@@ -46,6 +46,8 @@ export async function buildApp(): Promise<FastifyInstance> {
       .send({ error: { code: 'INTERNAL', message: 'Internal server error' } });
   });
 
+  app.get('/', async () => ({ ok: true, name: 'purrpose-api', version: '0.1.0' }));
+  app.get('/healthz', async () => ({ ok: true, serverTime: clock.now() }));
   app.get('/api/v1/healthz', async () => ({ ok: true, serverTime: clock.now() }));
 
   registerSessionRoutes(app);
