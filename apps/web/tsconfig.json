@@ -7,7 +7,12 @@
     "jsx": "react-jsx",
     "types": ["vite/client"],
     "useDefineForClassFields": true,
-    "noEmit": true
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@purrpose/shared": ["../../packages/shared/src/index.ts"],
+      "@purrpose/cats": ["../../packages/cats/src/index.ts"]
+    }
   },
   "include": ["src"]
 }
