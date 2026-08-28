@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: purrpose-postgres
+    environment:
+      POSTGRES_USER: purrpose
+      POSTGRES_PASSWORD: purrpose
+      POSTGRES_DB: purrpose
+    ports:
+      - "5433:5432"
+    volumes:
+      - purrpose_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U purrpose"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  purrpose_pgdata:

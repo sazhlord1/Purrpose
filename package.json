@@ -1,0 +1,35 @@
+{
+  "name": "purrpose",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "db:up": "docker compose -f infra/docker-compose.yml up -d",
+    "db:down": "docker compose -f infra/docker-compose.yml down",
+    "db:migrate": "pnpm --filter @purrpose/server migrate:deploy",
+    "db:seed": "pnpm --filter @purrpose/server seed",
+    "dev": "pnpm --parallel \"/^dev:.*/\"",
+    "dev:server": "pnpm --filter @purrpose/server dev",
+    "dev:web": "pnpm --filter @purrpose/web dev",
+    "smoke": "node scripts/smoke-api.mjs",
+    "gallery:capture": "node scripts/capture-cats.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "axe-core": "^4.13.0",
+    "eslint": "^9.17.0",
+    "lighthouse": "^13.4.1",
+    "playwright": "^1.62.1",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.0"
+  }
+}

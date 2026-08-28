@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CommitmentStatus {
+  ACTIVE
+  COMPLETED
+  FAILED
+}
+
+enum ConsequenceType {
+  MEALS
+  DRY_FOOD
+  VET_CARE
+}
+
+enum TransactionType {
+  STARTER_GRANT
+  TOPUP
+  FAILURE_DEDUCTION
+}
+
+model User {
+  id           String              @id @default(cuid())
+  name         String?
+  createdAt    DateTime            @default(now())
+  balances     CreditBalance[]
+  commitments  Commitment[]
+  transactions CreditTransaction[]
+  sessions     Session[]
+}
+
+model Session {
+  token     String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Cat {
+  id          String @id
+  name        String
+  type        String
+  personality String
+  config      Json
+}
+
+model Commitment {
+  id                String            @id @default(cuid())
+  userId            String
+  user              User              @relation(fields: [userId], references: [id])
+  title             String
+  description       String?
+  deadline          DateTime
+  status            CommitmentStatus  @default(ACTIVE)
+  catId             String
+  consequenceType   ConsequenceType
+  consequenceAmount Int
+  createdAt         DateTime          @default(now())
+  completedAt       DateTime?
+  failedAt          DateTime?
+  transactions      CreditTransaction[]
+
+  @@index([userId, status])
+  @@index([status, deadline])
+}
+
+model CreditBalance {
+  userId     String
+  creditType ConsequenceType
+  amount     Int
+  user       User            @relation(fields: [userId], references: [id])
+
+  @@id([userId, creditType])
+}
+
+model CreditTransaction {
+  id           String          @id @default(cuid())
+  userId       String
+  user         User            @relation(fields: [userId], references: [id])
+  type         TransactionType
+  creditType   ConsequenceType
+  amount       Int
+  commitmentId String?
+  commitment   Commitment?     @relation(fields: [commitmentId], references: [id])
+  createdAt    DateTime        @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model AppEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  name      String
+  payload   Json?
+  createdAt DateTime @default(now())
+}
