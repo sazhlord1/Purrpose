@@ -28,6 +28,7 @@ function Head({
   return (
     <g data-part="head">
       <Ears config={config} />
+      {/* 3D Volumetric Head Base */}
       <ellipse
         cx={0}
         cy={0}
@@ -36,6 +37,25 @@ function Head({
         fill={config.palette.body}
         stroke={ink}
         strokeWidth={3}
+      />
+      {/* Soft Forehead Highlight Dome for 3D Volume */}
+      <ellipse
+        cx={-2 * hs}
+        cy={-4 * hs}
+        rx={14 * hs}
+        ry={11 * hs}
+        fill="#FFFFFF"
+        opacity={0.09}
+        pointerEvents="none"
+      />
+      {/* Soft Cheek / Chin Shading */}
+      <ellipse
+        cx={0}
+        cy={10 * hs}
+        rx={11 * hs}
+        ry={5 * hs}
+        fill="rgba(43,35,31,0.06)"
+        pointerEvents="none"
       />
       <HeadMarkings config={config} hs={hs} />
       <Eyes config={config} expression={expression} />
@@ -76,6 +96,16 @@ export function Cat({
       data-expression={expr}
       className={className}
     >
+      {/* Dynamic Ground Shading / Contact Shadow */}
+      <ellipse
+        className="pcat-contact-shadow"
+        cx={110}
+        cy={171}
+        rx={46}
+        ry={7.5}
+        fill="rgba(43,35,31,0.22)"
+      />
+
       {showGround && (
         <path
           d="M30 151.5 C80 149.5 140 149.5 190 151.5"
@@ -113,6 +143,7 @@ export function Cat({
           </g>
         )}
 
+        {/* 3D Volumetric Body */}
         <path
           data-part="body"
           className="pcat-body"
@@ -121,6 +152,14 @@ export function Cat({
           stroke={ink}
           strokeWidth={3}
           strokeLinejoin="round"
+        />
+
+        {/* Soft Shoulder / Flank Volume Highlight */}
+        <path
+          d="M110 92 C88 98 76 122 76 148 C86 142 98 126 108 114 Z"
+          fill="#FFFFFF"
+          opacity={0.08}
+          pointerEvents="none"
         />
 
         <BodyMarkings config={config} poseName={state} />

@@ -64,12 +64,30 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
   const [expression, setExpression] = useState<Expression | null>(null);
   const [flags, setFlags] = useState<{
     blink: boolean;
-    ear: boolean;
+    halfBlink: boolean;
+    earLeft: boolean;
+    earRight: boolean;
+    earDual: boolean;
     tailFlick: boolean;
     bob: boolean;
     stare: boolean;
     stretch: boolean;
-  }>({ blink: false, ear: false, tailFlick: false, bob: false, stare: false, stretch: false });
+    listenLeft: boolean;
+    listenRight: boolean;
+  }>({
+    blink: false,
+    halfBlink: false,
+    earLeft: false,
+    earRight: false,
+    earDual: false,
+    tailFlick: false,
+    bob: false,
+    stare: false,
+    stretch: false,
+    listenLeft: false,
+    listenRight: false,
+  });
+
   const [bubble, setBubble] = useState<string | null>(null);
   const scriptDoneRef = useRef<string>('');
   const firstBeatRef = useRef(true);
@@ -92,7 +110,19 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
   }, [displayState]);
 
   useEffect(() => {
-    setFlags(f => ({ ...f, blink: false, ear: false, tailFlick: false, bob: false, stare: false, stretch: false }));
+    setFlags({
+      blink: false,
+      halfBlink: false,
+      earLeft: false,
+      earRight: false,
+      earDual: false,
+      tailFlick: false,
+      bob: false,
+      stare: false,
+      stretch: false,
+      listenLeft: false,
+      listenRight: false,
+    });
     setHeadTilt(0);
     setArmUp(false);
     setExpression(null);
@@ -150,9 +180,9 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
     switch (name) {
       case 'perkUp':
         await hop();
-        setFlags(f => ({ ...f, ear: true }));
+        setFlags(f => ({ ...f, earDual: true }));
         await wait(0.35, sp);
-        setFlags(f => ({ ...f, ear: false }));
+        setFlags(f => ({ ...f, earDual: false }));
         break;
       case 'lickLips':
         setExpression('happyShut');
@@ -408,6 +438,7 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
     };
   }, [phase, seed, paused, reduced, displayState]);
 
+  // Organic Randomized Blinking with Full, Half, and Double Blinks
   useEffect(() => {
     if (reduced || paused || !phase) return undefined;
     let cancelled = false;
@@ -417,21 +448,70 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
       const delay = (IDLE_TIMING.blinkMinMs + rng() * (IDLE_TIMING.blinkMaxMs - IDLE_TIMING.blinkMinMs)) / speedRef.current;
       timer = window.setTimeout(() => {
         if (cancelled) return;
-        const double = rng() < IDLE_TIMING.doubleBlinkChance;
-        setFlags(f => ({ ...f, blink: true }));
-        window.setTimeout(() => {
-          setFlags(f => ({ ...f, blink: false }));
-          if (double && !cancelled) {
-            window.setTimeout(() => {
-              setFlags(f => ({ ...f, blink: true }));
-              window.setTimeout(() => setFlags(f => ({ ...f, blink: false })), 160);
-            }, 200);
-          }
-          schedule();
-        }, 170);
+        const roll = rng();
+        if (roll < 0.20) {
+          // Lazy gentle half-blink
+          setFlags(f => ({ ...f, halfBlink: true }));
+          window.setTimeout(() => {
+            if (!cancelled) setFlags(f => ({ ...f, halfBlink: false }));
+            schedule();
+          }, 320);
+        } else if (roll < 0.35) {
+          // Double rapid blink
+          setFlags(f => ({ ...f, blink: true }));
+          window.setTimeout(() => {
+            setFlags(f => ({ ...f, blink: false }));
+            if (!cancelled) {
+              window.setTimeout(() => {
+                setFlags(f => ({ ...f, blink: true }));
+                window.setTimeout(() => {
+                  setFlags(f => ({ ...f, blink: false }));
+                  schedule();
+                }, 160);
+              }, 140);
+            }
+          }, 170);
+        } else {
+          // Standard natural blink
+          setFlags(f => ({ ...f, blink: true }));
+          window.setTimeout(() => {
+            if (!cancelled) setFlags(f => ({ ...f, blink: false }));
+            schedule();
+          }, 180);
+        }
       }, delay);
     };
     schedule();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [phase, paused, reduced, displayState]);
+
+  // Independent Ear Micro-Twitches (Left / Right / Dual)
+  useEffect(() => {
+    if (reduced || paused || !phase) return undefined;
+    let cancelled = false;
+    let timer = 0;
+    const scheduleEar = () => {
+      const delay = (4500 + Math.random() * 5500) / speedRef.current;
+      timer = window.setTimeout(() => {
+        if (cancelled) return;
+        const roll = Math.random();
+        if (roll < 0.4) {
+          setFlags(f => ({ ...f, earLeft: true }));
+          setTimeout(() => setFlags(f => ({ ...f, earLeft: false })), 360);
+        } else if (roll < 0.8) {
+          setFlags(f => ({ ...f, earRight: true }));
+          setTimeout(() => setFlags(f => ({ ...f, earRight: false })), 360);
+        } else {
+          setFlags(f => ({ ...f, earDual: true }));
+          setTimeout(() => setFlags(f => ({ ...f, earDual: false })), 420);
+        }
+        scheduleEar();
+      }, delay);
+    };
+    scheduleEar();
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
@@ -447,12 +527,24 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
 
   const swayClass =
     !reduced && phase ? (displayState === 'VERY_CLOSE' ? 'lc-swayfast' : 'lc-sway') : '';
+
+  const breatheClass = !reduced && phase && !flags.stare
+    ? displayState === 'SLEEPING'
+      ? 'lc-breathe-sleeping'
+      : (displayState === 'ANTICIPATING' || displayState === 'VERY_CLOSE')
+        ? 'lc-breathe-tense'
+        : 'lc-breathe'
+    : '';
+
   const rootClass = [
     'purrpose-living',
     swayClass,
-    !reduced && phase && !flags.stare ? 'lc-breathe' : '',
+    breatheClass,
     flags.blink ? 'lc-blinking' : '',
-    flags.ear ? 'lc-earflicking' : '',
+    flags.halfBlink ? 'lc-halfblink' : '',
+    flags.earDual ? 'lc-earflicking' : '',
+    flags.earLeft ? 'lc-ear-left-twitch' : '',
+    flags.earRight ? 'lc-ear-right-twitch' : '',
     flags.tailFlick ? 'lc-tailflicking' : '',
     flags.bob ? 'lc-bob' : '',
     flags.stare ? 'lc-stare' : '',
@@ -460,8 +552,6 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
   ]
     .filter(Boolean)
     .join(' ');
-
-  const headPose = POSE_BY_STATE[displayState].head;
 
   if (reduced) {
     return (
@@ -482,7 +572,7 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
       initial={false}
       animate={controls}
     >
-      <g transform="translate(-115 -150)">
+      <g transform="translate(-110 -150)">
         <Cat
           catId={catId}
           state={displayState}
@@ -505,7 +595,6 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
             stroke="#2B231F"
             strokeWidth={2.4}
           />
-          {/* Comic speech bubble tail pointing down to cat */}
           <path
             d={`M${Math.max(140, Math.min(280, bubble.length * 8.2 + 36)) / 2 - 6} 37 L${Math.max(140, Math.min(280, bubble.length * 8.2 + 36)) / 2} 48 L${Math.max(140, Math.min(280, bubble.length * 8.2 + 36)) / 2 + 8} 37 Z`}
             fill="#FFFDF8"
@@ -513,7 +602,6 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
             strokeWidth={2.4}
             strokeLinejoin="round"
           />
-          {/* inner fill patch to hide seam */}
           <path
             d={`M${Math.max(140, Math.min(280, bubble.length * 8.2 + 36)) / 2 - 8} 35 h18 v3 h-18 z`}
             fill="#FFFDF8"

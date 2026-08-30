@@ -1,62 +1,295 @@
 export const LIVING_CSS = `
 .purrpose-living { }
-.pcat-tail { transform-box: fill-box; transform-origin: 94% 94%; }
-.lc-sway .pcat-tail { animation: pcat-sway 4.2s cubic-bezier(0.445, 0.05, 0.55, 0.95) infinite; }
-.lc-swayfast .pcat-tail { animation: pcat-sway 2.4s cubic-bezier(0.445, 0.05, 0.55, 0.95) infinite; }
-.lc-tailflicking .pcat-tail { animation: pcat-flick .75s cubic-bezier(0.25, 1, 0.5, 1); }
-@keyframes pcat-sway { 0%,100% { transform: rotate(0deg); } 30% { transform: rotate(8deg); } 70% { transform: rotate(-6deg); } }
-@keyframes pcat-flick { 0%,100% { transform: rotate(0deg); } 35% { transform: rotate(-18deg); } 65% { transform: rotate(12deg); } }
 
-.pcat-body { transform-box: fill-box; transform-origin: 50% 100%; }
-.lc-breathe .pcat-body { animation: pcat-breathe 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
-.lc-bob .pcat-body { animation: pcat-bob .45s steps(2, end) infinite; }
-.lc-stretch .pcat-body { transform: scale(1.05, 1.08) translateY(-2px); }
-@keyframes pcat-breathe { 0%,100% { transform: scale(1, 1); } 50% { transform: scale(1.02, 1.032) translateY(-1px); } }
-@keyframes pcat-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3.5px); } }
+/* =========================================================================
+   1. ORGANIC ASYMMETRIC BREATHING & CONTACT SHADOW
+   ========================================================================= */
 
-.pcat-eyes { transform-box: fill-box; transform-origin: 50% 50%; }
-.lc-blinking .pcat-eyes { animation: pcat-blink .18s cubic-bezier(0.4, 0, 0.2, 1); }
-.lc-stare .pcat-eyes { transform: scale(1.22); }
-@keyframes pcat-blink { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(.08); } }
+.pcat-body {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
 
-.pcat-ears { transform-box: fill-box; transform-origin: 50% 100%; }
-.lc-earflicking .pcat-ears { animation: pcat-ear .36s ease-in-out; }
-@keyframes pcat-ear { 0%,100% { transform: rotate(0deg); } 40% { transform: rotate(-10deg); } }
+/* Asymmetric natural breathing: rapid soft inhalation (0-38%), gentle slow exhalation (38-85%), rest (85-100%) */
+.lc-breathe .pcat-body {
+  animation: pcat-breathe-organic 3.8s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+}
 
-.pcat-head { transform-box: fill-box; transform-origin: 50% 92%; transition: transform .36s cubic-bezier(.34, 1.56, .64, 1); }
-.pcat-head.lc-tilt-up { transform: rotate(-8deg) translateY(-1px); }
-.pcat-head.lc-tilt-down { transform: rotate(12deg) translateY(2px); }
+.lc-breathe-sleeping .pcat-body {
+  animation: pcat-breathe-sleep 5.0s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+}
 
-.pcat-arms { transform-box: fill-box; transform-origin: 50% 10%; transition: transform .22s cubic-bezier(.34, 1.56, .64, 1); }
-.pcat-arms.lc-armup { transform: translateY(-8px) rotate(-11deg); }
+.lc-breathe-tense .pcat-body {
+  animation: pcat-breathe-alert 2.4s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+}
 
-.lc-shake { animation: pcat-shake .45s ease-in-out; }
-@keyframes pcat-shake { 0%,100% { transform: translate(0, 0); } 20% { transform: translate(-2px, .8px); } 40% { transform: translate(2px, -.8px); } 60% { transform: translate(-1.5px, .4px); } 80% { transform: translate(1.5px, -.4px); } }
+.lc-stretch .pcat-body {
+  transform: scale(1.04, 1.09) translateY(-3px);
+}
 
-.lc-door { transform-box: fill-box; transform-origin: 0% 50%; transition: transform .6s cubic-bezier(.34, 1.56, .64, 1); }
-.lc-door.lc-open { transform: rotate(-22deg); }
+.lc-bob .pcat-body {
+  animation: pcat-bob 0.42s steps(2, end) infinite;
+}
 
-.lc-plant-leaf { transform-box: fill-box; transform-origin: 10% 10%; animation: pcat-leaf-sway 4.8s ease-in-out infinite; }
+@keyframes pcat-breathe-organic {
+  0% { transform: scale(1, 1) translateY(0); }
+  38% { transform: scale(1.025, 1.035) translateY(-1.5px); }
+  85% { transform: scale(0.995, 0.995) translateY(0.2px); }
+  100% { transform: scale(1, 1) translateY(0); }
+}
+
+@keyframes pcat-breathe-sleep {
+  0% { transform: scale(1, 1) translateY(0); }
+  45% { transform: scale(1.03, 1.045) translateY(-2px); }
+  90% { transform: scale(0.99, 0.99) translateY(0); }
+  100% { transform: scale(1, 1) translateY(0); }
+}
+
+@keyframes pcat-breathe-alert {
+  0% { transform: scale(1, 1) translateY(0); }
+  35% { transform: scale(1.02, 1.03) translateY(-1px); }
+  75% { transform: scale(0.995, 0.995) translateY(0); }
+  100% { transform: scale(1, 1) translateY(0); }
+}
+
+@keyframes pcat-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3.5px); }
+}
+
+/* Contact shadow beneath cat scaling with breathing */
+.pcat-contact-shadow {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: pcat-shadow-scale 3.8s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+}
+
+@keyframes pcat-shadow-scale {
+  0%, 100% { transform: scale(1, 1); opacity: 0.35; }
+  38% { transform: scale(0.95, 0.85); opacity: 0.22; }
+  85% { transform: scale(1.02, 1.05); opacity: 0.38; }
+}
+
+/* =========================================================================
+   2. PHYSICS-LIKE MULTI-HARMONIC TAIL SWAY & FLICK
+   ========================================================================= */
+
+.pcat-tail {
+  transform-box: fill-box;
+  transform-origin: 92% 92%;
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.lc-sway .pcat-tail {
+  animation: pcat-tail-physics 4.8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.lc-swayfast .pcat-tail {
+  animation: pcat-tail-physics 2.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.lc-tailflicking .pcat-tail {
+  animation: pcat-flick 0.75s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@keyframes pcat-tail-physics {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(7deg) skewX(1deg); }
+  55% { transform: rotate(-5deg) skewX(-1.5deg); }
+  80% { transform: rotate(3deg) skewX(0.5deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes pcat-flick {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-18deg); }
+  65% { transform: rotate(14deg); }
+}
+
+/* =========================================================================
+   3. ORGANIC EYES & RANDOMIZED BLINKING
+   ========================================================================= */
+
+.pcat-eyes {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+}
+
+.lc-blinking .pcat-eyes {
+  animation: pcat-blink 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.lc-halfblink .pcat-eyes {
+  animation: pcat-halfblink 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.lc-stare .pcat-eyes {
+  transform: scale(1.22);
+}
+
+@keyframes pcat-blink {
+  0%, 100% { transform: scaleY(1); }
+  45% { transform: scaleY(0.06); }
+}
+
+@keyframes pcat-halfblink {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.45); }
+}
+
+/* Subtle eye catchlight shimmer */
+.pcat-catchlight {
+  animation: pcat-glint-shimmer 6s ease-in-out infinite;
+}
+
+@keyframes pcat-glint-shimmer {
+  0%, 100% { transform: translate(0, 0); opacity: 0.95; }
+  50% { transform: translate(0.3px, -0.3px); opacity: 1; }
+}
+
+/* =========================================================================
+   4. INDEPENDENT EAR TWITCHING (Left / Right / Dual)
+   ========================================================================= */
+
+.pcat-ear-left, .pcat-ear-right {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+.lc-ear-left-twitch .pcat-ear-left {
+  animation: pcat-ear-l 0.36s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.lc-ear-right-twitch .pcat-ear-right {
+  animation: pcat-ear-r 0.36s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.lc-earflicking .pcat-ear-left {
+  animation: pcat-ear-l 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.lc-earflicking .pcat-ear-right {
+  animation: pcat-ear-r 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) 0.08s;
+}
+
+@keyframes pcat-ear-l {
+  0%, 100% { transform: rotate(0deg); }
+  40% { transform: rotate(-12deg); }
+}
+
+@keyframes pcat-ear-r {
+  0%, 100% { transform: rotate(0deg); }
+  40% { transform: rotate(12deg); }
+}
+
+/* =========================================================================
+   5. SILKY HEAD TILTS & ATTENTIVE LISTENING
+   ========================================================================= */
+
+.pcat-head {
+  transform-box: fill-box;
+  transform-origin: 50% 92%;
+  transition: transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pcat-head.lc-tilt-up { transform: rotate(-7deg) translateY(-1px); }
+.pcat-head.lc-tilt-down { transform: rotate(10deg) translateY(2px); }
+.pcat-head.lc-listen-left { transform: rotate(-4.5deg) translateX(-1px); }
+.pcat-head.lc-listen-right { transform: rotate(4.5deg) translateX(1px); }
+
+/* Arms / Paws */
+.pcat-arms {
+  transform-box: fill-box;
+  transform-origin: 50% 10%;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pcat-arms.lc-armup {
+  transform: translateY(-8px) rotate(-11deg);
+}
+
+/* =========================================================================
+   6. AMBIENT LIVING & SCENE ANIMATIONS
+   ========================================================================= */
+
+.lc-shake {
+  animation: pcat-shake 0.45s ease-in-out;
+}
+
+@keyframes pcat-shake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-2px, 0.8px); }
+  40% { transform: translate(2px, -0.8px); }
+  60% { transform: translate(-1.5px, 0.4px); }
+  80% { transform: translate(1.5px, -0.4px); }
+}
+
+.lc-door {
+  transform-box: fill-box;
+  transform-origin: 0% 50%;
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.lc-door.lc-open {
+  transform: rotate(-22deg);
+}
+
+.lc-plant-leaf {
+  transform-box: fill-box;
+  transform-origin: 10% 10%;
+  animation: pcat-leaf-sway 4.8s ease-in-out infinite;
+}
 .lc-plant-leaf:nth-child(2) { animation-delay: 1.2s; }
 .lc-plant-leaf:nth-child(3) { animation-delay: 2.4s; }
-@keyframes pcat-leaf-sway { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(4deg); } }
+@keyframes pcat-leaf-sway {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(4deg); }
+}
 
-.lc-clock-pendulum { transform-box: fill-box; transform-origin: 50% 0%; animation: pcat-pendulum 1.6s ease-in-out infinite; }
-@keyframes pcat-pendulum { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+.lc-clock-pendulum {
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+  animation: pcat-pendulum 1.6s ease-in-out infinite;
+}
+@keyframes pcat-pendulum {
+  0%, 100% { transform: rotate(-8deg); }
+  50% { transform: rotate(8deg); }
+}
 
-.lc-sunbeam { animation: pcat-sunbeam 6s ease-in-out infinite; }
-@keyframes pcat-sunbeam { 0%,100% { opacity: 0.18; } 50% { opacity: 0.28; } }
+.lc-sunbeam {
+  animation: pcat-sunbeam 6s ease-in-out infinite;
+}
+@keyframes pcat-sunbeam {
+  0%, 100% { opacity: 0.18; }
+  50% { opacity: 0.28; }
+}
 
-.lc-zzz { animation: pcat-zzz 2.8s ease-in-out infinite; }
-.lc-zzz:nth-of-type(2) { animation-delay: .9s; }
+.lc-zzz {
+  animation: pcat-zzz 2.8s ease-in-out infinite;
+}
+.lc-zzz:nth-of-type(2) { animation-delay: 0.9s; }
 .lc-zzz:nth-of-type(3) { animation-delay: 1.8s; }
-@keyframes pcat-zzz { 0% { opacity: 0; transform: translate(0, 6px) scale(0.8); } 30% { opacity: .95; } 100% { opacity: 0; transform: translate(10px, -20px) scale(1.2); } }
+@keyframes pcat-zzz {
+  0% { opacity: 0; transform: translate(0, 6px) scale(0.8); }
+  30% { opacity: 0.95; }
+  100% { opacity: 0; transform: translate(10px, -20px) scale(1.2); }
+}
 
-.lc-bubble { animation: pcat-pop-in .35s cubic-bezier(.34, 1.56, .64, 1); transform-box: fill-box; transform-origin: 50% 100%; filter: drop-shadow(0 2px 4px rgba(43,35,31,0.12)); }
-@keyframes pcat-pop-in { from { opacity: 0; transform: scale(.7) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.lc-bubble {
+  animation: pcat-pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 2px 5px rgba(43,35,31,0.14));
+}
+@keyframes pcat-pop-in {
+  from { opacity: 0; transform: scale(0.7) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .purrpose-living *, .purrpose-scene * { animation: none !important; transition: none !important; }
+  .purrpose-living *, .purrpose-scene * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 `;
 
