@@ -6,6 +6,7 @@ import type { CommitmentDto } from '@purrpose/shared';
 import { Home } from './pages/Home.js';
 import { NewCommitment } from './pages/NewCommitment.js';
 import { CommitmentDetail } from './pages/CommitmentDetail.js';
+import { Focus } from './pages/Focus.js';
 import { Pantry } from './pages/Pantry.js';
 import { Impact } from './pages/Impact.js';
 import { SessionProvider, useSession } from './lib/session.js';
@@ -48,6 +49,7 @@ function Shell() {
             <Suspense fallback={<p className="muted">fetching the doodles…</p>}>
               <Routes>
                 <Route path="/" element={<Home />} />
+                <Route path="/focus" element={<Focus />} />
                 <Route path="/new" element={<NewCommitment />} />
                 <Route path="/commitment/:id" element={<CommitmentDetail />} />
                 <Route path="/pantry" element={<Pantry />} />
@@ -62,6 +64,9 @@ function Shell() {
           <nav className="nav" aria-label="Main">
             <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
               Home
+            </NavLink>
+            <NavLink to="/focus" className={({ isActive }) => (isActive ? 'active' : '')}>
+              Focus
             </NavLink>
             <Link to="/new" className="nav-new" aria-label="New commitment">
               +

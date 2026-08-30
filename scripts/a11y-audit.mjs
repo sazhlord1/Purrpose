@@ -63,7 +63,7 @@ try {
 
   await page.evaluate(() => localStorage.setItem('purrpose.onboarded', '1'));
 
-  const routes = ['/', '/pantry', '/impact', '/settings', '/new', `/commitment/${detailId}`, '/lab', '/design', '/cats'];
+  const routes = ['/', '/focus', '/pantry', '/impact', '/settings', '/new', `/commitment/${detailId}`, '/lab', '/design', '/cats'];
 
   let totalViolations = 0;
   for (const route of routes) {

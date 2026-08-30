@@ -518,6 +518,110 @@ select {
   background: var(--accent-orange);
 }
 
+/* ===================================================
+   FOCUS MODE ANIMATIONS & STYLING
+   =================================================== */
+
+.focus-rain-layer {
+  transition: opacity 3.2s ease-out;
+}
+
+.focus-rain-fading {
+  opacity: 0;
+}
+
+.focus-clear-sky {
+  animation: pcat-sky-fade-in 2.5s ease-out forwards;
+}
+
+@keyframes pcat-sky-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 0.95; transform: translateY(0); }
+}
+
+.lc-seamless-rain-1 {
+  animation: pcat-seamless-rain 0.85s linear infinite;
+}
+
+.lc-seamless-rain-2 {
+  animation: pcat-seamless-rain 0.85s linear infinite;
+  animation-delay: -0.425s;
+}
+
+@keyframes pcat-seamless-rain {
+  0% { transform: translate(0, -110px); }
+  100% { transform: translate(-16px, 110px); }
+}
+
+.lc-rain-falling {
+  animation: pcat-rain-fall 0.65s linear infinite;
+}
+
+@keyframes pcat-rain-fall {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(-10px, 45px); }
+}
+
+.lc-rain-streak {
+  animation: pcat-rain-streak 4.5s ease-in-out infinite;
+}
+
+@keyframes pcat-rain-streak {
+  0%, 100% { transform: translateY(0); opacity: 0.65; }
+  50% { transform: translateY(6px); opacity: 0.9; }
+}
+
+/* Fireflies gentle drift and pulsing bioluminescent glow */
+.lc-firefly-1 {
+  animation: pcat-firefly-drift-1 5.2s ease-in-out infinite;
+}
+.lc-firefly-2 {
+  animation: pcat-firefly-drift-2 6.4s ease-in-out infinite 0.8s;
+}
+.lc-firefly-3 {
+  animation: pcat-firefly-drift-3 5.8s ease-in-out infinite 1.5s;
+}
+.lc-firefly-4 {
+  animation: pcat-firefly-drift-4 7.0s ease-in-out infinite 2.2s;
+}
+
+@keyframes pcat-firefly-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(0.9); opacity: 0.7; }
+  35% { transform: translate(14px, -18px) scale(1.2); opacity: 1; }
+  70% { transform: translate(-8px, -30px) scale(0.85); opacity: 0.5; }
+}
+
+@keyframes pcat-firefly-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.8; }
+  40% { transform: translate(-18px, 12px) scale(1.3); opacity: 1; }
+  75% { transform: translate(-28px, -15px) scale(0.75); opacity: 0.4; }
+}
+
+@keyframes pcat-firefly-drift-3 {
+  0%, 100% { transform: translate(0, 0) scale(0.85); opacity: 0.6; }
+  50% { transform: translate(16px, -16px) scale(1.25); opacity: 1; }
+}
+
+@keyframes pcat-firefly-drift-4 {
+  0%, 100% { transform: translate(0, 0) scale(0.9); opacity: 0.5; }
+  45% { transform: translate(-12px, -24px) scale(1.3); opacity: 1; }
+  80% { transform: translate(8px, -12px) scale(0.8); opacity: 0.6; }
+}
+
+/* Zen Fullscreen Mode */
+.zen-active .nav {
+  transform: translateX(-50%) translateY(120%);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.zen-floating-toggle {
+  position: fixed;
+  top: calc(16px + env(safe-area-inset-top));
+  right: 16px;
+  z-index: 50;
+  box-shadow: var(--shadow);
+}
+
 @keyframes pcat-fall {
   0% {
     opacity: 0;

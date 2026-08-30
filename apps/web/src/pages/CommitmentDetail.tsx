@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { CatScene, seedFor, type CatState, type LivingCatHandle } from '@purrpose/cats';
 import { CREDIT_TYPE_LABELS, now, type CommitmentDto } from '@purrpose/shared';
 import { api, ApiError } from '../lib/api.js';
+import { ambient } from '../lib/ambient.js';
 import { notifyFailure, notifySuccess } from '../lib/notifications.js';
 import { fmtDate, fmtRemaining } from '../lib/format.js';
 import { DoodleButton, SketchCard } from '../components/ui/index.js';
@@ -25,6 +26,13 @@ export function CommitmentDetail() {
   const reduced =
     typeof localStorage !== 'undefined' &&
     localStorage.getItem('purrpose.reducedMotion') === '1';
+
+  const trackedFocusSecs = Number(
+    typeof localStorage !== 'undefined' && id
+      ? localStorage.getItem(`purrpose.focus_time.${id}`) || '0'
+      : '0',
+  );
+  const focusMins = Math.round(trackedFocusSecs / 60);
 
   useEffect(() => {
     const t = setInterval(() => setTick(n => n + 1), 1000);
@@ -153,6 +161,16 @@ export function CommitmentDetail() {
         {c.status === 'ACTIVE' && !pending && (
           <span className="chip">{fmtRemaining(remainingMs)}</span>
         )}
+        {focusMins > 0 && (
+          <span className="chip" style={{ color: 'var(--accent-green)', fontWeight: 600 }}>
+            ⏱ {focusMins}m focused
+          </span>
+        )}
+        {c.status === 'ACTIVE' && !pending && (
+          <Link to="/focus" className="chip" style={{ background: 'var(--paper-warm)', color: 'var(--ink)', textDecoration: 'none' }}>
+            🌙 Focus Room →
+          </Link>
+        )}
         {pending && <span className="chip">checking on your cat…</span>}
       </div>
 
@@ -192,6 +210,9 @@ export function CommitmentDetail() {
           livingRef={livingRef}
           onSceneEvent={e => {
             if (e === 'script:done') setSceneOverride(null);
+            if (e.startsWith('speech:') || e.startsWith('display:')) {
+              ambient.playOccasionalMeow(10000);
+            }
           }}
         />
         <p className="muted" style={{ textAlign: 'center', marginTop: -6 }}>
