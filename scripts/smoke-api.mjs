@@ -48,7 +48,7 @@ assert(meals.amount === 10 && meals.available === 10, `starter pantry (meals=${m
 step('starter grant visible in wallet');
 
 const cats = await call('GET', '/cats');
-assert(cats.status === 200 && cats.json.cats.length === 5, 'five seeded cats');
+assert(cats.status === 200 && cats.json.cats.length === 8, 'eight seeded cats');
 step('cat catalog');
 
 const deadline = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();

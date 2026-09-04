@@ -22,7 +22,9 @@ export function Focus() {
   const [status, setStatus] = useState<FocusStatus>('idle');
   const [seconds, setSeconds] = useState(0);
   const [selectedCat, setSelectedCat] = useState<CatId>(() => {
-    return (localStorage.getItem('purrpose.focus_cat') as CatId) || 'orange';
+    if (typeof localStorage === 'undefined') return 'orange';
+    const saved = localStorage.getItem('purrpose.focus_cat') as CatId;
+    return CAT_SEED.some(c => c.id === saved) ? saved : 'orange';
   });
   const [selectedCommitmentId, setSelectedCommitmentId] = useState<string>('');
   const [soundEnabled, setSoundEnabled] = useState(true);

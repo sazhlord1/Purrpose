@@ -119,38 +119,56 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN null;
 END $$;
 
--- 4. Seed the 5 Cats
+-- 4. Seed the 8 Cats
 INSERT INTO "Cat" ("id", "name", "type", "personality", "config")
 VALUES
-('orange', 'Miso', 'ORANGE', 'Optimistic / chaotic / playful', '{
-  "palette": { "body": "#E28743", "belly": "#FBE9D2", "ink": "#2B231F", "markings": "#B85D24", "eyes": "#E76F51", "eyeGlint": "#FFFFFF", "nose": "#E76F51", "innerEar": "#F9B4A0" },
-  "structure": { "ears": "pointy", "tailPath": "bigCurl", "eyeShape": "dotWide", "bodyLength": 0.95, "headSize": 1.1, "postureDefault": "upright" },
-  "motion": { "overshootMul": 1.3, "stepFreq": 1.15, "pauseBias": 0.6 },
-  "quirks": { "winLine": "I KNEW IT!!! NOM NOM NOM", "loseLine": "aw man. okay. maybe next time.", "chosenLine": "oh!! oh!! deal!!", "closeLines": ["I''M SO READY. ARE YOU??"], "waitingLines": ["taking my time. lots of it.", "is that… the cabinet?? nooo (yes)"] }
+('orange', 'Miso', 'TABBY', 'Joyful / optimistic / warm sunbather', '{
+  "palette": { "body": "#EEB038", "belly": "#EEB038", "ink": "#26201D", "markings": "#26201D", "eyes": "#26201D", "eyeGlint": "#FFFDF9", "nose": "#26201D" },
+  "structure": { "ears": "pointy", "tailPath": "spiralCurl", "eyeShape": "joyfulArch", "bodyLength": 1, "headSize": 1, "postureDefault": "seatedPaws" },
+  "motion": { "overshootMul": 1.2, "stepFreq": 1.1, "pauseBias": 0.7 },
+  "quirks": { "winLine": "I KNEW IT!!! NOM NOM NOM", "loseLine": "aw man. okay. maybe next time.", "chosenLine": "oh!! oh!! deal!!", "closeLines": ["I''M SO READY. ARE YOU??"], "waitingLines": ["taking my time in the sun.", "is that… the snack cabinet??"] }
 }'::jsonb),
-('tuxedo', 'Winston', 'TUXEDO', 'Judgmental / sophisticated / sarcastic', '{
-  "palette": { "body": "#2B2A29", "belly": "#FBF8F1", "ink": "#1E1B18", "markings": "#FBF8F1", "eyes": "#4E8752", "eyeGlint": "#FFFFFF", "nose": "#EFA7A7", "innerEar": "#EFA7A7", "socks": "#FBF8F1", "bib": "#FBF8F1" },
-  "structure": { "ears": "roundTall", "tailPath": "longPlume", "eyeShape": "almond", "bodyLength": 1.05, "headSize": 1, "postureDefault": "poised" },
+('tuxedo', 'Winston', 'TUXEDO', 'Aristocratic / dignified / sardonic', '{
+  "palette": { "body": "#FFFDF9", "belly": "#FFFDF9", "ink": "#26201D", "markings": "#26201D", "eyes": "#26201D", "eyeGlint": "#FFFDF9", "nose": "#26201D", "patch": "#F4978E" },
+  "structure": { "ears": "tallStriped", "tailPath": "rootedStripedCurl", "eyeShape": "dotWide", "bodyLength": 1, "headSize": 1, "postureDefault": "aristocratSeated" },
   "motion": { "overshootMul": 0.8, "stepFreq": 0.85, "pauseBias": 1.4 },
   "quirks": { "winLine": "Naturally. Bon appétit — moi.", "loseLine": "Hm. Adequate, I suppose.", "chosenLine": "Very well. I shall wait.", "closeLines": ["The hour grows late."], "waitingLines": ["I''ve seen faster humans.", "I do enjoy a good suspense."] }
 }'::jsonb),
-('black', 'Nyx', 'BLACK', 'Mischievous / mysterious / slightly evil', '{
-  "palette": { "body": "#24202C", "belly": "#352F40", "ink": "#141219", "markings": "#443C53", "eyes": "#F7D060", "eyeGlint": "#FFFFFF", "nose": "#A08F85", "innerEar": "#6A5D7B" },
-  "structure": { "ears": "pointy", "tailPath": "lowHook", "eyeShape": "narrowSly", "bodyLength": 1, "headSize": 0.95, "postureDefault": "slink" },
+('black', 'Nyx', 'MIDNIGHT', 'Mysterious / graceful / luminous-eyed', '{
+  "palette": { "body": "#1E1B18", "belly": "#1E1B18", "ink": "#26201D", "markings": "#FFFDF9", "eyes": "#FFFDF9", "eyeGlint": "#1E1B18", "nose": "#E05368", "innerEar": "#E05368" },
+  "structure": { "ears": "pinkInner", "tailPath": "sleekUpright", "eyeShape": "luminousOval", "bodyLength": 0.95, "headSize": 0.95, "postureDefault": "slenderSeated" },
   "motion": { "overshootMul": 1, "stepFreq": 1, "pauseBias": 1 },
   "quirks": { "winLine": "I KNEW IT. feast mode.", "loseLine": "…fine.", "chosenLine": "heh. sure you will.", "closeLines": ["you won''t make it. i can smell it."], "waitingLines": ["tick tock.", "the bowl is RIGHT THERE."] }
 }'::jsonb),
-('boba', 'Boba', 'BOBA', 'Sleepy / food-obsessed / gentle chonk', '{
-  "palette": { "body": "#F7F1E5", "belly": "#FFFDF9", "ink": "#2B231F", "markings": "#4A3E3D", "patch": "#E07A5F", "eyes": "#3D5A80", "eyeGlint": "#E0FBFC", "nose": "#E76F51", "innerEar": "#F4A5A5" },
-  "structure": { "ears": "roundSoft", "tailPath": "fluffyPuff", "eyeShape": "bigGleam", "bodyLength": 1.15, "headSize": 1.15, "postureDefault": "chonk" },
-  "motion": { "overshootMul": 0.7, "stepFreq": 0.75, "pauseBias": 1.6 },
-  "quirks": { "winLine": "YESSS! CHONK FEAST COMMENCES!", "loseLine": "yawn… back to nap then.", "chosenLine": "deal! wake me up when it is food time…", "closeLines": ["the aroma of victory is in the air…", "my bowl calls to me…"], "waitingLines": ["is it snack time yet?", "i am conserving energy for the feast.", "sleeping with one ear open…"] }
+('boba', 'Boba', 'CALICO', 'Curious / sweet / cheeky side-glancer', '{
+  "palette": { "body": "#FFFDF9", "belly": "#FFFDF9", "ink": "#26201D", "markings": "#E07A5F", "patch": "#E07A5F", "eyes": "#FFFDF9", "eyeGlint": "#26201D", "nose": "#26201D" },
+  "structure": { "ears": "splitCalico", "tailPath": "groundTail", "eyeShape": "sideGlance", "bodyLength": 1.05, "headSize": 1, "postureDefault": "calicoSeated" },
+  "motion": { "overshootMul": 0.9, "stepFreq": 0.9, "pauseBias": 1.2 },
+  "quirks": { "winLine": "YESSS! CHONK FEAST COMMENCES!", "loseLine": "yawn… back to nap then.", "chosenLine": "deal! wake me up when it is food time…", "closeLines": ["the aroma of victory is in the air…"], "waitingLines": ["is it snack time yet?", "side-eyeing your procrastination…"] }
 }'::jsonb),
-('ziggy', 'Ziggy', 'ZIGGY', 'Hyperactive / chaos gremlin / zoomies master', '{
-  "palette": { "body": "#EFE8D8", "belly": "#FBF7EE", "ink": "#2B231F", "markings": "#3C2F2F", "mask": "#3C2F2F", "eyes": "#48CAE4", "eyeGlint": "#FFFFFF", "nose": "#2E2222", "innerEar": "#E29578", "socks": "#3C2F2F" },
-  "structure": { "ears": "batEars", "tailPath": "zigzag", "eyeShape": "wideWild", "bodyLength": 0.9, "headSize": 1.05, "postureDefault": "gremlin" },
-  "motion": { "overshootMul": 1.5, "stepFreq": 1.35, "pauseBias": 0.4 },
-  "quirks": { "winLine": "VICTORY LAP AT THE SPEED OF SOUND!!", "loseLine": "REEE! I will sprint anyway!!", "chosenLine": "ZOOMIES PROTOCOL ENGAGED!!", "closeLines": ["FIVE MINUTES UNTIL MAXIMUM CHAOS!!", "PREPARING 3AM VICTORY SPRINT!"], "waitingLines": ["I HEARD A CRUMB DROP 3 MILES AWAY", "CANNOT SIT STILL MUST JUMP", "TICK TOCK GO FAST FAST FAST!"] }
+('mochi', 'Mochi', 'BICOLOR', 'Quiet / gentle / marshmallow soft', '{
+  "palette": { "body": "#FFFDF9", "belly": "#FFFDF9", "ink": "#26201D", "markings": "#26201D", "eyes": "#26201D", "eyeGlint": "#FFFDF9", "nose": "#26201D" },
+  "structure": { "ears": "blackLeftComb", "tailPath": "hookLeft", "eyeShape": "dotWide", "bodyLength": 1, "headSize": 1, "postureDefault": "jjLegs" },
+  "motion": { "overshootMul": 0.85, "stepFreq": 0.9, "pauseBias": 1.3 },
+  "quirks": { "winLine": "Mochi is very, very happy!", "loseLine": "oh well... i still like you.", "chosenLine": "purr... i believe in you.", "closeLines": ["almost done, right?"], "waitingLines": ["sitting very still.", "watching your screen quietly."] }
+}'::jsonb),
+('oreo', 'Oreo', 'MASKED', 'Inquisitive / observant / mustache gentleman', '{
+  "palette": { "body": "#FFFDF9", "belly": "#FFFDF9", "ink": "#26201D", "markings": "#26201D", "eyes": "#FFFDF9", "eyeGlint": "#26201D", "nose": "#26201D" },
+  "structure": { "ears": "blackMaskEars", "tailPath": "uprightLedge", "eyeShape": "bigRoundStare", "bodyLength": 1, "headSize": 1.05, "postureDefault": "ledgePaws" },
+  "motion": { "overshootMul": 1.1, "stepFreq": 1, "pauseBias": 0.9 },
+  "quirks": { "winLine": "Spectacular achievement! A feast well earned.", "loseLine": "A momentary setback. Re-strategize!", "chosenLine": "Eyes on the prize! Let us begin.", "closeLines": ["The ledge is vibrating with anticipation!"], "waitingLines": ["Observing every keystroke.", "My mustache senses progress."] }
+}'::jsonb),
+('pepper', 'Pepper', 'POLKADOT', 'Playful / bubbly / spotty sweetheart', '{
+  "palette": { "body": "#FFFDF9", "belly": "#FFFDF9", "ink": "#26201D", "markings": "#26201D", "eyes": "#26201D", "eyeGlint": "#FFFDF9", "nose": "#26201D", "patch": "#F4978E" },
+  "structure": { "ears": "combForehead", "tailPath": "ringLoop", "eyeShape": "dotWide", "bodyLength": 1, "headSize": 1, "postureDefault": "polkaDots" },
+  "motion": { "overshootMul": 1.25, "stepFreq": 1.2, "pauseBias": 0.6 },
+  "quirks": { "winLine": "YAAAAY!! Pepper party time!!", "loseLine": "Aww pouts... but next time for sure!", "chosenLine": "Every dot on my fur is cheering for you!!", "closeLines": ["My ring tail is spinning with joy!"], "waitingLines": ["Counting my spots while you work!", "Wiggle wiggle! You can do it!"] }
+}'::jsonb),
+('yuki', 'Yuki', 'SKETCH', 'Energetic / expressive / playful ghost', '{
+  "palette": { "body": "#FFFDF9", "belly": "#FFFDF9", "ink": "#26201D", "markings": "#26201D", "eyes": "#26201D", "eyeGlint": "#FFFDF9", "nose": "#26201D" },
+  "structure": { "ears": "alertPointy", "tailPath": "hookRight", "eyeShape": "dotWide", "bodyLength": 1, "headSize": 1, "postureDefault": "wLegs" },
+  "motion": { "overshootMul": 1.3, "stepFreq": 1.25, "pauseBias": 0.5 },
+  "quirks": { "winLine": "BAM! Target destroyed! Delicious victory!", "loseLine": "Whoosh... scattered into the wind.", "chosenLine": "ALERT! Commitment registered! Engage!", "closeLines": ["Maximum energy surge! Finish strong!"], "waitingLines": ["Sparks of creativity incoming!", "Tail is hooked and ready!"] }
 }'::jsonb)
 ON CONFLICT ("id") DO UPDATE SET
   "name" = EXCLUDED."name",

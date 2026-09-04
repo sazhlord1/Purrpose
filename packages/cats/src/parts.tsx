@@ -1,21 +1,68 @@
 import type { CatSeedConfig, Expression } from './types.js';
 import type { TailHint } from './poses.js';
 
-export const INK = '#2B231F';
+export const INK = '#26201D';
 export const PAPER = '#FAF6EE';
 
-const TAIL_UP: Record<string, { d: string; width: number }> = {
+// ============================================================================
+// 1. TAIL GEOMETRY TABLE
+// All tails designed with an integrated root that attaches directly to the body
+// ============================================================================
+
+const TAIL_UP: Record<string, { d: string; width: number; fill?: string; stroke?: string }> = {
+  // 1. Winston: Striped curl tail on left
+  rootedStripedCurl: {
+    d: 'M0,0 C-18,-6 -34,-24 -36,-50 C-38,-80 -20,-110 6,-110 C20,-110 30,-99 28,-85 C26,-74 12,-66 0,-74 C-10,-82 -10,-94 -6,-99',
+    width: 14,
+  },
+  // 2. Miso: Upward spiral question-mark curl on right
+  spiralCurl: {
+    d: 'M0,0 C22,-2 36,-20 36,-48 C36,-78 22,-94 8,-90 C-2,-87 -6,-76 -2,-68 C2,-60 14,-64 13,-72',
+    width: 13,
+  },
+  // 3. Mochi: Short hook tail on left
+  hookLeft: {
+    d: 'M0,0 C-16,-5 -22,-21 -18,-40 C-16,-52 -4,-54 0,-47 C4,-40 -4,-28 8,-20',
+    width: 12,
+  },
+  // 4. Oreo: Upright tail on right
+  uprightLedge: {
+    d: 'M0,0 C14,-10 18,-35 16,-65 C14,-78 8,-76 4,-70 C0,-60 4,-35 -4,-5',
+    width: 10,
+  },
+  // 5. Pepper: Ring-loop tail on right
+  ringLoop: {
+    d: 'M0,0 C16,0 30,-10 30,-30 C30,-48 14,-54 4,-44 C-2,-38 2,-26 14,-28 C22,-30 24,-40 18,-46',
+    width: 11,
+  },
+  // 6. Yuki: Upward hook tail on right
+  hookRight: {
+    d: 'M0,0 C18,-2 30,-20 26,-46 C22,-62 12,-64 8,-56 C4,-48 14,-28 0,-10',
+    width: 11,
+  },
+  // 7. Nyx: Sleek upright tail on right
+  sleekUpright: {
+    d: 'M0,0 C14,-8 18,-32 16,-55 C15,-66 10,-68 6,-62 C3,-55 5,-38 -3,-10',
+    width: 8.5,
+  },
+  // 8. Boba: Ground tail on right
+  groundTail: {
+    d: 'M0,0 C24,0 44,-6 50,0 C52,4 46,8 25,6 L0,6',
+    width: 8,
+  },
+
+  // Fallbacks / Legacy keys
   bigCurl: {
     d: 'M0 0 C-4 -14 2 -28 16 -30 C27 -31 33 -21 27 -15 C22 -10 15 -14 17 -19',
-    width: 8.5,
+    width: 9,
   },
   longPlume: {
     d: 'M0 0 C-8 -12 -6 -30 6 -40 C14 -46 25 -43 26 -34',
-    width: 9.5,
+    width: 10,
   },
   lowHook: {
     d: 'M0 0 C3 -10 -1 -18 -10 -19 C-17 -19 -21 -13 -18 -8',
-    width: 7.5,
+    width: 8,
   },
   fluffyPuff: {
     d: 'M0 0 C-6 -10 0 -22 12 -24 C22 -26 28 -16 24 -8 C20 -1 10 3 0 0',
@@ -23,24 +70,34 @@ const TAIL_UP: Record<string, { d: string; width: number }> = {
   },
   zigzag: {
     d: 'M0 0 L-7 -11 L5 -20 L-8 -31 L6 -39',
-    width: 7,
+    width: 7.5,
   },
 };
 
 const TAIL_LIMP: Record<string, { d: string; width: number }> = {
-  bigCurl: { d: 'M0 0 C-10 3 -20 2 -29 -1', width: 8.5 },
-  longPlume: { d: 'M0 0 C-11 4 -23 3 -33 -1 C-36 -2 -38 -1 -39 1', width: 9.5 },
-  lowHook: { d: 'M0 0 C-8 3 -16 3 -24 0', width: 7.5 },
+  ...TAIL_UP,
+  rootedStripedCurl: {
+    d: 'M0,0 C-16,4 -28,8 -42,6 C-50,4 -56,0 -58,-4',
+    width: 14,
+  },
+  spiralCurl: {
+    d: 'M0,0 C16,4 28,6 40,2 C46,0 50,-4 52,-8',
+    width: 13,
+  },
+  bigCurl: { d: 'M0 0 C-10 3 -20 2 -29 -1', width: 9 },
+  longPlume: { d: 'M0 0 C-11 4 -23 3 -33 -1 C-36 -2 -38 -1 -39 1', width: 10 },
+  lowHook: { d: 'M0 0 C-8 3 -16 3 -24 0', width: 8 },
   fluffyPuff: { d: 'M0 0 C-9 4 -18 3 -26 0', width: 12 },
-  zigzag: { d: 'M0 0 L-9 4 L-17 -1 L-27 2', width: 7 },
+  zigzag: { d: 'M0 0 L-9 4 L-17 -1 L-27 2', width: 7.5 },
 };
 
 const TAIL_BRACE: Record<string, { d: string; width: number }> = {
-  bigCurl: { d: 'M0 0 C3 6 2 11 -2 13', width: 8.5 },
-  longPlume: { d: 'M0 0 C3 6 2 12 -2 14', width: 9.5 },
-  lowHook: { d: 'M0 0 C3 5 2 10 -2 12', width: 7.5 },
+  ...TAIL_UP,
+  bigCurl: { d: 'M0 0 C3 6 2 11 -2 13', width: 9 },
+  longPlume: { d: 'M0 0 C3 6 2 12 -2 14', width: 10 },
+  lowHook: { d: 'M0 0 C3 5 2 10 -2 12', width: 8 },
   fluffyPuff: { d: 'M0 0 C3 7 3 13 -2 15', width: 12 },
-  zigzag: { d: 'M0 0 L5 6 L-2 11 L4 15', width: 7 },
+  zigzag: { d: 'M0 0 L5 6 L-2 11 L4 15', width: 7.5 },
 };
 
 export function tailFor(variant: string, hint: TailHint) {
@@ -48,172 +105,268 @@ export function tailFor(variant: string, hint: TailHint) {
   return table[variant] ?? TAIL_UP.bigCurl;
 }
 
+// ============================================================================
+// 2. EARS ANATOMY
+// ============================================================================
+
 export function Ears({ config }: { config: CatSeedConfig }) {
   const fill = config.palette.body;
-  const ink = config.palette.ink;
-  const inner = config.palette.innerEar ?? '#F9B4A0';
+  const ink = config.palette.ink ?? INK;
+  const earType = config.structure.ears;
 
-  if (config.structure.ears === 'roundTall') {
+  // Winston: Black ears with inner white hatch line
+  if (earType === 'tallStriped') {
     return (
-      <g data-part="ears" data-ears="roundTall">
-        {/* outer ears */}
-        <path d="M-17 -6 C-19 -16 -17 -24 -12 -27 C-7.5 -24.5 -4.5 -19 -4 -12 Z" fill={fill} stroke={ink} strokeWidth={3} strokeLinejoin="round" />
-        <path d="M17 -6 C19 -16 17 -24 12 -27 C7.5 -24.5 4.5 -19 4 -12 Z" fill={fill} stroke={ink} strokeWidth={3} strokeLinejoin="round" />
-        {/* inner ear shading */}
-        <path d="M-15 -9 C-16 -16 -15 -21 -12 -23 C-9 -21 -7 -17 -6 -13 Z" fill={inner} stroke="none" opacity={0.85} />
-        <path d="M15 -9 C16 -16 15 -21 12 -23 C9 -21 7 -17 6 -13 Z" fill={inner} stroke="none" opacity={0.85} />
+      <g data-part="ears" data-ears="tallStriped">
+        <path d="M-18 -6 C-20 -20 -18 -36 -12 -42 C-7.5 -38 -4.5 -25 -4 -12 Z" fill="#26201D" stroke={ink} strokeWidth={3} strokeLinejoin="round" />
+        <path d="M18 -6 C20 -20 18 -36 12 -42 C7.5 -38 4.5 -25 4 -12 Z" fill="#26201D" stroke={ink} strokeWidth={3} strokeLinejoin="round" />
+        <path d="M-12 -34 L-12 -14" stroke="#FFFDF9" strokeWidth={2.4} strokeLinecap="round" />
+        <path d="M12 -34 L12 -14" stroke="#FFFDF9" strokeWidth={2.4} strokeLinecap="round" />
       </g>
     );
   }
-  if (config.structure.ears === 'roundSoft') {
+
+  // Nyx: Midnight black ears with hot pink inner fold
+  if (earType === 'pinkInner') {
     return (
-      <g data-part="ears" data-ears="roundSoft">
-        <path d="M-17 -5 C-22 -14 -16 -23 -9 -21 C-4 -19 -3 -12 -3 -6 Z" fill={fill} stroke={ink} strokeWidth={3} strokeLinejoin="round" />
-        <path d="M17 -5 C22 -14 16 -23 9 -21 C4 -19 3 -12 3 -6 Z" fill={fill} stroke={ink} strokeWidth={3} strokeLinejoin="round" />
-        <path d="M-15 -8 C-18 -13 -14 -19 -10 -18 C-6 -17 -5 -12 -5 -8 Z" fill={inner} stroke="none" opacity={0.9} />
-        <path d="M15 -8 C18 -13 14 -19 10 -18 C6 -17 5 -12 5 -8 Z" fill={inner} stroke="none" opacity={0.9} />
+      <g data-part="ears" data-ears="pinkInner">
+        <path d="M-17 -6 C-19 -18 -16 -30 -11 -35 C-6.5 -30 -4 -18 -3 -12 Z" fill="#1E1B18" stroke={ink} strokeWidth={3} strokeLinejoin="round" />
+        <path d="M17 -6 C19 -18 16 -30 11 -35 C6.5 -30 4 -18 3 -12 Z" fill="#1E1B18" stroke={ink} strokeWidth={3} strokeLinejoin="round" />
+        <path d="M-12 -28 C-14 -18 -12 -10 -9 -8 Z" fill="#E05368" />
+        <path d="M12 -28 C14 -18 12 -10 9 -8 Z" fill="#E05368" />
       </g>
     );
   }
-  if (config.structure.ears === 'batEars') {
+
+  // Boba: Split calico ears (Left terracotta, Right black)
+  if (earType === 'splitCalico') {
     return (
-      <g data-part="ears" data-ears="batEars">
-        <path d="M-15 -7 C-26 -20 -25 -33 -15 -35 C-7 -28 -4 -18 -2 -11 Z" fill={config.palette.mask ?? fill} stroke={ink} strokeWidth={3} strokeLinejoin="round" />
-        <path d="M15 -7 C26 -20 25 -33 15 -35 C7 -28 4 -18 2 -11 Z" fill={config.palette.mask ?? fill} stroke={ink} strokeWidth={3} strokeLinejoin="round" />
-        <path d="M-13 -10 C-20 -19 -19 -28 -14 -29 C-8 -24 -6 -16 -4 -12 Z" fill={inner} stroke="none" opacity={0.85} />
-        <path d="M13 -10 C20 -19 19 -28 14 -29 C8 -24 6 -16 4 -12 Z" fill={inner} stroke="none" opacity={0.85} />
+      <g data-part="ears" data-ears="splitCalico">
+        <path d="M-17 -6 C-19 -18 -16 -30 -11 -35 C-6.5 -30 -4 -18 -3 -12 Z" fill="#E07A5F" stroke={ink} strokeWidth={3} strokeLinejoin="round" />
+        <path d="M17 -6 C19 -18 16 -30 11 -35 C6.5 -30 4 -18 3 -12 Z" fill="#26201D" stroke={ink} strokeWidth={3} strokeLinejoin="round" />
       </g>
     );
   }
+
+  // Mochi: Left ear black with white comb lines, Right ear black
+  if (earType === 'blackLeftComb') {
+    return (
+      <g data-part="ears" data-ears="blackLeftComb">
+        <path d="M-17 -6 C-19 -18 -16 -32 -11 -36 C-6.5 -30 -4 -18 -3 -12 Z" fill="#26201D" stroke={ink} strokeWidth={3} strokeLinejoin="round" />
+        <path d="M17 -6 C19 -18 16 -32 11 -36 C6.5 -30 4 -18 3 -12 Z" fill="#26201D" stroke={ink} strokeWidth={3} strokeLinejoin="round" />
+        <path d="M-13 -26 L-13 -12 M-9 -22 L-9 -10" stroke="#FFFDF9" strokeWidth={2} strokeLinecap="round" />
+      </g>
+    );
+  }
+
+  // Pepper / Oreo: Dark cap ears
+  if (earType === 'combForehead' || earType === 'blackMaskEars') {
+    return (
+      <g data-part="ears" data-ears={earType}>
+        <path d="M-17 -6 C-19 -18 -16 -32 -11 -36 C-6.5 -30 -4 -18 -3 -12 Z" fill="#26201D" stroke={ink} strokeWidth={3} strokeLinejoin="round" />
+        <path d="M17 -6 C19 -18 16 -32 11 -36 C6.5 -30 4 -18 3 -12 Z" fill="#26201D" stroke={ink} strokeWidth={3} strokeLinejoin="round" />
+      </g>
+    );
+  }
+
+  // Default Pointy (Miso, Yuki)
   return (
     <g data-part="ears" data-ears="pointy">
-      <path d="M-16.5 -7 C-19.5 -17 -17 -26 -12.5 -29.5 C-7.5 -25.5 -4 -19 -3 -13 Z" fill={fill} stroke={ink} strokeWidth={3} strokeLinejoin="round" />
-      <path d="M16.5 -7 C19.5 -17 17 -26 12.5 -29.5 C7.5 -25.5 4 -19 3 -13 Z" fill={fill} stroke={ink} strokeWidth={3} strokeLinejoin="round" />
-      <path d="M-14 -10 C-16 -16 -15 -22 -12.5 -24 C-9 -21 -6 -16 -5 -12 Z" fill={inner} stroke="none" opacity={0.85} />
-      <path d="M14 -10 C16 -16 15 -22 12.5 -24 C9 -21 6 -16 5 -12 Z" fill={inner} stroke="none" opacity={0.85} />
+      <path d="M-16.5 -7 C-19.5 -18 -17 -28 -12 -34 C-7.5 -28 -4 -18 -3 -12 Z" fill={fill} stroke={ink} strokeWidth={3} strokeLinejoin="round" />
+      <path d="M16.5 -7 C19.5 -18 17 -28 12 -34 C7.5 -28 4 -18 3 -12 Z" fill={fill} stroke={ink} strokeWidth={3} strokeLinejoin="round" />
     </g>
   );
 }
 
+// ============================================================================
+// 3. HEAD MARKINGS & CHEEKS
+// ============================================================================
+
 export function HeadMarkings({ config, hs = 1 }: { config: CatSeedConfig; hs?: number }) {
-  const pal = config.palette;
+  const catId = config.structure.ears;
+  const ink = config.palette.ink ?? INK;
 
-  // Siamese mask (Ziggy)
-  if (pal.mask) {
-    return (
-      <g data-part="markings" opacity={0.92}>
-        <path
-          d="M-14 -2 C-15 -10 0 -13 0 -13 C0 -13 15 -10 14 -2 C12 8 0 12 0 12 C0 12 -12 8 -14 -2 Z"
-          fill={pal.mask}
-          stroke="none"
-        />
-      </g>
-    );
-  }
-
-  // Calico eye patch & head spots (Boba)
-  if (pal.patch) {
+  // Winston: Black forehead cap with 2 horizontal white stripes + Rosy Blush Cheeks
+  if (catId === 'tallStriped') {
     return (
       <g data-part="markings">
-        {/* terracotta eye/ear patch */}
-        <path
-          d="M-18 -10 C-22 -18 -8 -22 -4 -15 C-2 -10 -8 2 -14 0 C-18 -1 -17 -6 -18 -10 Z"
-          fill={pal.patch}
-          stroke="none"
-          opacity={0.95}
-        />
-        {/* chocolate ear spot */}
-        <path
-          d="M10 -18 C16 -24 22 -14 18 -8 C14 -4 8 -12 10 -18 Z"
-          fill={pal.markings ?? '#4A3E3D'}
-          stroke="none"
-          opacity={0.95}
-        />
+        <path d="M-20,-6 C-21,-22 21,-22 20,-6 C12,-11 0,-13 -20,-6 Z" fill="#26201D" stroke={ink} strokeWidth={2.4} strokeLinejoin="round" />
+        <line x1="-12" y1="-14" x2="12" y2="-14" stroke="#FFFDF9" strokeWidth={2.4} strokeLinecap="round" />
+        <line x1="-8" y1="-9" x2="8" y2="-9" stroke="#FFFDF9" strokeWidth={2.4} strokeLinecap="round" />
+        {/* Rosy blush cheeks */}
+        <circle cx="-14" cy="5" r="4.5" fill="#F4978E" opacity={0.88} />
+        <circle cx="14" cy="5" r="4.5" fill="#F4978E" opacity={0.88} />
       </g>
     );
   }
 
-  // Orange Tabby forehead stripes & cheek blush (Miso)
-  if (pal.markings && pal.body === '#E28743') {
+  // Pepper: Black side patches with white comb lines in center + Rosy Blush Cheeks
+  if (catId === 'combForehead') {
     return (
-      <g data-part="markings" stroke={pal.markings} strokeWidth={1.8} strokeLinecap="round" fill="none">
-        <path d="M-5 -14 L-3 -8 M0 -16 L0 -9 M5 -14 L3 -8" opacity={0.85} />
-        <path d="M-15 -1 L-18 -2 M15 -1 L18 -2" opacity={0.65} />
+      <g data-part="markings">
+        <path d="M-20,-6 C-22,-18 -10,-22 -4,-22 L-4,-10 C-10,-8 -16,-6 -20,-6 Z" fill="#26201D" />
+        <path d="M20,-6 C22,-18 10,-22 4,-22 L4,-10 C10,-8 16,-6 20,-6 Z" fill="#26201D" />
+        <g stroke="#26201D" strokeWidth={1.8} strokeLinecap="round">
+          <line x1="-2.5" y1="-21" x2="-2.5" y2="-14" />
+          <line x1="0" y1="-22" x2="0" y2="-14" />
+          <line x1="2.5" y1="-21" x2="2.5" y2="-14" />
+        </g>
+        <circle cx="-14" cy="5" r="4.5" fill="#F4978E" opacity={0.88} />
+        <circle cx="14" cy="5" r="4.5" fill="#F4978E" opacity={0.88} />
       </g>
     );
   }
 
-  // Tuxedo white muzzle blaze (Winston)
-  if (pal.bib && pal.body === '#2B2A29') {
+  // Oreo: Black mask covering top half of head
+  if (catId === 'blackMaskEars') {
     return (
-      <g data-part="muzzle">
-        <path
-          d="M-8 3 C-8 10 8 10 8 3 C4 0 -4 0 -8 3 Z"
-          fill={pal.bib}
-          stroke="none"
-        />
+      <g data-part="mask">
+        <path d="M-20,-4 C-22,-22 22,-22 20,-4 C12,-8 0,-9 -20,-4 Z" fill="#26201D" stroke={ink} strokeWidth={2.4} strokeLinejoin="round" />
+        {/* Mustache dots under eyes */}
+        <circle cx="-8" cy="7" r="1" fill="#26201D" /><circle cx="-5" cy="6" r="1" fill="#26201D" /><circle cx="-5" cy="8.5" r="1" fill="#26201D" />
+        <circle cx="8" cy="7" r="1" fill="#26201D" /><circle cx="5" cy="6" r="1" fill="#26201D" /><circle cx="5" cy="8.5" r="1" fill="#26201D" />
+      </g>
+    );
+  }
+
+  // Boba: Terracotta calico patch on left face
+  if (catId === 'splitCalico') {
+    return (
+      <g data-part="patch">
+        <path d="M-20,-4 C-22,-20 -6,-22 -2,-22 L-2,0 C-10,2 -16,1 -20,-4 Z" fill="#E07A5F" opacity={0.95} />
+      </g>
+    );
+  }
+
+  // Yuki: Alert motion lines on top-left of head
+  if (catId === 'alertPointy') {
+    return (
+      <g stroke="#26201D" strokeWidth={2} strokeLinecap="round" opacity={0.85}>
+        <line x1="-28" y1="-18" x2="-22" y2="-12" />
+        <line x1="-31" y1="-10" x2="-23" y2="-6" />
+        <line x1="-30" y1="-2" x2="-23" y2="0" />
+      </g>
+    );
+  }
+
+  // Miso: Forehead hatch dashes
+  if (config.structure.eyeShape === 'joyfulArch') {
+    return (
+      <g stroke="#26201D" strokeWidth={1.8} strokeLinecap="round" opacity={0.75}>
+        <line x1="-4" y1="-16" x2="-4" y2="-10" />
+        <line x1="0" y1="-17" x2="0" y2="-11" />
+        <line x1="4" y1="-16" x2="4" y2="-10" />
       </g>
     );
   }
 
   return null;
 }
+
+// ============================================================================
+// 4. BODY MARKINGS & PATTERNS
+// ============================================================================
 
 export function BodyMarkings({ config, poseName }: { config: CatSeedConfig; poseName?: string }) {
-  const pal = config.palette;
+  const posture = config.structure.postureDefault;
 
-  // Calico body patches (Boba)
-  if (pal.patch) {
+  // Winston: Striped flanks on left and right
+  if (posture === 'aristocratSeated') {
     return (
-      <g data-part="body-markings" pointerEvents="none">
-        <ellipse cx={110} cy={122} rx={22} ry={14} fill={pal.patch} opacity={0.92} transform="rotate(-8 110 122)" />
-        <ellipse cx={82} cy={134} rx={14} ry={9} fill={pal.markings ?? '#4A3E3D'} opacity={0.92} />
-        {/* creamy tummy */}
-        {pal.belly && <ellipse cx={124} cy={132} rx={16} ry={11} fill={pal.belly} opacity={0.95} />}
+      <g data-part="flanks" pointerEvents="none">
+        {/* Left flank stripes */}
+        <g stroke="#FFFDF9" strokeWidth={2.4} strokeLinecap="round">
+          <line x1="84" y1="126" x2="100" y2="128" />
+          <line x1="83" y1="135" x2="100" y2="137" />
+          <line x1="84" y1="144" x2="100" y2="146" />
+          <line x1="86" y1="153" x2="99" y2="154" />
+        </g>
+        {/* Right flank stripes */}
+        <g stroke="#FFFDF9" strokeWidth={2.4} strokeLinecap="round">
+          <line x1="120" y1="128" x2="136" y2="126" />
+          <line x1="120" y1="137" x2="137" y2="135" />
+          <line x1="120" y1="146" x2="136" y2="144" />
+          <line x1="121" y1="154" x2="134" y2="153" />
+        </g>
       </g>
     );
   }
 
-  // Tuxedo white chest bib (Winston)
-  if (pal.bib && pal.body === '#2B2A29') {
+  // Pepper: Polka dots pattern across white body
+  if (posture === 'polkaDots') {
     return (
-      <g data-part="body-markings" pointerEvents="none">
-        <path
-          d="M136 102 C120 108 126 138 140 144 C148 136 150 114 136 102 Z"
-          fill={pal.bib}
-          stroke="none"
-          opacity={0.98}
-        />
+      <g data-part="polka-dots" fill="#26201D" pointerEvents="none">
+        <circle cx="95" cy="116" r="2.2" /><circle cx="110" cy="112" r="2.6" /><circle cx="125" cy="118" r="2.4" /><circle cx="138" cy="112" r="2.2" />
+        <circle cx="88" cy="128" r="2.6" /><circle cx="104" cy="126" r="2.8" /><circle cx="118" cy="132" r="2.4" /><circle cx="132" cy="126" r="2.8" /><circle cx="144" cy="130" r="2.4" />
+        <circle cx="94" cy="142" r="2.8" /><circle cx="108" cy="146" r="2.4" /><circle cx="124" cy="146" r="2.4" /><circle cx="138" cy="142" r="2.8" />
+        <circle cx="90" cy="155" r="2.5" /><circle cx="102" cy="160" r="2.2" /><circle cx="132" cy="160" r="2.2" /><circle cx="142" cy="155" r="2.5" />
       </g>
     );
   }
 
-  // Orange tabby belly patch & stripes (Miso)
-  if (pal.belly && pal.body === '#E28743') {
+  // Boba: Terracotta calico patches on shoulder and flank
+  if (posture === 'calicoSeated') {
     return (
-      <g data-part="body-markings" pointerEvents="none">
-        <ellipse cx={124} cy={132} rx={18} ry={12} fill={pal.belly} opacity={0.95} />
-        {pal.markings && (
-          <g stroke={pal.markings} strokeWidth={1.8} strokeLinecap="round" opacity={0.7} fill="none">
-            <path d="M102 116 C96 122 96 130 99 136" />
-            <path d="M88 124 C84 130 85 138 88 142" />
-          </g>
-        )}
+      <g data-part="calico-patches" pointerEvents="none">
+        <path d="M86,118 C78,122 74,130 76,138 C78,144 86,146 94,142 C100,138 100,128 96,122 Z" fill="#E07A5F" opacity={0.95} />
+        <path d="M74,148 C70,158 78,168 90,168 C98,168 100,160 98,154 C96,146 86,144 76,146 Z" fill="#E07A5F" opacity={0.95} />
+        <path d="M142,144 C146,152 144,162 138,166 C134,164 134,156 136,150 Z" fill="#E07A5F" opacity={0.95} />
+        {/* speckles */}
+        <circle cx="82" cy="130" r="1.1" fill="#26201D" /><circle cx="88" cy="136" r="1.1" fill="#26201D" />
+        <circle cx="80" cy="158" r="1.1" fill="#26201D" /><circle cx="88" cy="162" r="1.1" fill="#26201D" />
       </g>
     );
   }
 
-  // Siamese dark paws & cream belly (Ziggy)
-  if (pal.mask) {
+  // Oreo: Vertical fur hatch dashes across chest
+  if (posture === 'ledgePaws') {
     return (
-      <g data-part="body-markings" pointerEvents="none">
-        {pal.belly && <ellipse cx={120} cy={130} rx={20} ry={13} fill={pal.belly} opacity={0.95} />}
+      <g stroke="#26201D" strokeWidth={1.5} strokeLinecap="round" opacity={0.7} pointerEvents="none">
+        <line x1="82" y1="118" x2="82" y2="126" /><line x1="102" y1="122" x2="102" y2="130" /><line x1="126" y1="122" x2="126" y2="130" /><line x1="146" y1="118" x2="146" y2="126" />
+        <line x1="88" y1="136" x2="88" y2="144" /><line x1="138" y1="136" x2="138" y2="144" />
+        <line x1="82" y1="152" x2="82" y2="160" /><line x1="98" y1="156" x2="98" y2="164" /><line x1="130" y1="156" x2="130" y2="164" /><line x1="144" y1="152" x2="144" y2="160" />
+      </g>
+    );
+  }
+
+  // Mochi & Yuki: Soft chest fur dashes
+  if (posture === 'jjLegs' || posture === 'wLegs') {
+    return (
+      <g stroke="#26201D" strokeWidth={1.5} strokeLinecap="round" opacity={0.7} pointerEvents="none">
+        <line x1="88" y1="124" x2="86" y2="132" /><line x1="95" y1="120" x2="93" y2="128" />
+        <line x1="132" y1="120" x2="134" y2="128" /><line x1="140" y1="124" x2="142" y2="132" />
+      </g>
+    );
+  }
+
+  // Miso: Flank motion curves
+  if (posture === 'seatedPaws') {
+    return (
+      <g stroke="#26201D" strokeWidth={1.8} strokeLinecap="round" fill="none" opacity={0.7} pointerEvents="none">
+        <path d="M68,130 C66,138 66,146 69,154" />
+        <path d="M65,138 C63,144 63,148 65,153" />
+        <path d="M152,130 C154,138 154,146 151,154" />
+      </g>
+    );
+  }
+
+  // Nyx: White leg contour lines
+  if (posture === 'slenderSeated') {
+    return (
+      <g stroke="#FFFDF9" strokeWidth={1.8} strokeLinecap="round" fill="none" opacity={0.8} pointerEvents="none">
+        <path d="M102,135 L102,168 C102,171 98,171 98,168" />
+        <path d="M118,135 L118,168 C118,171 122,171 122,168" />
+        <line x1="106" y1="166" x2="106" y2="171" /><line x1="114" y1="166" x2="114" y2="171" />
       </g>
     );
   }
 
   return null;
 }
+
+// ============================================================================
+// 5. EYES & EXPRESSIONS (ALL STATES SUPPORTED)
+// ============================================================================
 
 export interface FaceProps {
   config: CatSeedConfig;
@@ -221,122 +374,98 @@ export interface FaceProps {
 }
 
 export function faceInk(config: CatSeedConfig): string {
-  const body = config.palette.body.toUpperCase();
-  return body === '#24202C' || body === '#141219' || body === '#1A1A1A' || body === '#000000' || body === 'BLACK' ? PAPER : config.palette.ink ?? INK;
+  return config.palette.body === '#1E1B18' ? PAPER : config.palette.ink ?? INK;
 }
 
 export function Eyes({ config, expression }: FaceProps) {
   const ink = config.palette.ink ?? INK;
-  const irisColor = config.palette.eyes ?? '#E76F51';
-  const glint = config.palette.eyeGlint ?? '#FFFFFF';
-  const isDarkFace = config.palette.body === '#24202C' || config.palette.mask !== undefined;
+  const eyeShape = config.structure.eyeShape;
+  const isDarkFace = config.palette.body === '#1E1B18';
 
-  if (expression === 'sleep') {
-    const strokeColor = isDarkFace ? '#FAF6EE' : ink;
+  // SLEEPING STATE: Closed smiling eyelid curves (for all cats)
+  if (expression === 'sleep' || eyeShape === 'joyfulArch') {
+    const strokeCol = isDarkFace ? '#FFFDF9' : ink;
     return (
-      <g data-part="eyes" data-expression="sleep" stroke={strokeColor} strokeWidth={2.4} fill="none" strokeLinecap="round">
+      <g data-part="eyes" data-expression="sleep" stroke={strokeCol} strokeWidth={2.4} fill="none" strokeLinecap="round">
         <path d="M-11 -1.5 C-8.5 -4.5 -5.5 -4.5 -3 -1.5" />
         <path d="M11 -1.5 C8.5 -4.5 5.5 -4.5 3 -1.5" />
       </g>
     );
   }
 
+  // SATISFIED / HAPPY STATE: Happy curved smiling arches
   if (expression === 'happyShut') {
-    const strokeColor = isDarkFace ? '#FAF6EE' : ink;
+    const strokeCol = isDarkFace ? '#FFFDF9' : ink;
     return (
-      <g data-part="eyes" data-expression="happyShut" stroke={strokeColor} strokeWidth={2.4} fill="none" strokeLinecap="round">
-        <path d="M-11.5 -2 C-9.5 -6.5 -5 -6.5 -3 -2.5" />
-        <path d="M11.5 -2 C9.5 -6.5 5 -6.5 3 -2.5" />
+      <g data-part="eyes" data-expression="happyShut" stroke={strokeCol} strokeWidth={2.4} fill="none" strokeLinecap="round">
+        <path d="M-11 -2.5 C-9.5 -6.5 -5 -6.5 -3 -2.5" />
+        <path d="M11 -2.5 C9.5 -6.5 5 -6.5 3 -2.5" />
       </g>
     );
   }
 
-  if (config.structure.eyeShape === 'narrowSly') {
-    // Glowing golden eyes for Void cat (Nyx)
+  // Boba: Cheeky Side-Glance Eyes (👀)
+  if (eyeShape === 'sideGlance') {
     return (
-      <g data-part="eyes" data-eyes="narrowSly" data-expression={expression}>
-        {/* Eye socket with glowing iris */}
-        <ellipse cx={-7.5} cy={-3} rx={4.2} ry={expression === 'stare' ? 3.4 : 2.5} fill={irisColor} stroke={ink} strokeWidth={1.2} />
-        <ellipse cx={7.5} cy={-3} rx={4.2} ry={expression === 'stare' ? 3.4 : 2.5} fill={irisColor} stroke={ink} strokeWidth={1.2} />
-        {/* Dark feline slit pupil */}
-        <ellipse cx={-7.5} cy={-3} rx={1.2} ry={expression === 'stare' ? 2.8 : 2.1} fill="#141219" />
-        <ellipse cx={7.5} cy={-3} rx={1.2} ry={expression === 'stare' ? 2.8 : 2.1} fill="#141219" />
-        {/* Starry glint */}
-        <circle cx={-6.4} cy={-4.2} r={1.1} fill={glint} />
-        <circle cx={8.6} cy={-4.2} r={1.1} fill={glint} />
+      <g data-part="eyes" data-eyes="sideGlance" data-expression={expression}>
+        <circle cx={-7} cy={-3} r={5.5} fill="#FFFDF9" stroke={ink} strokeWidth={1.8} />
+        <circle cx={-5} cy={-4.5} r={3} fill={ink} />
+        <circle cx={-4.2} cy={-5.2} r={1} fill="#FFFDF9" />
+
+        <circle cx={7} cy={-3} r={5.5} fill="#FFFDF9" stroke={ink} strokeWidth={1.8} />
+        <circle cx={9} cy={-4.5} r={3} fill={ink} />
+        <circle cx={9.8} cy={-5.2} r={1} fill="#FFFDF9" />
       </g>
     );
   }
 
-  if (config.structure.eyeShape === 'almond') {
-    // Emerald almond eyes for Tuxedo (Winston)
-    const ry = expression === 'stare' ? 3.2 : 2.4;
+  // Oreo: Big Round Curious Eyes
+  if (eyeShape === 'bigRoundStare') {
+    const r = expression === 'stare' ? 6 : 5.2;
     return (
-      <g data-part="eyes" data-eyes="almond" data-expression={expression}>
-        <ellipse cx={-7.5} cy={-3} rx={4.4} ry={ry} fill={irisColor} stroke={ink} strokeWidth={1.4} transform="rotate(-6 -7.5 -3)" />
-        <ellipse cx={7.5} cy={-3} rx={4.4} ry={ry} fill={irisColor} stroke={ink} strokeWidth={1.4} transform="rotate(6 7.5 -3)" />
-        {/* pupil */}
-        <ellipse cx={-7.5} cy={-3} rx={1.6} ry={ry * 0.8} fill="#141219" />
-        <ellipse cx={7.5} cy={-3} rx={1.6} ry={ry * 0.8} fill="#141219" />
-        {/* catchlight */}
-        <circle cx={-6.3} cy={-4.3} r={1.2} fill={glint} />
-        <circle cx={8.7} cy={-4.3} r={1.2} fill={glint} />
+      <g data-part="eyes" data-eyes="bigRoundStare" data-expression={expression}>
+        <circle cx={-7.5} cy={-3} r={r} fill="#FFFDF9" stroke={ink} strokeWidth={1.8} />
+        <circle cx={-7.5} cy={-3} r={r * 0.52} fill={ink} />
+        <circle cx={-6.2} cy={-4.2} r={1.2} fill="#FFFDF9" />
+
+        <circle cx={7.5} cy={-3} r={r} fill="#FFFDF9" stroke={ink} strokeWidth={1.8} />
+        <circle cx={7.5} cy={-3} r={r * 0.52} fill={ink} />
+        <circle cx={8.8} cy={-4.2} r={1.2} fill="#FFFDF9" />
       </g>
     );
   }
 
-  if (config.structure.eyeShape === 'bigGleam') {
-    // Big sapphire boba eyes for Calico (Boba)
-    const r = expression === 'stare' ? 5.2 : 4.4;
+  // Nyx: Luminous Glowing Oval Eyes
+  if (eyeShape === 'luminousOval') {
     return (
-      <g data-part="eyes" data-eyes="bigGleam" data-expression={expression}>
-        <circle cx={-7.5} cy={-3} r={r} fill={irisColor} stroke={ink} strokeWidth={1.4} />
-        <circle cx={7.5} cy={-3} r={r} fill={irisColor} stroke={ink} strokeWidth={1.4} />
-        {/* deep dark inner pupil */}
-        <circle cx={-7.5} cy={-3} r={r * 0.65} fill="#182333" />
-        <circle cx={7.5} cy={-3} r={r * 0.65} fill="#182333" />
-        {/* main gleam */}
-        <circle cx={-6.1} cy={-4.5} r={1.8} fill={glint} />
-        <circle cx={8.9} cy={-4.5} r={1.8} fill={glint} />
-        {/* secondary tiny sparkle */}
-        <circle cx={-8.5} cy={-1.5} r={0.9} fill={glint} opacity={0.85} />
-        <circle cx={6.5} cy={-1.5} r={0.9} fill={glint} opacity={0.85} />
+      <g data-part="eyes" data-eyes="luminousOval" data-expression={expression}>
+        <ellipse cx={-7.5} cy={-3} rx={5.2} ry={4.6} fill="#FFFDF9" />
+        <circle cx={-6.5} cy={-3.5} r={3} fill="#1E1B18" />
+        <circle cx={-5.5} cy={-4.5} r={1.1} fill="#FFFDF9" />
+
+        <ellipse cx={7.5} cy={-3} rx={5.2} ry={4.6} fill="#FFFDF9" />
+        <circle cx={8.5} cy={-3.5} r={3} fill="#1E1B18" />
+        <circle cx={9.5} cy={-4.5} r={1.1} fill="#FFFDF9" />
       </g>
     );
   }
 
-  if (config.structure.eyeShape === 'wideWild') {
-    // Hypnotic electric blue zoomies eyes for Siamese (Ziggy)
-    const r = expression === 'stare' ? 5.4 : 4.6;
-    return (
-      <g data-part="eyes" data-eyes="wideWild" data-expression={expression}>
-        <circle cx={-7.5} cy={-3} r={r} fill={irisColor} stroke={ink} strokeWidth={1.4} />
-        <circle cx={7.5} cy={-3} r={r} fill={irisColor} stroke={ink} strokeWidth={1.4} />
-        {/* dilated pupil */}
-        <circle cx={-7.5} cy={-3} r={r * 0.7} fill="#141219" />
-        <circle cx={7.5} cy={-3} r={r * 0.7} fill="#141219" />
-        {/* gleam */}
-        <circle cx={-6.2} cy={-4.6} r={1.5} fill={glint} />
-        <circle cx={8.8} cy={-4.6} r={1.5} fill={glint} />
-      </g>
-    );
-  }
-
-  // Classic dotWide with warm amber iris for Orange Tabby (Miso)
-  const r = expression === 'stare' ? 4.6 : 3.8;
+  // Standard Folk Dot Eyes (Mochi, Pepper, Yuki, Winston)
+  const r = expression === 'stare' ? 4.5 : 3.6;
   return (
     <g data-part="eyes" data-eyes="dotWide" data-expression={expression}>
-      <circle cx={-7.5} cy={-3} r={r} fill={irisColor} stroke={ink} strokeWidth={1.3} />
-      <circle cx={7.5} cy={-3} r={r} fill={irisColor} stroke={ink} strokeWidth={1.3} />
-      {/* pupil */}
-      <circle cx={-7.5} cy={-3} r={r * 0.65} fill="#181310" />
-      <circle cx={7.5} cy={-3} r={r * 0.65} fill="#181310" />
-      {/* catchlight */}
-      <circle cx={-6.2} cy={-4.3} r={1.4} fill={glint} />
-      <circle cx={8.8} cy={-4.3} r={1.4} fill={glint} />
+      <circle cx={-7.5} cy={-3} r={r} fill={ink} />
+      <circle cx={-6.4} cy={-4.2} r={1.2} fill="#FFFDF9" />
+
+      <circle cx={7.5} cy={-3} r={r} fill={ink} />
+      <circle cx={8.6} cy={-4.2} r={1.2} fill="#FFFDF9" />
     </g>
   );
 }
+
+// ============================================================================
+// 6. MOUTH & SENSES
+// ============================================================================
 
 export type MouthKind = 'smile' | 'frown' | 'open' | 'grin' | 'none';
 
@@ -361,18 +490,18 @@ export function Mouth({ kind, ink }: { kind: MouthKind; ink: string }) {
   if (kind === 'open') {
     return (
       <g data-part="mouth" data-mouth="open">
-        <ellipse cx={0} cy={7.8} rx={2.8} ry={3.4} fill="#E07A5F" stroke={ink} strokeWidth={1.4} />
+        <ellipse cx={0} cy={6.5} rx={2.4} ry={2.8} fill="#E05368" stroke={ink} strokeWidth={1.2} />
       </g>
     );
   }
   const d =
     kind === 'grin'
-      ? 'M-5.5 5.5 C-2 9.5 0 6 0 6 C0 6 2 9.5 5.5 5.5'
+      ? 'M-4 5 C-2 7.8 0 5 0 5 C0 5 2 7.8 4 5'
       : kind === 'frown'
-        ? 'M-4 8.5 C-1.6 6.5 1.6 6.5 4 8.5'
-        : 'M-4 5.8 C-1.6 8.2 0 6.2 0 6.2 C0 6.2 1.6 8.2 4 5.8';
+        ? 'M-3.5 7.5 C-1.5 5.5 1.5 5.5 3.5 7.5'
+        : 'M-3.5 5.2 C-1.5 7.2 0 5.4 0 5.4 C0 5.4 1.5 7.2 3.5 5.2';
   return (
-    <g data-part="mouth" data-mouth={kind} stroke={ink} strokeWidth={2.2} fill="none" strokeLinecap="round" strokeLinejoin="round">
+    <g data-part="mouth" data-mouth={kind} stroke={ink} strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round">
       <path d={d} />
     </g>
   );
@@ -380,18 +509,18 @@ export function Mouth({ kind, ink }: { kind: MouthKind; ink: string }) {
 
 export function NoseAndWhiskers({ config }: { config: CatSeedConfig }) {
   const ink = config.palette.ink ?? INK;
-  const noseColor = config.palette.nose ?? '#E76F51';
-  const isDarkFace = config.palette.body === '#24202C' || config.palette.mask !== undefined;
-  const whiskerColor = isDarkFace ? '#FAF6EE' : ink;
+  const noseColor = config.palette.nose ?? '#26201D';
+  const isDarkFace = config.palette.body === '#1E1B18';
+  const whiskerColor = isDarkFace ? '#FFFDF9' : ink;
 
   return (
     <g data-part="senses">
-      {/* Cute button nose */}
-      <path d="M-1.8 2.8 L1.8 2.8 L0 5.2 Z" fill={noseColor} stroke={ink} strokeWidth={0.8} strokeLinejoin="round" />
+      {/* Nose */}
+      <path d="M-1.8 2.5 L1.8 2.5 L0 4.6 Z" fill={noseColor} />
       {/* Whiskers */}
-      <g stroke={whiskerColor} strokeWidth={1.5} strokeLinecap="round" opacity={isDarkFace ? 0.85 : 0.75}>
-        <path d="M-13.5 3.6 L-21.5 2.2 M-13.8 5.8 L-22 6.2 M-13.4 8 L-20.6 9.8" />
-        <path d="M13.5 3.6 L21.5 2.2 M13.8 5.8 L22 6.2 M13.4 8 L20.6 9.8" />
+      <g stroke={whiskerColor} strokeWidth={1.4} strokeLinecap="round" opacity={isDarkFace ? 0.85 : 0.75}>
+        <path d="M-12 3 L-19 1.5 M-12.5 5 L-20 5 M-12 7 L-18.5 8.5" />
+        <path d="M12 3 L19 1.5 M12.5 5 L20 5 M12 7 L18.5 8.5" />
       </g>
     </g>
   );

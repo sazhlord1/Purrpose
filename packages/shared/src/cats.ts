@@ -16,12 +16,12 @@ export interface CatSeedConfig {
     mask?: string;
   };
   structure: {
-    ears: 'pointy' | 'roundTall' | 'roundSoft' | 'batEars';
-    tailPath: 'bigCurl' | 'longPlume' | 'lowHook' | 'fluffyPuff' | 'zigzag';
-    eyeShape: 'dotWide' | 'almond' | 'narrowSly' | 'bigGleam' | 'wideWild';
+    ears: string;
+    tailPath: string;
+    eyeShape: string;
     bodyLength: number;
     headSize: number;
-    postureDefault: 'upright' | 'poised' | 'slink' | 'chonk' | 'gremlin';
+    postureDefault: string;
   };
   motion: { overshootMul: number; stepFreq: number; pauseBias: number };
   quirks: {
@@ -48,95 +48,75 @@ export interface CatSeed {
   config: CatSeedConfig;
 }
 
-const sharedInk = '#2B231F';
+const sharedInk = '#26201D';
 
 export const CAT_SEED: CatSeed[] = [
+  // 1. MISO (Golden Honey Tabby with Joyful Closed Eyes — Top 2nd in ref)
   {
     id: 'orange',
     name: 'Miso',
-    type: 'ORANGE',
-    personality: 'Optimistic / chaotic / playful',
+    type: 'TABBY',
+    personality: 'Joyful / optimistic / warm sunbather',
     config: {
       palette: {
-        body: '#E28743',
-        belly: '#FBE9D2',
+        body: '#EEB038',
+        belly: '#EEB038',
         ink: sharedInk,
-        markings: '#B85D24',
-        eyes: '#E76F51',
-        eyeGlint: '#FFFFFF',
-        nose: '#E76F51',
-        innerEar: '#F9B4A0',
+        markings: '#26201D',
+        eyes: '#26201D',
+        eyeGlint: '#FFFDF9',
+        nose: '#26201D',
       },
       structure: {
         ears: 'pointy',
-        tailPath: 'bigCurl',
-        eyeShape: 'dotWide',
-        bodyLength: 0.95,
-        headSize: 1.1,
-        postureDefault: 'upright',
+        tailPath: 'spiralCurl',
+        eyeShape: 'joyfulArch',
+        bodyLength: 1,
+        headSize: 1,
+        postureDefault: 'seatedPaws',
       },
-      motion: { overshootMul: 1.3, stepFreq: 1.15, pauseBias: 0.6 },
+      motion: { overshootMul: 1.2, stepFreq: 1.1, pauseBias: 0.7 },
       quirks: {
         chosenLine: 'oh!! oh!! deal!!',
-        waitingLines: ['taking my time. lots of it.', "is that… the cabinet?? nooo (yes)"],
+        waitingLines: ['taking my time in the sun.', 'is that… the snack cabinet??'],
         closeLines: ["I'M SO READY. ARE YOU??"],
         loseLine: 'aw man. okay. maybe next time.',
         winLine: 'I KNEW IT!!! NOM NOM NOM',
         stageLines: {
-          stage1: [
-            "i'll keep watch from my box!",
-            "you got this, right? i believe in you!",
-            "just waiting right here for your win!",
-          ],
-          stage2: [
-            "oh!! grass!! we're moving up in the world!!",
-            "look at the flowers! keep going!!",
-            "sunshine and fresh air! you're doing it!",
-          ],
-          stage3: [
-            "THIS CUSHION IS AMAZING!! BEST DAY EVER!!",
-            "you're doing so good!! look at me lounging!",
-            "softest bed in the universe! thank you!!",
-          ],
-          stage4: [
-            "A TOY!! LOOK AT IT JINGLE!! WE'RE ALMOST THERE!!",
-            "I'M SO EXCITED!! FINISH LINE IN SIGHT!",
-            "paw tap! paw tap! we are so close!!",
-          ],
-          stage5: [
-            "FOOOOOD!! WE DID IT!! YOU'RE THE BEST HUMAN EVER!!",
-            "FEAST MODE UNLOCKED!! NOM NOM NOM!",
-            "GLORIOUS MEAL TIME!! WE WON!!",
-          ],
+          stage1: ["i'll keep watch from my box!", "you got this, right? i believe in you!"],
+          stage2: ["oh!! grass!! we're moving up in the world!!", "sunshine and fresh air!"],
+          stage3: ["THIS CUSHION IS AMAZING!! BEST DAY EVER!!", "look at me lounging!"],
+          stage4: ["A TOY!! LOOK AT IT JINGLE!! WE'RE ALMOST THERE!!", "paw tap! finish line in sight!"],
+          stage5: ["FOOOOOD!! WE DID IT!! BEST HUMAN EVER!!", "FEAST MODE UNLOCKED!! NOM NOM!"],
         },
       },
     },
   },
+
+  // 2. WINSTON (Striped Cap & Flanks Tuxedo — Bottom Right in ref)
   {
     id: 'tuxedo',
     name: 'Winston',
     type: 'TUXEDO',
-    personality: 'Judgmental / sophisticated / sarcastic',
+    personality: 'Aristocratic / dignified / sardonic',
     config: {
       palette: {
-        body: '#2B2A29',
-        belly: '#FBF8F1',
-        ink: '#1E1B18',
-        markings: '#FBF8F1',
-        eyes: '#4E8752',
-        eyeGlint: '#FFFFFF',
-        nose: '#EFA7A7',
-        innerEar: '#EFA7A7',
-        socks: '#FBF8F1',
-        bib: '#FBF8F1',
+        body: '#FFFDF9',
+        belly: '#FFFDF9',
+        ink: sharedInk,
+        markings: '#26201D',
+        eyes: '#26201D',
+        eyeGlint: '#FFFDF9',
+        nose: '#26201D',
+        patch: '#F4978E', // Rosy cheeks
       },
       structure: {
-        ears: 'roundTall',
-        tailPath: 'longPlume',
-        eyeShape: 'almond',
-        bodyLength: 1.05,
+        ears: 'tallStriped',
+        tailPath: 'rootedStripedCurl',
+        eyeShape: 'dotWide',
+        bodyLength: 1,
         headSize: 1,
-        postureDefault: 'poised',
+        postureDefault: 'aristocratSeated',
       },
       motion: { overshootMul: 0.8, stepFreq: 0.85, pauseBias: 1.4 },
       quirks: {
@@ -146,58 +126,40 @@ export const CAT_SEED: CatSeed[] = [
         loseLine: 'Hm. Adequate, I suppose.',
         winLine: 'Naturally. Bon appétit — moi.',
         stageLines: {
-          stage1: [
-            "A box in the street. How quaint. Do not tarry, human.",
-            "I expect progress posthaste.",
-            "I shall supervise from this temporary shelter.",
-          ],
-          stage2: [
-            "Fresh air and garden greenery. An acceptable upgrade.",
-            "Acceptable progress. Do not lose momentum.",
-            "The scenery improves. As expected of you.",
-          ],
-          stage3: [
-            "Finally, a cushion befitting my aristocratic stature.",
-            "Luxurious comfort. You have done well thus far.",
-            "Most satisfactory. Keep this exquisite pace.",
-          ],
-          stage4: [
-            "A delightful diversion. Victory is within grasp.",
-            "Splendid toy. Maintain this pace to the finish.",
-            "I approve of this arrangement. Almost there.",
-          ],
-          stage5: [
-            "Exquisite cuisine. A magnificent triumph, human.",
-            "Naturally, perfection was achieved. Bon appétit!",
-            "A gourmet victory. Splendidly done.",
-          ],
+          stage1: ["A box in the street. How quaint. Do not tarry, human.", "I expect progress posthaste."],
+          stage2: ["Fresh air and garden greenery. An acceptable upgrade.", "Keep your momentum."],
+          stage3: ["Finally, a cushion befitting my aristocratic stature.", "Luxurious comfort."],
+          stage4: ["A delightful diversion. Victory is within grasp.", "Splendid toy. Almost there."],
+          stage5: ["Exquisite cuisine. A magnificent triumph, human.", "Naturally, perfection was achieved."],
         },
       },
     },
   },
+
+  // 3. NYX (Midnight Velvet Black with Pink Inner Ears — Bottom 2nd in ref)
   {
     id: 'black',
     name: 'Nyx',
-    type: 'BLACK',
-    personality: 'Mischievous / mysterious / slightly evil',
+    type: 'MIDNIGHT',
+    personality: 'Mysterious / graceful / luminous-eyed',
     config: {
       palette: {
-        body: '#24202C',
-        belly: '#352F40',
-        ink: '#141219',
-        markings: '#443C53',
-        eyes: '#F7D060',
-        eyeGlint: '#FFFFFF',
-        nose: '#A08F85',
-        innerEar: '#6A5D7B',
+        body: '#1E1B18',
+        belly: '#1E1B18',
+        ink: sharedInk,
+        markings: '#FFFDF9',
+        eyes: '#FFFDF9',
+        eyeGlint: '#1E1B18',
+        nose: '#E05368',
+        innerEar: '#E05368',
       },
       structure: {
-        ears: 'pointy',
-        tailPath: 'lowHook',
-        eyeShape: 'narrowSly',
-        bodyLength: 1,
+        ears: 'pinkInner',
+        tailPath: 'sleekUpright',
+        eyeShape: 'luminousOval',
+        bodyLength: 0.95,
         headSize: 0.95,
-        postureDefault: 'slink',
+        postureDefault: 'slenderSeated',
       },
       motion: { overshootMul: 1, stepFreq: 1, pauseBias: 1 },
       quirks: {
@@ -207,164 +169,223 @@ export const CAT_SEED: CatSeed[] = [
         loseLine: '…fine.',
         winLine: 'I KNEW IT. feast mode.',
         stageLines: {
-          stage1: [
-            "the box is cozy... but the streets are cold. get to work.",
-            "tick tock. don't leave me out in the alley.",
-            "lurking in the shadows... watching your cursor.",
-          ],
-          stage2: [
-            "i can smell the garden... we're getting closer.",
-            "good pacing. the void approves.",
-            "out of the alley, into the grass. keep going.",
-          ],
-          stage3: [
-            "now this is the good life. don't stop now.",
-            "purr... so soft. finish strong, human.",
-            "the shadow throne is prepared. almost there.",
-          ],
-          stage4: [
-            "pounce mode ready... bring home the victory.",
-            "the final stretch. i can smell the feast.",
-            "batting the toy into orbit! finish it!",
-          ],
-          stage5: [
-            "THE FEAST IS OURS!! brilliant work, partner.",
-            "we conquered the deadline. pure perfection.",
-            "unlimited snacks unlocked! victory is sweet.",
-          ],
+          stage1: ["the box is cozy... but the streets are cold. get to work.", "tick tock."],
+          stage2: ["i can smell the garden... we're getting closer.", "the void approves."],
+          stage3: ["now this is the good life. don't stop now.", "the shadow throne is prepared."],
+          stage4: ["pounce mode ready... bring home the victory.", "the final stretch."],
+          stage5: ["THE FEAST IS OURS!! brilliant work, partner.", "unlimited snacks unlocked!"],
         },
       },
     },
   },
+
+  // 4. BOBA (Calico Patch with Playful Side-Glance Eyes — Bottom 3rd in ref)
   {
     id: 'boba',
     name: 'Boba',
-    type: 'BOBA',
-    personality: 'Sleepy / food-obsessed / gentle chonk',
+    type: 'CALICO',
+    personality: 'Curious / sweet / cheeky side-glancer',
     config: {
       palette: {
-        body: '#F7F1E5',
+        body: '#FFFDF9',
         belly: '#FFFDF9',
         ink: sharedInk,
-        markings: '#4A3E3D',
+        markings: '#E07A5F',
         patch: '#E07A5F',
-        eyes: '#3D5A80',
-        eyeGlint: '#E0FBFC',
-        nose: '#E76F51',
-        innerEar: '#F4A5A5',
+        eyes: '#FFFDF9',
+        eyeGlint: '#26201D',
+        nose: '#26201D',
       },
       structure: {
-        ears: 'roundSoft',
-        tailPath: 'fluffyPuff',
-        eyeShape: 'bigGleam',
-        bodyLength: 1.15,
-        headSize: 1.15,
-        postureDefault: 'chonk',
+        ears: 'splitCalico',
+        tailPath: 'groundTail',
+        eyeShape: 'sideGlance',
+        bodyLength: 1.05,
+        headSize: 1,
+        postureDefault: 'calicoSeated',
       },
-      motion: { overshootMul: 0.7, stepFreq: 0.75, pauseBias: 1.6 },
+      motion: { overshootMul: 0.9, stepFreq: 0.9, pauseBias: 1.2 },
       quirks: {
         chosenLine: 'deal! wake me up when it is food time…',
-        waitingLines: [
-          'is it snack time yet?',
-          'i am conserving energy for the feast.',
-          'sleeping with one ear open…',
-        ],
-        closeLines: ['the aroma of victory is in the air…', 'my bowl calls to me…'],
+        waitingLines: ['is it snack time yet?', 'side-eyeing your procrastination…'],
+        closeLines: ['the aroma of victory is in the air…'],
         loseLine: 'yawn… back to nap then.',
         winLine: 'YESSS! CHONK FEAST COMMENCES!',
         stageLines: {
-          stage1: [
-            "it's a comfy box, but i'm dreaming of a warm bed...",
-            "conserving my energy in this box... you got this!",
-            "wake me up when you make some progress!",
-          ],
-          stage2: [
-            "sunshine and grass... feeling cozy already!",
-            "warm garden breeze... almost cushion time!",
-            "gentle purrs from the grass... keep going!",
-          ],
-          stage3: [
-            "zzzz... this bed is like a giant warm marshmallow...",
-            "so soft... keep working, almost snack time...",
-            "snuggled up on my cloud... you're doing wonderful!",
-          ],
-          stage4: [
-            "playing with my toy... getting my appetite ready!",
-            "almost food time... my tummy is rumbling happily!",
-            "pat pat with the paws! the finish line is right here!",
-          ],
-          stage5: [
-            "FOOOOOOD!! delicious golden feast... thank you!!",
-            "the happiest chonk in the world! nom nom!",
-            "tummy full and heart happy! we did it!!",
-          ],
+          stage1: ["dreaming of a warm bed from my box...", "wake me up when you make progress!"],
+          stage2: ["sunshine and grass... feeling cozy already!", "warm garden breeze!"],
+          stage3: ["zzzz... this bed is like a giant warm marshmallow...", "so soft... keep working!"],
+          stage4: ["playing with my toy... getting my appetite ready!", "almost food time!"],
+          stage5: ["FOOOOOOD!! delicious golden feast... thank you!!", "tummy full and heart happy!"],
         },
       },
     },
   },
+
+  // 5. MOCHI (Snow White with Black Ear & Tail Hook — Top Left in ref)
   {
-    id: 'ziggy',
-    name: 'Ziggy',
-    type: 'ZIGGY',
-    personality: 'Hyperactive / chaos gremlin / zoomies master',
+    id: 'mochi',
+    name: 'Mochi',
+    type: 'BICOLOR',
+    personality: 'Quiet / gentle / marshmallow soft',
     config: {
       palette: {
-        body: '#EFE8D8',
-        belly: '#FBF7EE',
+        body: '#FFFDF9',
+        belly: '#FFFDF9',
         ink: sharedInk,
-        markings: '#3C2F2F',
-        mask: '#3C2F2F',
-        eyes: '#48CAE4',
-        eyeGlint: '#FFFFFF',
-        nose: '#2E2222',
-        innerEar: '#E29578',
-        socks: '#3C2F2F',
+        markings: '#26201D',
+        eyes: '#26201D',
+        eyeGlint: '#FFFDF9',
+        nose: '#26201D',
       },
       structure: {
-        ears: 'batEars',
-        tailPath: 'zigzag',
-        eyeShape: 'wideWild',
-        bodyLength: 0.9,
-        headSize: 1.05,
-        postureDefault: 'gremlin',
+        ears: 'blackLeftComb',
+        tailPath: 'hookLeft',
+        eyeShape: 'dotWide',
+        bodyLength: 1,
+        headSize: 1,
+        postureDefault: 'jjLegs',
       },
-      motion: { overshootMul: 1.5, stepFreq: 1.35, pauseBias: 0.4 },
+      motion: { overshootMul: 0.85, stepFreq: 0.9, pauseBias: 1.3 },
       quirks: {
-        chosenLine: 'ZOOMIES PROTOCOL ENGAGED!!',
-        waitingLines: [
-          'I HEARD A CRUMB DROP 3 MILES AWAY',
-          'CANNOT SIT STILL MUST JUMP',
-          'TICK TOCK GO FAST FAST FAST!',
-        ],
-        closeLines: ['FIVE MINUTES UNTIL MAXIMUM CHAOS!!', 'PREPARING 3AM VICTORY SPRINT!'],
-        loseLine: 'REEE! I will sprint anyway!!',
-        winLine: 'VICTORY LAP AT THE SPEED OF SOUND!!',
+        chosenLine: 'purr... i believe in you.',
+        waitingLines: ['sitting very still.', 'watching your screen quietly.'],
+        closeLines: ['almost done, right?'],
+        loseLine: 'oh well... i still like you.',
+        winLine: 'Mochi is very, very happy!',
         stageLines: {
-          stage1: [
-            "BOX HEADQUARTERS ACTIVE!! SPRINT TIME GO GO GO!",
-            "I'M WAITING AT MAXIMUM VELOCITY!!",
-            "CANNOT SIT STILL IN BOX MUST FOCUS TYPE FAST!!",
-          ],
-          stage2: [
-            "NATURE ZOOMIES UNLOCKED!! SPRINT SPRINT SPRINT!!",
-            "LOOK AT MY NEW SPOT!! SPEED LEVEL 2 REACHED!!",
-            "BOUNCING THROUGH THE GARDEN!! KEEP TYPING!!",
-          ],
-          stage3: [
-            "SUPER SOFT LAUNCHPAD ACQUIRED!! JUMP JUMP!!",
-            "I CAN BOUNCE ON THIS FOREVER!! KEEP GOING!",
-            "SPEED BED SPEED BED!! ALMOST THERE!!",
-          ],
-          stage4: [
-            "TOY ENGAGED!! MAXIMUM FUN!! ALMOST THERE!!",
-            "HYPER ZOOMIES ACTIVATED!! PUSH PUSH PUSH!",
-            "FEATHER SPEED ATTACK!! FINISH LINE IMMINENT!!",
-          ],
-          stage5: [
-            "VICTORY FEAST AT THE SPEED OF SOUND!! WE WON!!",
-            "MISSION ACCOMPLISHED!! BEST PARTNER EVER!!",
-            "UNSTOPPABLE ZOOMIES CELEBRATION COMMENCES!!",
-          ],
+          stage1: ["i am small in this box, but i have big hopes!", "keep typing, friend."],
+          stage2: ["i like this little garden patch.", "green grass makes me calm."],
+          stage3: ["such a cloud-soft cushion. thank you.", "purring very gently now."],
+          stage4: ["i nudged the toy with my paw!", "almost finished."],
+          stage5: ["a feast! mochi bows gratefully.", "we did it together!"],
+        },
+      },
+    },
+  },
+
+  // 6. OREO (Masked Tuxedo on Ledge with Big Eyes & Mustache Dots — Top 3rd in ref)
+  {
+    id: 'oreo',
+    name: 'Oreo',
+    type: 'MASKED',
+    personality: 'Inquisitive / observant / mustache gentleman',
+    config: {
+      palette: {
+        body: '#FFFDF9',
+        belly: '#FFFDF9',
+        ink: sharedInk,
+        markings: '#26201D',
+        eyes: '#FFFDF9',
+        eyeGlint: '#26201D',
+        nose: '#26201D',
+      },
+      structure: {
+        ears: 'blackMaskEars',
+        tailPath: 'uprightLedge',
+        eyeShape: 'bigRoundStare',
+        bodyLength: 1,
+        headSize: 1.05,
+        postureDefault: 'ledgePaws',
+      },
+      motion: { overshootMul: 1.1, stepFreq: 1, pauseBias: 0.9 },
+      quirks: {
+        chosenLine: 'Eyes on the prize! Let us begin.',
+        waitingLines: ['Observing every keystroke.', 'My mustache senses progress.'],
+        closeLines: ['The ledge is vibrating with anticipation!'],
+        loseLine: 'A momentary setback. Re-strategize!',
+        winLine: 'Spectacular achievement! A feast well earned.',
+        stageLines: {
+          stage1: ["Stationed in the street box. I have my eyes on you!", "Commence operation."],
+          stage2: ["Perched near the garden. Splendid vantage point.", "Keep up the momentum."],
+          stage3: ["The cushion is impeccably padded.", "Comfort level: maximum."],
+          stage4: ["A playful distraction! Focus remains sharp.", "Almost at the goal."],
+          stage5: ["Magnificent feast unlocked! Mission accomplished.", "Splendid work, human."],
+        },
+      },
+    },
+  },
+
+  // 7. PEPPER (Dalmatian Polka-Dot Cat with Ring Tail — Top 4th in ref)
+  {
+    id: 'pepper',
+    name: 'Pepper',
+    type: 'POLKADOT',
+    personality: 'Playful / bubbly / spotty sweetheart',
+    config: {
+      palette: {
+        body: '#FFFDF9',
+        belly: '#FFFDF9',
+        ink: sharedInk,
+        markings: '#26201D',
+        eyes: '#26201D',
+        eyeGlint: '#FFFDF9',
+        nose: '#26201D',
+        patch: '#F4978E', // Blush cheeks
+      },
+      structure: {
+        ears: 'combForehead',
+        tailPath: 'ringLoop',
+        eyeShape: 'dotWide',
+        bodyLength: 1,
+        headSize: 1,
+        postureDefault: 'polkaDots',
+      },
+      motion: { overshootMul: 1.25, stepFreq: 1.2, pauseBias: 0.6 },
+      quirks: {
+        chosenLine: 'Every dot on my fur is cheering for you!!',
+        waitingLines: ['Counting my spots while you work!', 'Wiggle wiggle! You can do it!'],
+        closeLines: ['My ring tail is spinning with joy!'],
+        loseLine: 'Aww pouts... but next time for sure!',
+        winLine: 'YAAAAY!! Pepper party time!!',
+        stageLines: {
+          stage1: ["Spotty cat in a cozy box! Let's get started!!", "Yay! Let's go!"],
+          stage2: ["Garden vibes are 10/10!! Spots are sparkling!", "Look at the flowers!"],
+          stage3: ["Plush cushion cuddle time! So soft!!", "Bouncing on the cushion!"],
+          stage4: ["Playing with my toy!! Jingle jingle!", "Final sprint time!"],
+          stage5: ["SNACK EXPLOSION!! BEST DAY EVER!!", "Pepper dances with joy!"],
+        },
+      },
+    },
+  },
+
+  // 8. YUKI (Expressive White Sketch Cat with Alert Lines — Bottom Left in ref)
+  {
+    id: 'yuki',
+    name: 'Yuki',
+    type: 'SKETCH',
+    personality: 'Energetic / expressive / playful ghost',
+    config: {
+      palette: {
+        body: '#FFFDF9',
+        belly: '#FFFDF9',
+        ink: sharedInk,
+        markings: '#26201D',
+        eyes: '#26201D',
+        eyeGlint: '#FFFDF9',
+        nose: '#26201D',
+      },
+      structure: {
+        ears: 'alertPointy',
+        tailPath: 'hookRight',
+        eyeShape: 'dotWide',
+        bodyLength: 1,
+        headSize: 1,
+        postureDefault: 'wLegs',
+      },
+      motion: { overshootMul: 1.3, stepFreq: 1.25, pauseBias: 0.5 },
+      quirks: {
+        chosenLine: 'ALERT! Commitment registered! Engage!',
+        waitingLines: ['Sparks of creativity incoming!', 'Tail is hooked and ready!'],
+        closeLines: ['Maximum energy surge! Finish strong!'],
+        loseLine: 'Whoosh... scattered into the wind.',
+        winLine: 'BAM! Target destroyed! Delicious victory!',
+        stageLines: {
+          stage1: ["Box radar online! Antenna ears listening!", "Type fast, human!"],
+          stage2: ["Garden breeze detected! Energy rising!", "Moving with the wind!"],
+          stage3: ["Landing on the soft cushion pad! Ahhh yeah!", "Comfort recharge active!"],
+          stage4: ["Pouncing on the toy! Zoom zoom!", "Finish line locked in!"],
+          stage5: ["FEAST VICTORY CONFIRMED! High paws!!", "We crushed the deadline!"],
         },
       },
     },

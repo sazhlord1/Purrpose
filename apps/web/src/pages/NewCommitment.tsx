@@ -5,6 +5,7 @@ import {
   CAT_SEED,
   CONSEQUENCE_TYPES,
   CREDIT_TYPE_LABELS,
+  type CatId,
   type CommitmentDto,
   type ConsequenceType,
   type MeResponse,
@@ -14,23 +15,25 @@ import { api, ApiError } from '../lib/api.js';
 import { requestNotificationPermission } from '../lib/notifications.js';
 import { AmountPicker, Chip, DoodleButton, Field, Input, SketchCard } from '../components/ui/index.js';
 import { CanTin, KibbleBag, VetCare } from '../components/doodles/index.js';
+import { PawShake } from '../components/PawShake.js';
 
 interface CatsResponse {
   cats: Array<{ id: string; name: string; personality: string }>;
 }
-
-const STEP_TITLES = ['The task', 'The deadline', 'The stake', 'The amount', 'Opponent', 'Make it official'];
 
 const CAT_QUIPS: Record<string, string> = Object.fromEntries(
   CAT_SEED.map(c => [c.id, c.config.quirks.chosenLine]),
 );
 
 const CAT_ARCHETYPES: Record<string, string> = {
-  orange: 'Chaos Agent · Orange Tabby',
-  tuxedo: 'The Aristocrat · Classic Tuxedo',
-  black: 'Shadow Void · Slinky Fiend',
-  boba: 'Sleepy Chonk · Fluffy Calico',
-  ziggy: 'Speedster · Siamese Gremlin',
+  orange: 'Golden Tabby · Joyful Sunbather',
+  tuxedo: 'The Aristocrat · Striped Cap Tuxedo',
+  black: 'Midnight Velvet · Luminous Eyes',
+  boba: 'Sweet Calico · Cheeky Side-Glance',
+  mochi: 'Snow White · Soft Marshmallow',
+  oreo: 'Masked Tuxedo · Mustache Gentleman',
+  pepper: 'Polka-Dot · Bubbly Sweetheart',
+  yuki: 'Expressive Sketch · Playful Spirit',
 };
 
 const OVERSTAKE_QUIPS: Record<string, string> = {
@@ -38,7 +41,10 @@ const OVERSTAKE_QUIPS: Record<string, string> = {
   tuxedo: 'One cannot stake what one does not have.',
   black: 'you don’t have that many. i counted.',
   boba: 'even in my sleep, i know you lack the snacks for that.',
-  ziggy: 'ZOOM ERROR 404: INSUFFICIENT TREATS DETECTED!!',
+  mochi: 'i checked the pantry... not enough snacks, friend.',
+  oreo: 'my mustache senses an overdraft! check your balance.',
+  pepper: 'more snacks needed for that! check your pantry!',
+  yuki: 'energy overload! you need more snacks to stake that!',
 };
 
 const DOODLE_BY_TYPE = {
@@ -58,30 +64,39 @@ export function NewCommitment() {
   const cats = useQuery({ queryKey: ['cats'], queryFn: () => api<CatsResponse>('/cats') });
   const me = useQuery({ queryKey: ['me'], queryFn: () => api<MeResponse>('/me') });
 
-  const [step, setStep] = useState(0);
   const [title, setTitle] = useState('');
-  const [when, setWhen] = useState(() => localInputValue(Date.now() + 2 * 3_600_000));
+  const [when, setWhen] = useState(() => localInputValue(Date.now() + 24 * 3_600_000));
+  const [selectedQuick, setSelectedQuick] = useState<'Tonight' | 'Tomorrow' | 'Next week' | null>('Tomorrow');
   const [creditType, setCreditType] = useState<ConsequenceType>('MEALS');
   const [amount, setAmount] = useState(5);
-  const [catId, setCatId] = useState('orange');
+  const [catId, setCatId] = useState<CatId>('orange');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [sealedCommitmentId, setSealedCommitmentId] = useState<string | null>(null);
+  const [showPawShake, setShowPawShake] = useState(false);
 
   const minWhen = localInputValue(Date.now() + 6 * 60_000);
-  const available =
-    me.data?.balances.find(b => b.creditType === creditType)?.available ?? 0;
+  const available = me.data?.balances.find(b => b.creditType === creditType)?.available ?? 0;
   const overstaked = amount > available;
+  const isValid = title.trim().length > 0 && !overstaked;
 
-  const stepDone = [title.trim().length > 0, true, true, !overstaked, true, true];
+  const currentCat = CAT_SEED.find(c => c.id === catId) ?? CAT_SEED[0];
 
-  async function submit() {
+  const handleQuickDeadline = (label: 'Tonight' | 'Tomorrow' | 'Next week', ms: number) => {
+    setSelectedQuick(label);
+    setWhen(localInputValue(Date.now() + ms));
+  };
+
+  async function handleConfirmSubmit() {
+    if (!isValid || busy) return;
     setBusy(true);
     setError(null);
     try {
       const res = await api<{ commitment: CommitmentDto }>('/commitments', {
         method: 'POST',
         body: {
-          title,
+          title: title.trim(),
           deadlineISO: new Date(when).toISOString(),
           catId,
           consequenceType: creditType,
@@ -89,8 +104,10 @@ export function NewCommitment() {
         },
       });
       void requestNotificationPermission();
-      navigate(`/commitment/${res.commitment.id}`);
+      setSealedCommitmentId(res.commitment.id);
+      setShowPawShake(true);
     } catch (e) {
+      setConfirming(false);
       setError(
         e instanceof ApiError
           ? e.code === 'INSUFFICIENT_AVAILABLE'
@@ -102,73 +119,207 @@ export function NewCommitment() {
     }
   }
 
-  const next = () => {
-    if (!stepDone[step] || step === 5) return;
-    setStep(s => s + 1);
-  };
-  const back = () => setStep(s => Math.max(0, s - 1));
-
   return (
-    <main>
-      <h1>New commitment</h1>
-      <div className="chip-row" aria-label="Progress">
-        {STEP_TITLES.map((t, i) => (
-          <span
-            key={t}
-            className={`chip${i === step ? ' chip-active' : ''}`}
-            style={{ color: i <= step ? undefined : 'var(--ink-soft)' }}
-          >
-            {i + 1}·{t}
-          </span>
-        ))}
+    <main style={{ maxWidth: 480, margin: '0 auto', paddingBottom: 96 }}>
+      {/* Handshake Overlay Animation on Success */}
+      <PawShake
+        open={showPawShake}
+        catId={catId}
+        catName={currentCat.name}
+        onComplete={() => {
+          if (sealedCommitmentId) {
+            navigate(`/commitment/${sealedCommitmentId}`);
+          }
+        }}
+      />
+
+      <div style={{ textAlign: 'center', marginBottom: 14 }}>
+        <h1 style={{ margin: '0 0 4px', fontSize: 32 }}>The Feline Pact</h1>
+        <p className="muted" style={{ margin: 0, fontSize: 14 }}>
+          Make a promise your cat can hold you to.
+        </p>
       </div>
 
-      {step === 0 && (
-        <Field label="What do you want to get done?" hint="enter to continue">
-          <Input
-            autoFocus
-            maxLength={80}
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && next()}
-            placeholder="Finish YouTube video"
-          />
-        </Field>
-      )}
+      {/* The Unified All-in-One Task Card */}
+      <SketchCard variant="a" style={{ padding: '18px 20px', position: 'relative' }}>
+        {/* Top Decorative Stamp */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 14 }}>
+          <span
+            style={{
+              fontFamily: 'var(--font-hand)',
+              fontSize: 13.5,
+              letterSpacing: '1.8px',
+              color: 'var(--stamp-red)',
+              fontWeight: 'bold',
+              border: '1.5px dashed var(--stamp-red)',
+              padding: '3px 12px',
+              borderRadius: 6,
+              background: 'var(--paper)',
+            }}
+          >
+            ★ FELINE COMMITMENT PACT ★
+          </span>
+        </div>
 
-      {step === 1 && (
-        <>
-          <Field label="When will it be done?">
+        {/* 1. CAT SHOWCASE & COMPANION PICKER */}
+        <div
+          style={{
+            background: 'var(--paper)',
+            border: '2px solid var(--ink)',
+            borderRadius: 'var(--radius-sketch-b)',
+            padding: '12px 14px',
+            marginBottom: 16,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            position: 'relative',
+          }}
+        >
+          {/* Chosen Cat SVG Portrait */}
+          <div style={{ height: 125, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Cat catId={catId} state="ANTICIPATING" size={135} />
+          </div>
+
+          <div style={{ textAlign: 'center', width: '100%', marginTop: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <strong style={{ fontSize: 18 }}>{currentCat.name}</strong>
+              <span
+                style={{
+                  fontSize: 11,
+                  background: 'var(--ink)',
+                  color: 'var(--paper)',
+                  padding: '1px 8px',
+                  borderRadius: 999,
+                  fontWeight: 600,
+                }}
+              >
+                CHOSEN OPPONENT
+              </span>
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--stamp-red)', margin: '2px 0 6px', fontWeight: 600 }}>
+              {CAT_ARCHETYPES[catId] ?? currentCat.personality}
+            </p>
+
+            {/* Reactive Cat Quip Speech */}
+            <div
+              style={{
+                fontFamily: 'var(--font-hand)',
+                fontSize: 14,
+                color: 'var(--ink)',
+                background: 'var(--paper-raised)',
+                border: '1.5px solid var(--ink)',
+                borderRadius: 12,
+                padding: '6px 12px',
+                display: 'inline-block',
+                maxWidth: '90%',
+              }}
+            >
+              "{overstaked ? (OVERSTAKE_QUIPS[catId] ?? 'Not enough treats!') : (CAT_QUIPS[catId] ?? 'Deal!!')}"
+            </div>
+          </div>
+
+          {/* Quick Cat Switcher Avatars */}
+          <div style={{ width: '100%', marginTop: 12, borderTop: '1px dashed rgba(43,35,31,0.25)', paddingTop: 10 }}>
+            <span style={{ fontSize: 11.5, color: 'var(--ink-soft)', fontWeight: 600, display: 'block', marginBottom: 6, textAlign: 'center' }}>
+              Choose your feline opponent:
+            </span>
+            <div
+              style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}
+              role="radiogroup"
+              aria-label="Choose your opponent"
+            >
+              {(cats.data?.cats ?? CAT_SEED).map(cat => {
+                const isSelected = catId === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={isSelected}
+                    onClick={() => setCatId(cat.id as CatId)}
+                    className={`chip ${isSelected ? 'chip-active' : ''}`}
+                    style={{
+                      fontSize: 12,
+                      padding: '3px 10px',
+                      fontWeight: isSelected ? 700 : 500,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {cat.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* 2. THE TASK INPUT */}
+        <div style={{ marginBottom: 16 }}>
+          <Field label="I promise to get done:" hint="Clear, actionable goal">
             <Input
-              type="datetime-local"
-              min={minWhen}
-              value={when}
-              onChange={e => setWhen(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && next()}
+              autoFocus
+              maxLength={80}
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="Finish YouTube video"
+              style={{ fontSize: 16, fontWeight: 500 }}
             />
           </Field>
-          <div className="chip-row">
+        </div>
+
+        {/* 3. DEADLINE SECTION */}
+        <div style={{ marginBottom: 16 }}>
+          <span style={{ display: 'block', fontSize: 13.5, fontWeight: 600, color: 'var(--ink-soft)', marginBottom: 6 }}>
+            Deadline:
+          </span>
+          <div className="chip-row" style={{ marginBottom: 8 }}>
             {[
               ['Tonight', 6 * 3_600_000],
               ['Tomorrow', 24 * 3_600_000],
               ['Next week', 7 * 24 * 3_600_000],
             ].map(([label, ms]) => (
-              <Chip key={label as string} onClick={() => setWhen(localInputValue(Date.now() + (ms as number)))}>
+              <Chip
+                key={label as string}
+                active={selectedQuick === label}
+                onClick={() => handleQuickDeadline(label as 'Tonight' | 'Tomorrow' | 'Next week', ms as number)}
+              >
                 {label as string}
               </Chip>
             ))}
           </div>
-        </>
-      )}
+          <Input
+            type="datetime-local"
+            min={minWhen}
+            value={when}
+            aria-label="Deadline date and time"
+            onChange={e => {
+              setSelectedQuick(null);
+              setWhen(e.target.value);
+            }}
+            style={{ fontSize: 14 }}
+          />
+        </div>
 
-      {step === 2 && (
-        <>
-          <p className="muted">What's at stake?</p>
-          <div className="chip-row">
+        {/* 4. THE STAKE (WHAT'S ON THE LINE) */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+            <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink-soft)' }}>
+              What's at stake if you procrastinate?
+            </span>
+            <span style={{ fontSize: 12, color: '#2E6930', fontWeight: 600 }}>
+              {available} {CREDIT_TYPE_LABELS[creditType]} available
+            </span>
+          </div>
+
+          <div className="chip-row" style={{ marginBottom: 10 }}>
             {CONSEQUENCE_TYPES.map(t => {
               const Icon = DOODLE_BY_TYPE[t];
               return (
-                <Chip key={t} active={creditType === t} onClick={() => setCreditType(t)}>
+                <Chip
+                  key={t}
+                  active={creditType === t}
+                  onClick={() => setCreditType(t)}
+                >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                     <Icon size={18} strokeWidth={2.2} /> {CREDIT_TYPE_LABELS[t]}
                   </span>
@@ -176,171 +327,69 @@ export function NewCommitment() {
               );
             })}
           </div>
-          <p className="muted">
-            You have {available} {CREDIT_TYPE_LABELS[creditType]} available.
-          </p>
-        </>
-      )}
 
-      {step === 3 && (
-        <>
-          <Field label="How much?" error={overstaked ? OVERSTAKE_QUIPS[catId] : undefined}>
+          <Field
+            label="Stake Amount:"
+            error={overstaked ? (OVERSTAKE_QUIPS[catId] ?? 'Not enough available credits.') : undefined}
+          >
             <AmountPicker value={amount} onChange={setAmount} max={9999} />
           </Field>
-          <p className="muted">
-            {available} {CREDIT_TYPE_LABELS[creditType]} available ·{' '}
-            {overstaked ? 'stake less to continue.' : 'the rest stays safe.'}
+        </div>
+
+        {/* Error Alert Box */}
+        {error && (
+          <p className="card error-box card-c" role="alert" style={{ margin: '8px 0 14px' }}>
+            {error}
           </p>
-        </>
-      )}
-
-      {step === 4 && (
-        <>
-          <div style={{ marginBottom: 16 }}>
-            <h2>Choose your opponent</h2>
-            <p className="muted" style={{ marginTop: -4 }}>
-              Pick the feline who will feast if you procrastinate.
-            </p>
-          </div>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-              gap: 12,
-              marginBottom: 16,
-            }}
-            role="radiogroup"
-            aria-label="Choose your opponent"
-          >
-            {(cats.data?.cats ?? CAT_SEED).map(cat => {
-              const isSelected = catId === cat.id;
-              return (
-                <div
-                  key={cat.id}
-                  onClick={() => setCatId(cat.id)}
-                  onKeyDown={e => {
-                    if (e.key === ' ' || e.key === 'Enter') {
-                      e.preventDefault();
-                      setCatId(cat.id);
-                    }
-                  }}
-                  role="radio"
-                  aria-checked={isSelected}
-                  tabIndex={0}
-                  className={`card ${isSelected ? 'card-b' : 'card-a'}`}
-                  style={{
-                    margin: 0,
-                    padding: 12,
-                    cursor: 'pointer',
-                    borderColor: isSelected ? 'var(--ink)' : 'rgba(26, 26, 26, 0.35)',
-                    borderWidth: isSelected ? 2.5 : 1.5,
-                    boxShadow: isSelected ? 'var(--shadow)' : 'none',
-                    background: isSelected ? 'var(--paper-raised)' : 'transparent',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    textAlign: 'center',
-                    position: 'relative',
-                    transition: 'all 120ms ease-out',
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="cat"
-                    value={cat.id}
-                    checked={isSelected}
-                    onChange={() => setCatId(cat.id)}
-                    style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
-                    aria-label={`Select ${cat.name}`}
-                  />
-                  <div style={{ height: 110, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Cat
-                      catId={cat.id as any}
-                      state={isSelected ? 'ANTICIPATING' : 'WAITING'}
-                      size={120}
-                    />
-                  </div>
-                  <div style={{ width: '100%', marginTop: 6 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                      <strong style={{ fontSize: 17 }}>{cat.name}</strong>
-                      {isSelected && (
-                        <span
-                          style={{
-                            fontSize: 11,
-                            background: 'var(--ink)',
-                            color: 'var(--paper)',
-                            padding: '1px 7px',
-                            borderRadius: 999,
-                            fontWeight: 600,
-                          }}
-                        >
-                          SELECTED
-                        </span>
-                      )}
-                    </div>
-                    <p style={{ fontSize: 11.5, color: 'var(--accent-coral)', margin: '2px 0', fontWeight: 600 }}>
-                      {CAT_ARCHETYPES[cat.id] ?? 'Feline Challenger'}
-                    </p>
-                    <p className="muted" style={{ fontSize: 12, margin: '2px 0 6px', lineHeight: 1.3 }}>
-                      {cat.personality}
-                    </p>
-                    <div
-                      style={{
-                        fontFamily: 'var(--font-hand)',
-                        fontSize: 13,
-                        color: isSelected ? 'var(--ink)' : 'var(--ink-soft)',
-                        borderTop: '1px dashed rgba(26,26,26,0.25)',
-                        paddingTop: 6,
-                        minHeight: 28,
-                      }}
-                    >
-                      "{CAT_QUIPS[cat.id] ?? 'deal!!'}"
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
-
-      {step === 5 && (
-        <SketchCard variant="b">
-          <h3>Ready?</h3>
-          <p>
-            <strong>{title}</strong>
-            <br />
-            <span className="muted">
-              {new Date(when).toLocaleString()} · {amount} {CREDIT_TYPE_LABELS[creditType]} ·{' '}
-              {cats.data?.cats.find(c => c.id === catId)?.name}
-            </span>
-          </p>
-          <p className="muted">Finish in time and the meals stay yours. Don't, and your cat eats.</p>
-        </SketchCard>
-      )}
-
-      {error && (
-        <p className="card error-box card-c" role="alert">
-          {error}
-        </p>
-      )}
-
-      <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-        {step > 0 && step < 5 && <DoodleButton onClick={back}>Back</DoodleButton>}
-        {step < 5 && (
-          <DoodleButton variant="primary" disabled={!stepDone[step]} onClick={next}>
-            {step === 4 ? 'Review' : 'Next'}
-          </DoodleButton>
         )}
-        {step === 5 && (
-          <>
-            <DoodleButton onClick={back}>Back</DoodleButton>
-            <DoodleButton variant="primary" size="big" disabled={busy} onClick={submit}>
-              Make It Official
+
+        {/* 5. CONFIRMATION PROMPT / SUBMISSION */}
+        {!confirming ? (
+          <div style={{ marginTop: 20 }}>
+            <DoodleButton
+              variant="primary"
+              size="big"
+              disabled={!isValid || busy}
+              onClick={() => setConfirming(true)}
+              style={{ width: '100%', textAlign: 'center', justifyContent: 'center' }}
+            >
+              🐾 Seal the Pact
             </DoodleButton>
-          </>
+          </div>
+        ) : (
+          <div
+            className="card card-b"
+            style={{
+              marginTop: 18,
+              padding: '14px 16px',
+              background: 'var(--paper)',
+              borderColor: 'var(--accent-coral)',
+              borderWidth: 2,
+              textAlign: 'center',
+            }}
+          >
+            <h3 style={{ margin: '0 0 6px', fontSize: 19 }}>Are you sure about this commitment?</h3>
+            <p className="muted" style={{ margin: '0 0 14px', fontSize: 13.5 }}>
+              You are staking <strong>{amount} {CREDIT_TYPE_LABELS[creditType]}</strong> with{' '}
+              <strong>{currentCat.name}</strong>. If you finish in time, your food stays yours. If you fail,{' '}
+              {currentCat.name} feasts!
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <DoodleButton
+                variant="primary"
+                size="big"
+                disabled={busy}
+                onClick={handleConfirmSubmit}
+              >
+                Yes, I promise!
+              </DoodleButton>
+              <DoodleButton onClick={() => setConfirming(false)}>
+                Wait, not yet
+              </DoodleButton>
+            </div>
+          </div>
         )}
-      </div>
+      </SketchCard>
     </main>
   );
 }

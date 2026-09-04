@@ -7,7 +7,16 @@ export type ConsequenceType = (typeof CONSEQUENCE_TYPES)[number];
 export const TRANSACTION_TYPES = ['STARTER_GRANT', 'TOPUP', 'FAILURE_DEDUCTION'] as const;
 export type TransactionType = (typeof TRANSACTION_TYPES)[number];
 
-export const CAT_IDS = ['orange', 'tuxedo', 'black', 'boba', 'ziggy'] as const;
+export const CAT_IDS = [
+  'orange',
+  'tuxedo',
+  'black',
+  'boba',
+  'mochi',
+  'oreo',
+  'pepper',
+  'yuki',
+] as const;
 export type CatId = (typeof CAT_IDS)[number];
 
 export const CREDIT_TYPE_LABELS: Record<ConsequenceType, string> = {

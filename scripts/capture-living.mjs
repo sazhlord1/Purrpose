@@ -72,7 +72,7 @@ try {
   await page.reload({ waitUntil: 'networkidle' });
   const skip = page.getByRole('button', { name: 'skip' });
   if (await skip.isVisible().catch(() => false)) await skip.click();
-  await page.locator('[data-world-cat]').first().waitFor({ timeout: 15000 });
+  await page.locator('.purrpose-scene').first().waitFor({ timeout: 15000 });
   await wait(2500);
   await page.screenshot({ path: path.join(OUT, 'living_home.png') });
   console.log('captured living_home.png');

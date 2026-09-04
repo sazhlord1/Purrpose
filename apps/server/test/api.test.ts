@@ -25,31 +25,23 @@ async function api(method: 'GET' | 'POST' | 'DELETE', url: string, opts: InjectO
 }
 
 async function seedCats() {
-  await prisma.cat.upsert({
-    where: { id: 'orange' },
-    update: {},
-    create: { id: 'orange', name: 'Miso', type: 'ORANGE', personality: 'chaotic', config: {} },
-  });
-  await prisma.cat.upsert({
-    where: { id: 'tuxedo' },
-    update: {},
-    create: { id: 'tuxedo', name: 'Winston', type: 'TUXEDO', personality: 'judgmental', config: {} },
-  });
-  await prisma.cat.upsert({
-    where: { id: 'black' },
-    update: {},
-    create: { id: 'black', name: 'Nyx', type: 'BLACK', personality: 'mischievous', config: {} },
-  });
-  await prisma.cat.upsert({
-    where: { id: 'boba' },
-    update: {},
-    create: { id: 'boba', name: 'Boba', type: 'BOBA', personality: 'sleepy', config: {} },
-  });
-  await prisma.cat.upsert({
-    where: { id: 'ziggy' },
-    update: {},
-    create: { id: 'ziggy', name: 'Ziggy', type: 'ZIGGY', personality: 'gremlin', config: {} },
-  });
+  const cats = [
+    { id: 'orange', name: 'Miso', type: 'TABBY', personality: 'chaotic' },
+    { id: 'tuxedo', name: 'Winston', type: 'TUXEDO', personality: 'judgmental' },
+    { id: 'black', name: 'Nyx', type: 'MIDNIGHT', personality: 'mischievous' },
+    { id: 'boba', name: 'Boba', type: 'CALICO', personality: 'sleepy' },
+    { id: 'mochi', name: 'Mochi', type: 'BICOLOR', personality: 'gentle' },
+    { id: 'oreo', name: 'Oreo', type: 'MASKED', personality: 'observant' },
+    { id: 'pepper', name: 'Pepper', type: 'POLKADOT', personality: 'bubbly' },
+    { id: 'yuki', name: 'Yuki', type: 'SKETCH', personality: 'expressive' },
+  ];
+  for (const c of cats) {
+    await prisma.cat.upsert({
+      where: { id: c.id },
+      update: {},
+      create: { id: c.id, name: c.name, type: c.type, personality: c.personality, config: {} },
+    });
+  }
 }
 
 async function wipe() {
@@ -111,7 +103,7 @@ describe.skipIf(!dbReady)('Purrpose API', () => {
       expect(b.stakedActive).toBe(0);
     }
     const cats = (await api('GET', '/api/v1/cats')).json();
-    expect(cats.cats.map((c: { id: string }) => c.id)).toEqual(['black', 'boba', 'orange', 'tuxedo', 'ziggy']);
+    expect(cats.cats.map((c: { id: string }) => c.id)).toEqual(['black', 'boba', 'mochi', 'orange', 'oreo', 'pepper', 'tuxedo', 'yuki']);
   });
 
   it('creates commitments and enforces availability atomically', async () => {

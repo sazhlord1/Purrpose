@@ -14,6 +14,7 @@ interface DoodleButtonProps {
   onClick?: () => void;
   href?: string;
   ariaLabel?: string;
+  style?: React.CSSProperties;
   children: ReactNode;
 }
 
@@ -25,6 +26,7 @@ export function DoodleButton({
   onClick,
   href,
   ariaLabel,
+  style,
   children,
 }: DoodleButtonProps) {
   const cls = ['btn', variant === 'primary' ? 'btn-primary' : '', size === 'big' ? 'btn-big' : '']
@@ -33,7 +35,7 @@ export function DoodleButton({
 
   if (href !== undefined) {
     return (
-      <Link to={href} className={cls} aria-label={ariaLabel}>
+      <Link to={href} className={cls} aria-label={ariaLabel} style={style}>
         {children}
       </Link>
     );
@@ -45,6 +47,7 @@ export function DoodleButton({
       className={cls}
       disabled={disabled}
       onClick={onClick}
+      style={style}
       whileTap={{ scale: 0.97, y: 1 }}
       transition={tap}
       aria-label={ariaLabel}

@@ -139,36 +139,19 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
   };
 
   async function ensureAt(target: AnchorName): Promise<void> {
-    if (anchorRef.current === target) return;
-    await walkTo(target);
+    anchorRef.current = target;
   }
 
   async function walkTo(target: AnchorName): Promise<void> {
-    const dx = ANCHORS[target] - homeX - offsetRef.current;
-    if (Math.abs(dx) < 2) {
-      anchorRef.current = target;
-      return;
-    }
-    const dist = Math.abs(dx);
-    const dur = Math.max(0.5, dist / 240) / speedRef.current;
-    setFlag('bob', true);
-    onEvent?.('walk');
-    await controls.start({
-      x: offsetRef.current + dx,
-      transition: { duration: dur, ease: stepped(4) },
-    });
-    setFlag('bob', false);
-    offsetRef.current += dx;
     anchorRef.current = target;
   }
 
   async function hop(): Promise<void> {
-    const base = offsetRef.current;
     await controls.start({
-      y: [0, -16, 0, -10, 0],
+      y: [0, -14, 0, -8, 0],
       transition: { duration: 0.7 / speedRef.current, times: [0, 0.3, 0.55, 0.78, 1] },
     });
-    await controls.set({ y: 0, x: base });
+    await controls.set({ y: 0, x: 0 });
   }
 
   async function runMacro(name: MacroName): Promise<void> {
@@ -195,7 +178,7 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
         await wait(1.2, sp);
         break;
       case 'shiftWeight':
-        await controls.start({ x: [offsetRef.current, offsetRef.current + 4, offsetRef.current], transition: { duration: 0.9 / sp } });
+        await controls.start({ x: [0, 3, -3, 0], transition: { duration: 0.9 / sp } });
         break;
       case 'lookAround':
         setHeadTilt(-1);
@@ -555,12 +538,14 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
 
   if (reduced) {
     return (
-      <Cat
-        catId={catId}
-        state={displayState}
-        size={220}
-        title={`${catName(catId)} — ${displayState.toLowerCase()}`}
-      />
+      <g transform="translate(-120 -254)">
+        <Cat
+          catId={catId}
+          state={displayState}
+          size={240}
+          title={`${catName(catId)} — ${displayState.toLowerCase()}`}
+        />
+      </g>
     );
   }
 
@@ -572,18 +557,18 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
       initial={false}
       animate={controls}
     >
-      <g transform="translate(-110 -150)">
+      <g transform="translate(-120 -254)">
         <Cat
           catId={catId}
           state={displayState}
           expression={expression ?? undefined}
           headTilt={headTilt}
           armUp={armUp}
-          size={220}
+          size={240}
         />
       </g>
       {bubble && (
-        <g className="lc-bubble" transform={`translate(${-Math.max(140, Math.min(280, bubble.length * 8.2 + 36)) / 2} -185)`}>
+        <g className="lc-bubble" transform={`translate(${-Math.max(140, Math.min(280, bubble.length * 8.2 + 36)) / 2} -215)`}>
           <rect
             x={0}
             y={0}

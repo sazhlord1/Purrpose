@@ -68,13 +68,9 @@ try {
   assert(true, 'reached create screen via keyboard');
 
   await page.getByPlaceholder('Finish YouTube video').fill('Keyboard-made commitment');
-  await page.keyboard.press('Enter');
   await tabTo(page, 'Tomorrow', 'Tomorrow');
-  await tabTo(page, 'Next', 'Next');
-  await tabTo(page, 'Next', 'Next');
-  await tabTo(page, 'Next', 'Next');
-  await tabTo(page, 'Review', 'Review');
-  await tabTo(page, 'Make It Official', 'Make It Official');
+  await tabTo(page, 'Seal the Pact', 'Seal the Pact');
+  await tabTo(page, 'Yes, I promise!', 'Yes, I promise!');
   await page.waitForURL('**/commitment/**', { timeout: 10000 });
   assert(true, 'commitment created entirely via keyboard');
 

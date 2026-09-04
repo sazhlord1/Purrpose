@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Purrpose — Rebuilt 6-Location Scene Roster</title>
+  <style>
+    :root {
+      --bg: #F4EFE6;
+      --card-bg: #FAF6EE;
+      --ink: #26201D;
+      --border: #26201D;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px 24px 64px;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    header {
+      text-align: center;
+      max-width: 840px;
+      margin-bottom: 24px;
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    p.sub {
+      margin: 0;
+      color: #6C5E53;
+      font-size: 15px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      max-width: 1140px;
+      width: 100%;
+    }
+    @media (max-width: 960px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .scene-card {
+      background: var(--card-bg);
+      border: 3px solid var(--border);
+      border-radius: 18px;
+      padding: 12px;
+      box-shadow: 5px 5px 0 var(--ink);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .scene-preview {
+      width: 100%;
+      height: 250px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #FFFDF9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
+    .num {
+      background: var(--ink);
+      color: white;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>WINSTON — 6 REBUILT SCENES</h1>
+    <p class="sub">100% Vector SVGs faithfully refined according to your precise feedback.</p>
+  </header>
+
+  <div class="grid">
+    <!-- 1. SIDEWALK (BOX) -->
+    <div class="scene-card">
+      <div class="scene-preview">
+        <svg viewBox="0 0 360 250" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <!-- Brick Wall Background -->
+          <rect x="0" y="0" width="360" height="155" fill="#D7C2AD" />
+          <g stroke="#C2AC96" stroke-width="1.6">
+            <line x1="0" y1="35" x2="360" y2="35" />
+            <line x1="0" y1="75" x2="360" y2="75" />
+            <line x1="0" y1="115" x2="360" y2="115" />
+            <line x1="0" y1="155" x2="360" y2="155" />
+            <line x1="60" y1="0" x2="60" y2="35" /><line x1="180" y1="0" x2="180" y2="35" /><line x1="300" y1="0" x2="300" y2="35" />
+            <line x1="120" y1="35" x2="120" y2="75" /><line x1="240" y1="35" x2="240" y2="75" />
+            <line x1="60" y1="75" x2="60" y2="115" /><line x1="180" y1="75" x2="180" y2="115" /><line x1="300" y1="75" x2="300" y2="115" />
+            <line x1="120" y1="115" x2="120" y2="155" /><line x1="240" y1="115" x2="240" y2="155" />
+          </g>
+
+          <!-- Sidewalk Pavement -->
+          <rect x="0" y="155" width="360" height="95" fill="#C5B9AA" stroke="#26201D" stroke-width="2.5" />
+          <line x1="0" y1="185" x2="360" y2="185" stroke="#26201D" stroke-width="1.8" />
+          <line x1="100" y1="185" x2="80" y2="250" stroke="#26201D" stroke-width="1.8" />
+          <line x1="280" y1="185" x2="260" y2="250" stroke="#26201D" stroke-width="1.8" />
+
+          <!-- Street Lamp on Left -->
+          <g stroke="#26201D" stroke-width="2.6" fill="#4A4542">
+            <rect x="22" y="0" width="10" height="150" />
+            <ellipse cx="27" cy="150" rx="14" ry="5" />
+            <path d="M12 155 L42 155 L38 150 L16 150 Z" />
+            <ellipse cx="27" cy="60" rx="8" ry="4" fill="#383431" />
+          </g>
+
+          <!-- Green Bush on Right -->
+          <g stroke="#26201D" stroke-width="2.4" fill="#8D9F80">
+            <path d="M285 155 C275 125 295 100 320 105 C335 90 360 105 360 130 L360 155 Z" />
+          </g>
+
+          <!-- Stray fallen leaves -->
+          <g stroke="#26201D" stroke-width="1.4" fill="#758B65">
+            <path d="M50 205 c5 -4 10 0 8 4 c-2 4 -8 2 -8 -4 z" />
+            <path d="M280 215 c5 -3 9 2 6 5 c-3 3 -7 0 -6 -5 z" />
+          </g>
+
+          <!-- Cardboard Box Ground Shadow -->
+          <ellipse cx="180" cy="235" rx="75" ry="10" fill="rgba(38,32,29,0.22)" />
+          <polygon points="120,165 240,165 265,225 95,225" fill="#A47C4E" stroke="#26201D" stroke-width="2.6" />
+
+          <!-- Winston sitting inside box -->
+          <g transform="translate(180, 205) scale(0.68) translate(-120, -254)">
+            <path d="M75,235 C52,230 34,212 32,185 C30,155 48,125 74,125 C88,125 98,136 96,150 C94,162 80,170 68,162 C58,154 58,142 62,137 C64,135 68,135 68,140" fill="none" stroke="#26201D" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" />
+            <g stroke="#FFFDF9" stroke-width="2.8" stroke-linecap="round">
+              <line x1="45" y1="216" x2="60" y2="222" /><line x1="36" y1="198" x2="51" y2="202" /><line x1="34" y1="180" x2="49" y2="182" />
+              <line x1="38" y1="162" x2="52" y2="158" /><line x1="46" y1="146" x2="58" y2="140" /><line x1="62" y1="134" x2="74" y2="128" />
+            </g>
+            <path d="M82,148 C66,168 54,200 56,238 C57,252 66,254 85,254 C94,254 98,245 98,230 L98,165 Z" fill="#26201D" stroke="#26201D" stroke-width="3" />
+            <g stroke="#FFFDF9" stroke-width="2.6" stroke-linecap="round">
+              <line x1="58" y1="200" x2="94" y2="202" /><line x1="57" y1="214" x2="94" y2="216" />
+            </g>
+            <path d="M158,148 C174,168 186,200 184,238 C183,252 174,254 155,254 C146,254 142,245 142,230 L142,165 Z" fill="#26201D" stroke="#26201D" stroke-width="3" />
+            <g stroke="#FFFDF9" stroke-width="2.6" stroke-linecap="round">
+              <line x1="146" y1="202" x2="182" y2="200" /><line x1="146" y1="216" x2="183" y2="214" />
+            </g>
+            <path d="M86,142 C86,142 80,175 82,210 C84,242 90,254 120,254 C150,254 156,242 158,210 C160,175 154,142 154,142 Z" fill="#FFFDF9" stroke="#26201D" stroke-width="3.2" />
+            <g stroke="#26201D" stroke-width="1.8" stroke-linecap="round" opacity="0.75">
+              <line x1="104" y1="182" x2="104" y2="190" /><line x1="120" y1="180" x2="120" y2="188" /><line x1="136" y1="182" x2="136" y2="190" />
+            </g>
+            <g id="head">
+              <path d="M70,96 L78,50 L94,88 Z" fill="#26201D" stroke="#26201D" stroke-width="3" stroke-linejoin="round" />
+              <path d="M78,64 L78,82" stroke="#FFFDF9" stroke-width="2" stroke-linecap="round" />
+              <path d="M170,96 L162,50 L146,88 Z" fill="#26201D" stroke="#26201D" stroke-width="3" stroke-linejoin="round" />
+              <path d="M162,64 L162,82" stroke="#FFFDF9" stroke-width="2" stroke-linecap="round" />
+              <path d="M68,106 C60,65 180,65 172,106 C176,142 154,152 120,152 C86,152 64,142 68,106 Z" fill="#FFFDF9" stroke="#26201D" stroke-width="3.2" stroke-linejoin="round" />
+              <path d="M68,104 C62,70 178,70 172,104 C152,98 136,96 120,96 C104,96 88,98 68,104 Z" fill="#26201D" stroke="#26201D" stroke-width="2.5" stroke-linejoin="round" />
+              <g stroke="#FFFDF9" stroke-width="2.5" stroke-linecap="round">
+                <line x1="88" y1="84" x2="152" y2="84" /><line x1="96" y1="92" x2="144" y2="92" />
+              </g>
+              <circle cx="86" cy="122" r="7.5" fill="#F4978E" opacity="0.9" />
+              <circle cx="154" cy="122" r="7.5" fill="#F4978E" opacity="0.9" />
+              <circle cx="102" cy="112" r="5.5" fill="#26201D" /><circle cx="103.5" cy="110.5" r="1.8" fill="#FFFDF9" />
+              <circle cx="138" cy="112" r="5.5" fill="#26201D" /><circle cx="139.5" cy="110.5" r="1.8" fill="#FFFDF9" />
+              <path d="M116,122 L124,122 L120,127 Z" fill="#26201D" />
+              <path d="M120,127 v3 M114,133 c2,3 6,3 6,0 c0,3 4,3 6,0" fill="none" stroke="#26201D" stroke-width="2.2" stroke-linecap="round" />
+              <g stroke="#26201D" stroke-width="2" stroke-linecap="round">
+                <line x1="78" y1="116" x2="48" y2="114" /><line x1="76" y1="124" x2="44" y2="124" /><line x1="78" y1="132" x2="48" y2="135" />
+                <line x1="162" y1="116" x2="192" y2="114" /><line x1="164" y1="124" x2="196" y2="124" /><line x1="162" y1="132" x2="192" y2="135" />
+              </g>
+            </g>
+          </g>
+
+          <!-- Cardboard Box Front & Open Flaps -->
+          <g stroke="#26201D" stroke-width="2.6" stroke-linejoin="round">
+            <polygon points="100,180 260,180 245,235 115,235" fill="#C89F6E" />
+            <polygon points="68,185 100,180 115,235 85,240" fill="#B58D5D" />
+            <polygon points="68,185 100,180 82,150 50,158" fill="#DDB483" />
+            <polygon points="260,180 245,235 285,210 295,160" fill="#C89F6E" />
+            <polygon points="100,180 260,180 270,195 90,195" fill="#DDB483" />
+          </g>
+        </svg>
+      </div>
+      <div class="badge"><span class="num">1</span> SIDEWALK (BOX)</div>
+    </div>
+
+    <!-- 2. YARD (GRASS) [Natural Tree Cropped at Top Frame] -->
+    <div class="scene-card">
+      <div class="scene-preview">
+        <svg viewBox="0 0 360 250" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <!-- Sky -->
+          <rect x="0" y="0" width="360" height="110" fill="#DEE5D4" />
+          <!-- White Fluffy Cloud -->
+          <path d="M230 45 C235 32 255 32 262 44 C270 40 282 46 280 54 C286 58 284 68 276 69 L232 69 C224 69 222 59 230 54 Z" fill="#FFFDF9" opacity="0.95" />
+
+          <!-- Wooden Picket Fence along the background -->
+          <g stroke="#26201D" stroke-width="2.2" fill="#E7D7C1">
+            <rect x="0" y="70" width="360" height="14" fill="#D9C5AD" />
+            ${Array.from({ length: 18 }).map((_, i) => `
+              <path d="M${i * 20 + 2} 85 L${i * 20 + 2} 45 L${i * 20 + 11} 36 L${i * 20 + 20} 45 L${i * 20 + 20} 85 Z" />
+            `).join('')}
+          </g>
+
+          <!-- Tree Trunk standing in yard with rightward branch -->
+          <g stroke="#26201D" stroke-width="2.6" stroke-linejoin="round">
+            <!-- Brown Trunk & Branch -->
+            <path d="M15 140 L35 140 L35 48 C48 45 80 44 98 50 C98 58 75 60 38 64 L38 140 L15 140 Z" fill="#8A6642" />
+            <!-- Large Lush Foliage Canopy extending above the frame (cleanly cropped at top) -->
+            <path d="M-10 -20 L165 -20 C175 10 162 42 140 55 C120 68 85 68 55 58 C25 64 -10 48 -10 10 Z" fill="#758B65" />
+          </g>
+
+          <!-- Green Grass Lawn -->
+          <rect x="0" y="85" width="360" height="165" fill="#8FA37E" stroke="#26201D" stroke-width="2.6" />
+
+          <!-- Background Green Shrubs -->
+          <path d="M0 95 C15 75 40 85 55 95 Z" fill="#6F825F" stroke="#26201D" stroke-width="2.2" />
+          <path d="M265 115 C280 90 320 90 345 115 Z" fill="#6F825F" stroke="#26201D" stroke-width="2.2" />
+
+          <!-- Daisies & Grass Tufts -->
+          <g stroke="#26201D" stroke-width="1.8" stroke-linecap="round">
+            <path d="M55 170 l-3 -8 M55 170 l0 -10 M55 170 l3 -8" />
+            <path d="M125 155 l-3 -8 M125 155 l0 -10 M125 155 l3 -8" />
+            <path d="M245 155 l-3 -8 M245 155 l0 -10 M245 155 l3 -8" />
+            <path d="M315 180 l-3 -8 M315 180 l0 -10 M315 180 l3 -8" />
+            <path d="M55 220 l-3 -8 M55 220 l0 -10 M55 220 l3 -8" />
+            <path d="M285 225 l-3 -8 M285 225 l0 -10 M285 225 l3 -8" />
+          </g>
+          <!-- Daisies -->
+          <g>
+            <circle cx="105" cy="170" r="4" fill="#FFFDF9" stroke="#26201D" stroke-width="1.5" />
+            <circle cx="105" cy="170" r="1.5" fill="#F59E0B" />
+            <circle cx="270" cy="170" r="4" fill="#FFFDF9" stroke="#26201D" stroke-width="1.5" />
+            <circle cx="270" cy="170" r="1.5" fill="#F59E0B" />
+            <circle cx="260" cy="205" r="4" fill="#FFFDF9" stroke="#26201D" stroke-width="1.5" />
+            <circle cx="260" cy="205" r="1.5" fill="#F59E0B" />
+          </g>
+
+          <!-- Winston in Center of Yard -->
+          <g transform="translate(180, 215) scale(0.72) translate(-120, -254)">
+            <ellipse cx="120" cy="254" rx="65" ry="8" fill="rgba(38,32,29,0.22)" />
+            <path d="M75,235 C52,230 34,212 32,185 C30,155 48,125 74,125 C88,125 98,136 96,150 C94,162 80,170 68,162 C58,154 58,142 62,137 C64,135 68,135 68,140" fill="none" stroke="#26201D" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" />
+            <g stroke="#FFFDF9" stroke-width="2.8" stroke-linecap="round">
+              <line x1="45" y1="216" x2="60" y2="222" /><line x1="36" y1="198" x2="51" y2="202" /><line x1="34" y1="180" x2="49" y2="182" />
+              <line x1="38" y1="162" x2="52" y2="158" /><line x1="46" y1="146" x2="58" y2="140" /><line x1="62" y1="134" x2="74" y2="128" /><line x1="82" y1="140" x2="90" y2="148" />
+            </g>
+            <path d="M82,148 C66,168 54,200 56,238 C57,252 66,254 85,254 C94,254 98,245 98,230 L98,165 Z" fill="#26201D" stroke="#26201D" stroke-width="3" />
+            <g stroke="#FFFDF9" stroke-width="2.6" stroke-linecap="round">
+              <line x1="58" y1="200" x2="94" y2="202" /><line x1="57" y1="214" x2="94" y2="216" />
+            </g>
+            <path d="M158,148 C174,168 186,200 184,238 C183,252 174,254 155,254 C146,254 142,245 142,230 L142,165 Z" fill="#26201D" stroke="#26201D" stroke-width="3" />
+            <g stroke="#FFFDF9" stroke-width="2.6" stroke-linecap="round">
+              <line x1="146" y1="202" x2="182" y2="200" /><line x1="146" y1="216" x2="183" y2="214" />
+            </g>
+            <path d="M86,142 C86,142 80,175 82,210 C84,242 90,254 120,254 C150,254 156,242 158,210 C160,175 154,142 154,142 Z" fill="#FFFDF9" stroke="#26201D" stroke-width="3.2" />
+            <g stroke="#26201D" stroke-width="1.8" stroke-linecap="round" opacity="0.75">
+              <line x1="104" y1="182" x2="104" y2="190" /><line x1="120" y1="180" x2="120" y2="188" /><line x1="136" y1="182" x2="136" y2="190" />
+            </g>
+            <line x1="108" y1="200" x2="108" y2="248" fill="none" stroke="#26201D" stroke-width="2.8" stroke-linecap="round" />
+            <line x1="132" y1="200" x2="132" y2="248" fill="none" stroke="#26201D" stroke-width="2.8" stroke-linecap="round" />
+            <g transform="translate(96, 240)"><path d="M2,14 C2,6 8,6 8,14 C8,6 14,6 14,14 C14,6 20,6 20,14" fill="#FFFDF9" stroke="#26201D" stroke-width="2.4" stroke-linejoin="round" /></g>
+            <g transform="translate(124, 240)"><path d="M2,14 C2,6 8,6 8,14 C8,6 14,6 14,14 C14,6 20,6 20,14" fill="#FFFDF9" stroke="#26201D" stroke-width="2.4" stroke-linejoin="round" /></g>
+            <g id="head">
+              <path d="M70,96 L78,50 L94,88 Z" fill="#26201D" stroke="#26201D" stroke-width="3" stroke-linejoin="round" /><path d="M78,64 L78,82" stroke="#FFFDF9" stroke-width="2" stroke-linecap="round" />
+              <path d="M170,96 L162,50 L146,88 Z" fill="#26201D" stroke="#26201D" stroke-width="3" stroke-linejoin="round" /><path d="M162,64 L162,82" stroke="#FFFDF9" stroke-width="2" stroke-linecap="round" />
+              <path d="M68,106 C60,65 180,65 172,106 C176,142 154,152 120,152 C86,152 64,142 68,106 Z" fill="#FFFDF9" stroke="#26201D" stroke-width="3.2" stroke-linejoin="round" />
+              <path d="M68,104 C62,70 178,70 172,104 C152,98 136,96 120,96 C104,96 88,98 68,104 Z" fill="#26201D" stroke="#26201D" stroke-width="2.5" stroke-linejoin="round" />
+              <g stroke="#FFFDF9" stroke-width="2.5" stroke-linecap="round"><line x1="88" y1="84" x2="152" y2="84" /><line x1="96" y1="92" x2="144" y2="92" /></g>
+              <circle cx="86" cy="122" r="7.5" fill="#F4978E" opacity="0.9" /><circle cx="154" cy="122" r="7.5" fill="#F4978E" opacity="0.9" />
+              <circle cx="102" cy="112" r="5.5" fill="#26201D" /><circle cx="103.5" cy="110.5" r="1.8" fill="#FFFDF9" />
+              <circle cx="138" cy="112" r="5.5" fill="#26201D" /><circle cx="139.5" cy="110.5" r="1.8" fill="#FFFDF9" />
+              <path d="M116,122 L124,122 L120,127 Z" fill="#26201D" /><path d="M120,127 v3 M114,133 c2,3 6,3 6,0 c0,3 4,3 6,0" fill="none" stroke="#26201D" stroke-width="2.2" stroke-linecap="round" />
+              <line x1="120" y1="139" x2="120" y2="143" stroke="#26201D" stroke-width="1.8" stroke-linecap="round" opacity="0.75" />
+              <g stroke="#26201D" stroke-width="2" stroke-linecap="round"><line x1="78" y1="116" x2="48" y2="114" /><line x1="76" y1="124" x2="44" y2="124" /><line x1="78" y1="132" x2="48" y2="135" /><line x1="162" y1="116" x2="192" y2="114" /><line x1="164" y1="124" x2="196" y2="124" /><line x1="162" y1="132" x2="192" y2="135" /></g>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <div class="badge"><span class="num">2</span> YARD (GRASS)</div>
+    </div>
+
+    <!-- 3. INDOOR (CUSHION) [Clean ficus leaves + cat seated in cushion] -->
+    <div class="scene-card">
+      <div class="scene-preview">
+        <svg viewBox="0 0 360 250" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <!-- Light Beige Wall -->
+          <rect x="0" y="0" width="360" height="175" fill="#EFEAE0" />
+
+          <!-- Wood Floorboards -->
+          <rect x="0" y="175" width="360" height="75" fill="#CDB393" stroke="#26201D" stroke-width="2.5" />
+          <line x1="0" y1="210" x2="360" y2="210" stroke="#26201D" stroke-width="1.8" />
+          <line x1="110" y1="175" x2="90" y2="250" stroke="#26201D" stroke-width="1.6" />
+          <line x1="260" y1="175" x2="240" y2="250" stroke="#26201D" stroke-width="1.6" />
+
+          <!-- Framed Wall Art on Right -->
+          <g stroke="#26201D" stroke-width="2.2">
+            <rect x="290" y="38" width="45" height="58" fill="#FDFBF7" rx="3" />
+            <path d="M290 75 Q310 65 335 72 L335 96 L290 96 Z" fill="#C5B59D" />
+            <circle cx="310" cy="55" r="5" fill="#D97706" />
+          </g>
+
+          <!-- Potted Ficus Plant on Left (Natural balanced oval leaves) -->
+          <g stroke="#26201D" stroke-width="2.4" stroke-linejoin="round">
+            <!-- Center Stem -->
+            <line x1="48" y1="42" x2="48" y2="135" stroke-width="3" />
+            <!-- Leaves with central veins -->
+            <path d="M48 42 C40 22 56 22 48 42 Z" fill="#5E7A5E" />
+            <path d="M48 68 C26 50 30 72 48 78 Z" fill="#6F8D6F" />
+            <path d="M48 68 C70 50 66 72 48 78 Z" fill="#6F8D6F" />
+            <path d="M48 95 C22 80 25 102 48 108 Z" fill="#5E7A5E" />
+            <path d="M48 95 C74 80 71 102 48 108 Z" fill="#5E7A5E" />
+            <!-- Terracotta Pot -->
+            <polygon points="35,135 61,135 56,175 40,175" fill="#A67C52" />
+            <rect x="32" y="130" width="32" height="7" rx="2" fill="#BA8D60" />
+          </g>
+
+          <!-- Round Salmon Cushion Centered -->
+          <g transform="translate(180, 212)">
+            <ellipse cx="0" cy="16" rx="55" ry="12" fill="rgba(38,32,29,0.2)" />
+            <ellipse cx="0" cy="8" rx="54" ry="18" fill="#E89D8E" stroke="#26201D" stroke-width="2.6" />
+            <ellipse cx="0" cy="4" rx="42" ry="12" fill="#F4B5A8" stroke="#26201D" stroke-width="1.8" />
+            <g stroke="#D07C6D" stroke-width="1.6" stroke-linecap="round" fill="none">
+              <path d="M-30 4 C-20 8 -10 10 0 10" /><path d="M30 4 C20 8 10 10 0 10" />
+            </g>
+          </g>
+
+          <!-- Winston sitting squarely inside Cushion -->
+          <g transform="translate(180, 212) scale(0.68) translate(-120, -254)">
+            <path d="M75,235 C52,230 34,212 32,185 C30,155 48,125 74,125 C88,125 98,136 96,150 C94,162 80,170 68,162 C58,154 58,142 62,137 C64,135 68,135 68,140" fill="none" stroke="#26201D" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" />
+            <g stroke="#FFFDF9" stroke-width="2.8" stroke-linecap="round">
+              <line x1="45" y1="216" x2="60" y2="222" /><line x1="36" y1="198" x2="51" y2="202" /><line x1="34" y1="180" x2="49" y2="182" />
+              <line x1="38" y1="162" x2="52" y2="158" /><line x1="46" y1="146" x2="58" y2="140" /><line x1="62" y1="134" x2="74" y2="128" /><line x1="82" y1="140" x2="90" y2="148" />
+            </g>
+            <path d="M82,148 C66,168 54,200 56,238 C57,252 66,254 85,254 C94,254 98,245 98,230 L98,165 Z" fill="#26201D" stroke="#26201D" stroke-width="3" />
+            <g stroke="#FFFDF9" stroke-width="2.6" stroke-linecap="round">
+              <line x1="58" y1="200" x2="94" y2="202" /><line x1="57" y1="214" x2="94" y2="216" />
+            </g>
+            <path d="M158,148 C174,168 186,200 184,238 C183,252 174,254 155,254 C146,254 142,245 142,230 L142,165 Z" fill="#26201D" stroke="#26201D" stroke-width="3" />
+            <g stroke="#FFFDF9" stroke-width="2.6" stroke-linecap="round">
+              <line x1="146" y1="202" x2="182" y2="200" /><line x1="146" y1="216" x2="183" y2="214" />
+            </g>
+            <path d="M86,142 C86,142 80,175 82,210 C84,242 90,254 120,254 C150,254 156,242 158,210 C160,175 154,142 154,142 Z" fill="#FFFDF9" stroke="#26201D" stroke-width="3.2" />
+            <g stroke="#26201D" stroke-width="1.8" stroke-linecap="round" opacity="0.75">
+              <line x1="104" y1="182" x2="104" y2="190" /><line x1="120" y1="180" x2="120" y2="188" /><line x1="136" y1="182" x2="136" y2="190" />
+            </g>
+            <line x1="108" y1="200" x2="108" y2="248" fill="none" stroke="#26201D" stroke-width="2.8" stroke-linecap="round" />
+            <line x1="132" y1="200" x2="132" y2="248" fill="none" stroke="#26201D" stroke-width="2.8" stroke-linecap="round" />
+            <g transform="translate(96, 240)"><path d="M2,14 C2,6 8,6 8,14 C8,6 14,6 14,14 C14,6 20,6 20,14" fill="#FFFDF9" stroke="#26201D" stroke-width="2.4" stroke-linejoin="round" /></g>
+            <g transform="translate(124, 240)"><path d="M2,14 C2,6 8,6 8,14 C8,6 14,6 14,14 C14,6 20,6 20,14" fill="#FFFDF9" stroke="#26201D" stroke-width="2.4" stroke-linejoin="round" /></g>
+            <g id="head">
+              <path d="M70,96 L78,50 L94,88 Z" fill="#26201D" stroke="#26201D" stroke-width="3" stroke-linejoin="round" /><path d="M78,64 L78,82" stroke="#FFFDF9" stroke-width="2" stroke-linecap="round" />
+              <path d="M170,96 L162,50 L146,88 Z" fill="#26201D" stroke="#26201D" stroke-width="3" stroke-linejoin="round" /><path d="M162,64 L162,82" stroke="#FFFDF9" stroke-width="2" stroke-linecap="round" />
+              <path d="M68,106 C60,65 180,65 172,106 C176,142 154,152 120,152 C86,152 64,142 68,106 Z" fill="#FFFDF9" stroke="#26201D" stroke-width="3.2" stroke-linejoin="round" />
+              <path d="M68,104 C62,70 178,70 172,104 C152,98 136,96 120,96 C104,96 88,98 68,104 Z" fill="#26201D" stroke="#26201D" stroke-width="2.5" stroke-linejoin="round" />
+              <g stroke="#FFFDF9" stroke-width="2.5" stroke-linecap="round"><line x1="88" y1="84" x2="152" y2="84" /><line x1="96" y1="92" x2="144" y2="92" /></g>
+              <circle cx="86" cy="122" r="7.5" fill="#F4978E" opacity="0.9" /><circle cx="154" cy="122" r="7.5" fill="#F4978E" opacity="0.9" />
+              <circle cx="102" cy="112" r="5.5" fill="#26201D" /><circle cx="103.5" cy="110.5" r="1.8" fill="#FFFDF9" />
+              <circle cx="138" cy="112" r="5.5" fill="#26201D" /><circle cx="139.5" cy="110.5" r="1.8" fill="#FFFDF9" />
+              <path d="M116,122 L124,122 L120,127 Z" fill="#26201D" /><path d="M120,127 v3 M114,133 c2,3 6,3 6,0 c0,3 4,3 6,0" fill="none" stroke="#26201D" stroke-width="2.2" stroke-linecap="round" />
+              <g stroke="#26201D" stroke-width="2" stroke-linecap="round"><line x1="78" y1="116" x2="48" y2="114" /><line x1="76" y1="124" x2="44" y2="124" /><line x1="78" y1="132" x2="48" y2="135" /><line x1="162" y1="116" x2="192" y2="114" /><line x1="164" y1="124" x2="196" y2="124" /><line x1="162" y1="132" x2="192" y2="135" /></g>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <div class="badge"><span class="num">3</span> INDOOR (CUSHION)</div>
+    </div>
+
+    <!-- 4. SCRATCHER (PLAY) [Pulled-back Camera & Comfortable Headroom] -->
+    <div class="scene-card">
+      <div class="scene-preview">
+        <svg viewBox="0 0 360 250" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <!-- Light Wall & Floor -->
+          <rect x="0" y="0" width="360" height="175" fill="#EFE9DF" />
+          <rect x="0" y="175" width="360" height="75" fill="#CEB79B" stroke="#26201D" stroke-width="2.5" />
+
+          <!-- Cat Tree Scratching Post -->
+          <g stroke="#26201D" stroke-width="2.4" stroke-linejoin="round">
+            <!-- Base on Floor -->
+            <rect x="70" y="210" width="85" height="15" rx="3" fill="#B38E65" />
+            <!-- Sisal Column -->
+            <rect x="100" y="145" width="25" height="65" fill="#C2AA7D" />
+            <g stroke="#A89065" stroke-width="1.8">
+              ${Array.from({ length: 9 }).map((_, i) => `<line x1="100" y1="${152 + i * 6.5}" x2="125" y2="${152 + i * 6.5}" />`).join('')}
+            </g>
+            <!-- Platform Perch -->
+            <rect x="62" y="136" width="100" height="10" rx="2" fill="#A8835B" />
+            <!-- Hanging Pom-pom Ball -->
+            <line x1="145" y1="146" x2="145" y2="168" stroke-width="1.8" />
+            <circle cx="145" cy="174" r="6" fill="#E89D8E" />
+          </g>
+
+          <!-- Floor Toys on Right -->
+          <g stroke="#26201D" stroke-width="2" stroke-linejoin="round">
+            <circle cx="180" cy="225" r="9" fill="#C2714F" />
+            <path d="M173 222 C180 220 185 230 187 225" fill="none" stroke="#E29578" stroke-width="1.4" />
+            <g transform="translate(210, 226)">
+              <path d="M0 0 C8 -6 20 -4 24 0 C20 4 8 6 0 0 Z" fill="#7E9671" />
+              <polygon points="24,0 30,-5 30,5" fill="#7E9671" />
+              <circle cx="5" cy="-1" r="1.2" fill="#26201D" />
+            </g>
+          </g>
+
+          <!-- Winston sitting on Top Perch with ample headroom -->
+          <g transform="translate(112, 136) scale(0.60) translate(-120, -254)">
+            <ellipse cx="120" cy="254" rx="55" ry="8" fill="rgba(38,32,29,0.2)" />
+            <path d="M75,235 C52,230 34,212 32,185 C30,155 48,125 74,125 C88,125 98,136 96,150 C94,162 80,170 68,162 C58,154 58,142 62,137 C64,135 68,135 68,140" fill="none" stroke="#26201D" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" />
+            <g stroke="#FFFDF9" stroke-width="2.8" stroke-linecap="round">
+              <line x1="45" y1="216" x2="60" y2="222" /><line x1="36" y1="198" x2="51" y2="202" /><line x1="34" y1="180" x2="49" y2="182" />
+              <line x1="38" y1="162" x2="52" y2="158" /><line x1="46" y1="146" x2="58" y2="140" /><line x1="62" y1="134" x2="74" y2="128" /><line x1="82" y1="140" x2="90" y2="148" />
+            </g>
+            <path d="M82,148 C66,168 54,200 56,238 C57,252 66,254 85,254 C94,254 98,245 98,230 L98,165 Z" fill="#26201D" stroke="#26201D" stroke-width="3" />
+            <g stroke="#FFFDF9" stroke-width="2.6" stroke-linecap="round">
+              <line x1="58" y1="200" x2="94" y2="202" /><line x1="57" y1="214" x2="94" y2="216" />
+            </g>
+            <path d="M158,148 C174,168 186,200 184,238 C183,252 174,254 155,254 C146,254 142,245 142,230 L142,165 Z" fill="#26201D" stroke="#26201D" stroke-width="3" />
+            <g stroke="#FFFDF9" stroke-width="2.6" stroke-linecap="round">
+              <line x1="146" y1="202" x2="182" y2="200" /><line x1="146" y1="216" x2="183" y2="214" />
+            </g>
+            <path d="M86,142 C86,142 80,175 82,210 C84,242 90,254 120,254 C150,254 156,242 158,210 C160,175 154,142 154,142 Z" fill="#FFFDF9" stroke="#26201D" stroke-width="3.2" />
+            <g stroke="#26201D" stroke-width="1.8" stroke-linecap="round" opacity="0.75">
+              <line x1="104" y1="182" x2="104" y2="190" /><line x1="120" y1="180" x2="120" y2="188" /><line x1="136" y1="182" x2="136" y2="190" />
+            </g>
+            <line x1="108" y1="200" x2="108" y2="248" fill="none" stroke="#26201D" stroke-width="2.8" stroke-linecap="round" />
+            <line x1="132" y1="200" x2="132" y2="248" fill="none" stroke="#26201D" stroke-width="2.8" stroke-linecap="round" />
+            <g transform="translate(96, 240)"><path d="M2,14 C2,6 8,6 8,14 C8,6 14,6 14,14 C14,6 20,6 20,14" fill="#FFFDF9" stroke="#26201D" stroke-width="2.4" stroke-linejoin="round" /></g>
+            <g transform="translate(124, 240)"><path d="M2,14 C2,6 8,6 8,14 C8,6 14,6 14,14 C14,6 20,6 20,14" fill="#FFFDF9" stroke="#26201D" stroke-width="2.4" stroke-linejoin="round" /></g>
+            <g id="head">
+              <path d="M70,96 L78,50 L94,88 Z" fill="#26201D" stroke="#26201D" stroke-width="3" stroke-linejoin="round" /><path d="M78,64 L78,82" stroke="#FFFDF9" stroke-width="2" stroke-linecap="round" />
+              <path d="M170,96 L162,50 L146,88 Z" fill="#26201D" stroke="#26201D" stroke-width="3" stroke-linejoin="round" /><path d="M162,64 L162,82" stroke="#FFFDF9" stroke-width="2" stroke-linecap="round" />
+              <path d="M68,106 C60,65 180,65 172,106 C176,142 154,152 120,152 C86,152 64,142 68,106 Z" fill="#FFFDF9" stroke="#26201D" stroke-width="3.2" stroke-linejoin="round" />
+              <path d="M68,104 C62,70 178,70 172,104 C152,98 136,96 120,96 C104,96 88,98 68,104 Z" fill="#26201D" stroke="#26201D" stroke-width="2.5" stroke-linejoin="round" />
+              <g stroke="#FFFDF9" stroke-width="2.5" stroke-linecap="round"><line x1="88" y1="84" x2="152" y2="84" /><line x1="96" y1="92" x2="144" y2="92" /></g>
+              <circle cx="86" cy="122" r="7.5" fill="#F4978E" opacity="0.9" /><circle cx="154" cy="122" r="7.5" fill="#F4978E" opacity="0.9" />
+              <circle cx="102" cy="112" r="5.5" fill="#26201D" /><circle cx="103.5" cy="110.5" r="1.8" fill="#FFFDF9" />
+              <circle cx="138" cy="112" r="5.5" fill="#26201D" /><circle cx="139.5" cy="110.5" r="1.8" fill="#FFFDF9" />
+              <path d="M116,122 L124,122 L120,127 Z" fill="#26201D" /><path d="M120,127 v3 M114,133 c2,3 6,3 6,0 c0,3 4,3 6,0" fill="none" stroke="#26201D" stroke-width="2.2" stroke-linecap="round" />
+              <g stroke="#26201D" stroke-width="2" stroke-linecap="round"><line x1="78" y1="116" x2="48" y2="114" /><line x1="76" y1="124" x2="44" y2="124" /><line x1="78" y1="132" x2="48" y2="135" /><line x1="162" y1="116" x2="192" y2="114" /><line x1="164" y1="124" x2="196" y2="124" /><line x1="162" y1="132" x2="192" y2="135" /></g>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <div class="badge"><span class="num">4</span> SCRATCHER (PLAY)</div>
+    </div>
+
+    <!-- 5. COUCH (MEAL) [Higher Frames + Cat Firmly on Seat] -->
+    <div class="scene-card">
+      <div class="scene-preview">
+        <svg viewBox="0 0 360 250" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <!-- Wall & Floor -->
+          <rect x="0" y="0" width="360" height="175" fill="#EAE3D5" />
+          <rect x="0" y="175" width="360" height="75" fill="#C9B190" stroke="#26201D" stroke-width="2.5" />
+
+          <!-- Two Wall Picture Frames (Positioned high up) -->
+          <g stroke="#26201D" stroke-width="2.2" fill="#FDFBF7">
+            <rect x="115" y="18" width="32" height="38" rx="2" />
+            <path d="M131 30 c-4 6 0 14 0 18 M131 36 c-3 -3 -6 0 -3 3 M131 40 c3 -3 6 0 3 3" stroke="#748C6B" stroke-width="1.8" fill="none" />
+            <rect x="225" y="24" width="36" height="30" rx="2" />
+            <line x1="230" y1="42" x2="252" y2="35" stroke="#B89F82" stroke-width="1.6" />
+          </g>
+
+          <!-- Sage Green Couch with Cat Sitting Firmly on Cushions -->
+          <g stroke="#26201D" stroke-width="2.8" stroke-linejoin="round">
+            <!-- Backrest -->
+            <rect x="90" y="80" width="180" height="95" rx="16" fill="#849674" />
+            <line x1="180" y1="80" x2="180" y2="175" stroke="#26201D" stroke-width="2" />
+
+            <!-- Armrests -->
+            <rect x="70" y="120" width="28" height="60" rx="10" fill="#758765" />
+            <rect x="262" y="120" width="28" height="60" rx="10" fill="#758765" />
+
+            <!-- Seat Cushion Base -->
+            <rect x="82" y="145" width="196" height="35" rx="8" fill="#7D906D" />
+            <polygon points="98,180 103,180 100,195 95,195" fill="#5C3E24" />
+            <polygon points="257,180 262,180 265,195 260,195" fill="#5C3E24" />
+
+            <!-- Yellow Throw Pillow on Left -->
+            <rect x="98" y="125" width="34" height="34" rx="8" transform="rotate(-8 115 142)" fill="#E8BA64" stroke="#26201D" stroke-width="2.2" />
+          </g>
+
+          <!-- Winston sitting firmly on top of couch seat cushion -->
+          <g transform="translate(180, 150) scale(0.62) translate(-120, -254)">
+            <ellipse cx="120" cy="254" rx="55" ry="8" fill="rgba(38,32,29,0.2)" />
+            <path d="M75,235 C52,230 34,212 32,185 C30,155 48,125 74,125 C88,125 98,136 96,150 C94,162 80,170 68,162 C58,154 58,142 62,137 C64,135 68,135 68,140" fill="none" stroke="#26201D" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" />
+            <g stroke="#FFFDF9" stroke-width="2.8" stroke-linecap="round">
+              <line x1="45" y1="216" x2="60" y2="222" /><line x1="36" y1="198" x2="51" y2="202" /><line x1="34" y1="180" x2="49" y2="182" />
+              <line x1="38" y1="162" x2="52" y2="158" /><line x1="46" y1="146" x2="58" y2="140" /><line x1="62" y1="134" x2="74" y2="128" /><line x1="82" y1="140" x2="90" y2="148" />
+            </g>
+            <path d="M82,148 C66,168 54,200 56,238 C57,252 66,254 85,254 C94,254 98,245 98,230 L98,165 Z" fill="#26201D" stroke="#26201D" stroke-width="3" />
+            <g stroke="#FFFDF9" stroke-width="2.6" stroke-linecap="round">
+              <line x1="58" y1="200" x2="94" y2="202" /><line x1="57" y1="214" x2="94" y2="216" />
+            </g>
+            <path d="M158,148 C174,168 186,200 184,238 C183,252 174,254 155,254 C146,254 142,245 142,230 L142,165 Z" fill="#26201D" stroke="#26201D" stroke-width="3" />
+            <g stroke="#FFFDF9" stroke-width="2.6" stroke-linecap="round">
+              <line x1="146" y1="202" x2="182" y2="200" /><line x1="146" y1="216" x2="183" y2="214" />
+            </g>
+            <path d="M86,142 C86,142 80,175 82,210 C84,242 90,254 120,254 C150,254 156,242 158,210 C160,175 154,142 154,142 Z" fill="#FFFDF9" stroke="#26201D" stroke-width="3.2" />
+            <g stroke="#26201D" stroke-width="1.8" stroke-linecap="round" opacity="0.75">
+              <line x1="104" y1="182" x2="104" y2="190" /><line x1="120" y1="180" x2="120" y2="188" /><line x1="136" y1="182" x2="136" y2="190" />
+            </g>
+            <line x1="108" y1="200" x2="108" y2="248" fill="none" stroke="#26201D" stroke-width="2.8" stroke-linecap="round" />
+            <line x1="132" y1="200" x2="132" y2="248" fill="none" stroke="#26201D" stroke-width="2.8" stroke-linecap="round" />
+            <g transform="translate(96, 240)"><path d="M2,14 C2,6 8,6 8,14 C8,6 14,6 14,14 C14,6 20,6 20,14" fill="#FFFDF9" stroke="#26201D" stroke-width="2.4" stroke-linejoin="round" /></g>
+            <g transform="translate(124, 240)"><path d="M2,14 C2,6 8,6 8,14 C8,6 14,6 14,14 C14,6 20,6 20,14" fill="#FFFDF9" stroke="#26201D" stroke-width="2.4" stroke-linejoin="round" /></g>
+            <g id="head">
+              <path d="M70,96 L78,50 L94,88 Z" fill="#26201D" stroke="#26201D" stroke-width="3" stroke-linejoin="round" /><path d="M78,64 L78,82" stroke="#FFFDF9" stroke-width="2" stroke-linecap="round" />
+              <path d="M170,96 L162,50 L146,88 Z" fill="#26201D" stroke="#26201D" stroke-width="3" stroke-linejoin="round" /><path d="M162,64 L162,82" stroke="#FFFDF9" stroke-width="2" stroke-linecap="round" />
+              <path d="M68,106 C60,65 180,65 172,106 C176,142 154,152 120,152 C86,152 64,142 68,106 Z" fill="#FFFDF9" stroke="#26201D" stroke-width="3.2" stroke-linejoin="round" />
+              <path d="M68,104 C62,70 178,70 172,104 C152,98 136,96 120,96 C104,96 88,98 68,104 Z" fill="#26201D" stroke="#26201D" stroke-width="2.5" stroke-linejoin="round" />
+              <g stroke="#FFFDF9" stroke-width="2.5" stroke-linecap="round"><line x1="88" y1="84" x2="152" y2="84" /><line x1="96" y1="92" x2="144" y2="92" /></g>
+              <circle cx="86" cy="122" r="7.5" fill="#F4978E" opacity="0.9" /><circle cx="154" cy="122" r="7.5" fill="#F4978E" opacity="0.9" />
+              <circle cx="102" cy="112" r="5.5" fill="#26201D" /><circle cx="103.5" cy="110.5" r="1.8" fill="#FFFDF9" />
+              <circle cx="138" cy="112" r="5.5" fill="#26201D" /><circle cx="139.5" cy="110.5" r="1.8" fill="#FFFDF9" />
+              <path d="M116,122 L124,122 L120,127 Z" fill="#26201D" /><path d="M120,127 v3 M114,133 c2,3 6,3 6,0 c0,3 4,3 6,0" fill="none" stroke="#26201D" stroke-width="2.2" stroke-linecap="round" />
+              <g stroke="#26201D" stroke-width="2" stroke-linecap="round"><line x1="78" y1="116" x2="48" y2="114" /><line x1="76" y1="124" x2="44" y2="124" /><line x1="78" y1="132" x2="48" y2="135" /><line x1="162" y1="116" x2="192" y2="114" /><line x1="164" y1="124" x2="196" y2="124" /><line x1="162" y1="132" x2="192" y2="135" /></g>
+            </g>
+          </g>
+
+          <!-- Coffee Table in Foreground -->
+          <g stroke="#26201D" stroke-width="2.6" stroke-linejoin="round">
+            <ellipse cx="180" cy="242" rx="75" ry="6" fill="rgba(38,32,29,0.2)" stroke="none" />
+            <rect x="110" y="200" width="8" height="35" fill="#6E4A28" />
+            <rect x="242" y="200" width="8" height="35" fill="#6E4A28" />
+            <rect x="100" y="190" width="160" height="15" rx="3" fill="#8F6843" />
+            <path d="M125 190 C125 178 155 178 155 190 Z" fill="#F4EEE4" />
+            <ellipse cx="140" cy="180" rx="10" ry="4" fill="#5E4228" />
+            <rect x="205" y="172" width="22" height="18" rx="2" fill="#9C7CA5" />
+            <ellipse cx="216" cy="172" rx="11" ry="3" fill="#C5ADC9" />
+            <rect x="208" y="178" width="16" height="10" fill="#FFFDF9" />
+            <path d="M213 182 l2 -3 l2 3 l2 -3 l2 3 v3 h-8 z" fill="#9C7CA5" stroke="none" />
+          </g>
+        </svg>
+      </div>
+      <div class="badge"><span class="num">5</span> COUCH (MEAL)</div>
+    </div>
+
+    <!-- 6. NIGHT (RAIN) [Focus Room: Front-facing Winston + Correct Lampshade Orientation] -->
+    <div class="scene-card">
+      <div class="scene-preview">
+        <svg viewBox="0 0 360 250" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <!-- Dark Night Sky Outside Window -->
+          <rect x="0" y="0" width="360" height="180" fill="#1C273C" />
+
+          <!-- Distant House Silhouette & Lit Window -->
+          <polygon points="265,180 265,125 320,85 360,110 360,180" fill="#141C2B" />
+          <rect x="280" y="125" width="16" height="16" fill="#F6C445" stroke="#26201D" stroke-width="1.8" />
+          <line x1="288" y1="125" x2="288" y2="141" stroke="#26201D" stroke-width="1.2" />
+          <line x1="280" y1="133" x2="296" y2="133" stroke="#26201D" stroke-width="1.2" />
+
+          <!-- Rain Streaks falling outside -->
+          <g stroke="#93C5FD" stroke-width="1.4" stroke-linecap="round" opacity="0.65">
+            <line x1="50" y1="20" x2="40" y2="60" /><line x1="75" y1="90" x2="65" y2="130" />
+            <line x1="120" y1="10" x2="110" y2="50" /><line x1="145" y1="80" x2="135" y2="120" />
+            <line x1="190" y1="25" x2="180" y2="65" /><line x1="210" y1="95" x2="200" y2="135" />
+            <line x1="250" y1="15" x2="240" y2="55" /><line x1="270" y1="70" x2="260" y2="110" />
+            <line x1="330" y1="20" x2="320" y2="60" /><line x1="345" y1="90" x2="335" y2="130" />
+          </g>
+
+          <!-- Window Frame and Center Mullion -->
+          <rect x="25" y="0" width="310" height="180" fill="none" stroke="#26201D" stroke-width="3.5" />
+          <line x1="180" y1="0" x2="180" y2="180" stroke="#26201D" stroke-width="3.5" />
+
+          <!-- Dark Indoor Room Floor / Sill -->
+          <rect x="0" y="180" width="360" height="70" fill="#544136" stroke="#26201D" stroke-width="2.6" />
+
+          <!-- Soft Warm Lamp Glow -->
+          <circle cx="86" cy="145" r="48" fill="#F59E0B" opacity="0.25" pointer-events="none" />
+          <circle cx="86" cy="145" r="28" fill="#FDE68A" opacity="0.55" pointer-events="none" />
+
+          <!-- Small Wooden Side Table on Left with CORRECT Lampshade Orientation (Wide at bottom) -->
+          <g stroke="#26201D" stroke-width="2.4" stroke-linejoin="round">
+            <!-- Table -->
+            <rect x="64" y="180" width="44" height="10" rx="2" fill="#75553D" />
+            <rect x="69" y="190" width="6" height="42" fill="#5C3E28" />
+            <rect x="97" y="190" width="6" height="42" fill="#5C3E28" />
+            <!-- Lamp Base & Stand -->
+            <path d="M79 180 C79 172 93 172 93 180 Z" fill="#8A6A4E" />
+            <line x1="86" y1="172" x2="86" y2="152" stroke-width="3" />
+            <!-- Normal Bedside Lampshade: Wider at Bottom, Narrower at Top -->
+            <polygon points="68,155 104,155 96,128 76,128" fill="#F0C056" />
+          </g>
+
+          <!-- Deep Plum Round Floor Cushion Centered -->
+          <g transform="translate(225, 210)">
+            <ellipse cx="0" cy="18" rx="55" ry="12" fill="rgba(20,15,12,0.35)" />
+            <ellipse cx="0" cy="8" rx="52" ry="18" fill="#5B435A" stroke="#26201D" stroke-width="2.6" />
+            <ellipse cx="0" cy="4" rx="42" ry="12" fill="#6C536B" stroke="#26201D" stroke-width="1.8" />
+          </g>
+
+          <!-- Winston SITTING FRONT-FACING ON CUSHION LOOKING AT US -->
+          <g transform="translate(225, 206) scale(0.66) translate(-120, -254)">
+            <ellipse cx="120" cy="254" rx="65" ry="8" fill="rgba(38,32,29,0.22)" />
+            <path d="M75,235 C52,230 34,212 32,185 C30,155 48,125 74,125 C88,125 98,136 96,150 C94,162 80,170 68,162 C58,154 58,142 62,137 C64,135 68,135 68,140" fill="none" stroke="#26201D" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" />
+            <g stroke="#FFFDF9" stroke-width="2.8" stroke-linecap="round">
+              <line x1="45" y1="216" x2="60" y2="222" /><line x1="36" y1="198" x2="51" y2="202" /><line x1="34" y1="180" x2="49" y2="182" />
+              <line x1="38" y1="162" x2="52" y2="158" /><line x1="46" y1="146" x2="58" y2="140" /><line x1="62" y1="134" x2="74" y2="128" /><line x1="82" y1="140" x2="90" y2="148" />
+            </g>
+            <path d="M82,148 C66,168 54,200 56,238 C57,252 66,254 85,254 C94,254 98,245 98,230 L98,165 Z" fill="#26201D" stroke="#26201D" stroke-width="3" />
+            <g stroke="#FFFDF9" stroke-width="2.6" stroke-linecap="round">
+              <line x1="58" y1="200" x2="94" y2="202" /><line x1="57" y1="214" x2="94" y2="216" />
+            </g>
+            <path d="M158,148 C174,168 186,200 184,238 C183,252 174,254 155,254 C146,254 142,245 142,230 L142,165 Z" fill="#26201D" stroke="#26201D" stroke-width="3" />
+            <g stroke="#FFFDF9" stroke-width="2.6" stroke-linecap="round">
+              <line x1="146" y1="202" x2="182" y2="200" /><line x1="146" y1="216" x2="183" y2="214" />
+            </g>
+            <path d="M86,142 C86,142 80,175 82,210 C84,242 90,254 120,254 C150,254 156,242 158,210 C160,175 154,142 154,142 Z" fill="#FFFDF9" stroke="#26201D" stroke-width="3.2" />
+            <g stroke="#26201D" stroke-width="1.8" stroke-linecap="round" opacity="0.75">
+              <line x1="104" y1="182" x2="104" y2="190" /><line x1="120" y1="180" x2="120" y2="188" /><line x1="136" y1="182" x2="136" y2="190" />
+            </g>
+            <line x1="108" y1="200" x2="108" y2="248" fill="none" stroke="#26201D" stroke-width="2.8" stroke-linecap="round" />
+            <line x1="132" y1="200" x2="132" y2="248" fill="none" stroke="#26201D" stroke-width="2.8" stroke-linecap="round" />
+            <g transform="translate(96, 240)"><path d="M2,14 C2,6 8,6 8,14 C8,6 14,6 14,14 C14,6 20,6 20,14" fill="#FFFDF9" stroke="#26201D" stroke-width="2.4" stroke-linejoin="round" /></g>
+            <g transform="translate(124, 240)"><path d="M2,14 C2,6 8,6 8,14 C8,6 14,6 14,14 C14,6 20,6 20,14" fill="#FFFDF9" stroke="#26201D" stroke-width="2.4" stroke-linejoin="round" /></g>
+            <g id="head">
+              <path d="M70,96 L78,50 L94,88 Z" fill="#26201D" stroke="#26201D" stroke-width="3" stroke-linejoin="round" /><path d="M78,64 L78,82" stroke="#FFFDF9" stroke-width="2" stroke-linecap="round" />
+              <path d="M170,96 L162,50 L146,88 Z" fill="#26201D" stroke="#26201D" stroke-width="3" stroke-linejoin="round" /><path d="M162,64 L162,82" stroke="#FFFDF9" stroke-width="2" stroke-linecap="round" />
+              <path d="M68,106 C60,65 180,65 172,106 C176,142 154,152 120,152 C86,152 64,142 68,106 Z" fill="#FFFDF9" stroke="#26201D" stroke-width="3.2" stroke-linejoin="round" />
+              <path d="M68,104 C62,70 178,70 172,104 C152,98 136,96 120,96 C104,96 88,98 68,104 Z" fill="#26201D" stroke="#26201D" stroke-width="2.5" stroke-linejoin="round" />
+              <g stroke="#FFFDF9" stroke-width="2.5" stroke-linecap="round"><line x1="88" y1="84" x2="152" y2="84" /><line x1="96" y1="92" x2="144" y2="92" /></g>
+              <circle cx="86" cy="122" r="7.5" fill="#F4978E" opacity="0.9" /><circle cx="154" cy="122" r="7.5" fill="#F4978E" opacity="0.9" />
+              <circle cx="102" cy="112" r="5.5" fill="#26201D" /><circle cx="103.5" cy="110.5" r="1.8" fill="#FFFDF9" />
+              <circle cx="138" cy="112" r="5.5" fill="#26201D" /><circle cx="139.5" cy="110.5" r="1.8" fill="#FFFDF9" />
+              <path d="M116,122 L124,122 L120,127 Z" fill="#26201D" /><path d="M120,127 v3 M114,133 c2,3 6,3 6,0 c0,3 4,3 6,0" fill="none" stroke="#26201D" stroke-width="2.2" stroke-linecap="round" />
+              <line x1="120" y1="139" x2="120" y2="143" stroke="#26201D" stroke-width="1.8" stroke-linecap="round" opacity="0.75" />
+              <g stroke="#26201D" stroke-width="2" stroke-linecap="round"><line x1="78" y1="116" x2="48" y2="114" /><line x1="76" y1="124" x2="44" y2="124" /><line x1="78" y1="132" x2="48" y2="135" /><line x1="162" y1="116" x2="192" y2="114" /><line x1="164" y1="124" x2="196" y2="124" /><line x1="162" y1="132" x2="192" y2="135" /></g>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <div class="badge"><span class="num">6</span> NIGHT (RAIN) — FOCUS ROOM</div>
+    </div>
+  </div>
+</body>
+</html>

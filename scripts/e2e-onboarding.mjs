@@ -109,13 +109,9 @@ try {
   assert(onboardingMs < ONBOARDING_LIMIT_MS, `onboarding \u2192 create in ${onboardingMs}ms (< ${ONBOARDING_LIMIT_MS}ms)`);
 
   await page.getByPlaceholder('Finish YouTube video').fill('Onboarding E2E commitment');
-  await page.keyboard.press('Enter');
   await page.getByRole('button', { name: 'Tomorrow' }).click();
-  await page.getByRole('button', { name: 'Next', exact: true }).click();
-  await page.getByRole('button', { name: 'Next', exact: true }).click();
-  await page.getByRole('button', { name: 'Next', exact: true }).click();
-  await page.getByRole('button', { name: 'Review' }).click();
-  await page.getByRole('button', { name: 'Make It Official' }).click();
+  await page.getByRole('button', { name: /Seal the Pact/ }).click();
+  await page.getByRole('button', { name: /Yes, I promise/ }).click();
 
   await page.waitForURL('**/commitment/**', { timeout: 10000 });
   await page.getByRole('button', { name: 'I DID IT' }).click();

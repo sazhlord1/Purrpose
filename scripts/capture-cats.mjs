@@ -46,7 +46,7 @@ try {
   const cells = page.locator('[data-cat-cell]');
   await cells.first().waitFor({ timeout: 15000 });
   const count = await cells.count();
-  if (count !== 40) throw new Error(`expected 40 cells, found ${count}`);
+  if (count !== 64) throw new Error(`expected 64 cells, found ${count}`);
 
   for (let i = 0; i < count; i++) {
     const cell = cells.nth(i);

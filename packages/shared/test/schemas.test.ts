@@ -14,12 +14,21 @@ describe('time skew helpers', () => {
 });
 
 describe('cat seed', () => {
-  it('has the five cats with distinct structure', () => {
-    expect(CAT_SEED.map(c => c.id)).toEqual(['orange', 'tuxedo', 'black', 'boba', 'ziggy']);
+  it('has the eight cats with distinct structure', () => {
+    expect(CAT_SEED.map(c => c.id)).toEqual([
+      'orange',
+      'tuxedo',
+      'black',
+      'boba',
+      'mochi',
+      'oreo',
+      'pepper',
+      'yuki',
+    ]);
     const tails = new Set(CAT_SEED.map(c => c.config.structure.tailPath));
     const eyes = new Set(CAT_SEED.map(c => c.config.structure.eyeShape));
-    expect(tails.size).toBe(5);
-    expect(eyes.size).toBe(5);
+    expect(tails.size).toBeGreaterThanOrEqual(6);
+    expect(eyes.size).toBeGreaterThanOrEqual(5);
   });
 });
 

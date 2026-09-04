@@ -57,29 +57,26 @@ try {
   await page.waitForURL('**/new');
 
   await page.getByPlaceholder('Finish YouTube video').fill('E2E timed commitment');
-  await page.keyboard.press('Enter');
 
   await page.getByRole('button', { name: 'Tomorrow' }).click();
-  await page.getByRole('button', { name: 'Next', exact: true }).click();
 
+  // Test overstake on unified Task Card
   await page.getByRole('button', { name: /Vet Care/ }).click();
-  await page.getByRole('button', { name: 'Next', exact: true }).click();
-
   await page.getByRole('button', { name: '10', exact: true }).first().click();
-  const nextBtn = page.getByRole('button', { name: 'Next', exact: true });
-  if (await nextBtn.isEnabled()) throw new Error('overstake should block Next');
+
+  const sealBtn = page.getByRole('button', { name: /Seal the Pact/ });
+  if (await sealBtn.isEnabled()) throw new Error('overstake should block Seal the Pact');
   const quip = await page.locator('[role="alert"]').textContent();
   if (!quip || quip.length < 5) throw new Error('expected overstake quip');
   console.log(`overstake quip shown: "${quip.trim()}"`);
 
-  await page.getByRole('button', { name: 'Back' }).click();
+  // Switch back to valid amount
   await page.getByRole('button', { name: /Cat Meals/ }).click();
-  await page.getByRole('button', { name: 'Next', exact: true }).click();
   await page.getByRole('button', { name: '5', exact: true }).first().click();
-  await page.getByRole('button', { name: 'Next', exact: true }).click();
 
-  await page.getByRole('button', { name: 'Review' }).click();
-  await page.getByRole('button', { name: 'Make It Official' }).click();
+  // Seal the pact & confirm
+  await page.getByRole('button', { name: /Seal the Pact/ }).click();
+  await page.getByRole('button', { name: /Yes, I promise/ }).click();
 
   await page.waitForURL('**/commitment/**', { timeout: 10000 });
   await page.getByRole('button', { name: 'I DID IT' }).waitFor({ timeout: 10000 });
