@@ -1,5 +1,6 @@
 import type { CatId, ConsequenceType } from '@purrpose/shared';
 import {
+  CAT_SEED,
   buildTimeView,
   canStake,
   computePhase,
@@ -59,8 +60,30 @@ export function makeCommitmentEngine(prisma: PrismaClient, clock: ClockApi) {
     userId: string,
     input: CreateCommitmentInput,
   ): Promise<Commitment> {
-    const cat = await prisma.cat.findUnique({ where: { id: input.catId } });
-    if (!cat) throw new AppError('NOT_FOUND', { catId: input.catId }, 'Unknown cat');
+    let cat = await prisma.cat.findUnique({ where: { id: input.catId } });
+    if (!cat) {
+      const seedCat = CAT_SEED.find(c => c.id === input.catId);
+      if (seedCat) {
+        cat = await prisma.cat.upsert({
+          where: { id: seedCat.id },
+          update: {
+            name: seedCat.name,
+            type: seedCat.type,
+            personality: seedCat.personality,
+            config: seedCat.config as any,
+          },
+          create: {
+            id: seedCat.id,
+            name: seedCat.name,
+            type: seedCat.type,
+            personality: seedCat.personality,
+            config: seedCat.config as any,
+          },
+        });
+      } else {
+        throw new AppError('NOT_FOUND', { catId: input.catId }, 'Unknown cat');
+      }
+    }
 
     return prisma.$transaction(async tx => {
       const rows = await tx.$queryRaw<{ amount: number }[]>`

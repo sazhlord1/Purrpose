@@ -228,7 +228,7 @@ export function NewCommitment() {
               role="radiogroup"
               aria-label="Choose your opponent"
             >
-              {(cats.data?.cats ?? CAT_SEED).map(cat => {
+              {CAT_SEED.map(cat => {
                 const isSelected = catId === cat.id;
                 return (
                   <button
