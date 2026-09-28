@@ -1,0 +1,10 @@
+// Cloudflare Workers (static assets) config for the Purrpose web app.
+// Build: pnpm --filter @purrpose/web build   Deploy: npx wrangler deploy
+{
+  "name": "purrpose-web",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./apps/web/dist",
+    "not_found_handling": "single-page-application"
+  }
+}
