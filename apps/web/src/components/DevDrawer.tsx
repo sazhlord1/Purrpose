@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { API_BASE_URL } from '../lib/api.js';
 
 const TRAVELS: Array<[string, string]> = [
   ['+10s', '0.1667'],
@@ -12,12 +13,12 @@ export function DevDrawer() {
   if (!import.meta.env.DEV) return null;
 
   const travel = async (minutes: string) => {
-    await fetch(`/api/v1/dev/time-travel?addMinutes=${minutes}`);
+    await fetch(`${API_BASE_URL}/api/v1/dev/time-travel?addMinutes=${minutes}`);
     location.reload();
   };
 
   const reset = async () => {
-    await fetch('/api/v1/dev/reset-demo', { method: 'POST' });
+    await fetch(`${API_BASE_URL}/api/v1/dev/reset-demo`, { method: 'POST' });
     localStorage.clear();
     location.href = '/';
   };

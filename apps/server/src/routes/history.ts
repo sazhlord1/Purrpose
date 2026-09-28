@@ -1,10 +1,11 @@
+import { userIdOf } from '../auth.js';
 import type { FastifyInstance } from 'fastify';
 import { CONSEQUENCE_TYPES, historyResponseSchema, type ConsequenceType } from '@purrpose/shared';
 import { getPrisma } from '../db.js';
 
 export function registerHistoryRoutes(app: FastifyInstance): void {
   app.get('/api/v1/history', async request => {
-    const userId = request.userId as string;
+    const userId = userIdOf(request);
     const prisma = getPrisma();
 
     const [completed, failed, donated, entries] = await Promise.all([

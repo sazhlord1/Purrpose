@@ -8,6 +8,9 @@ export default defineConfig({
         process.env.DATABASE_URL_TEST ??
         'postgresql://purrpose:purrpose@localhost:5433/purrpose?schema=public',
       NODE_ENV: 'test',
+      PAYMENTS_MODE: 'sandbox',
+      VAPID_PUBLIC_KEY: '',
+      VAPID_PRIVATE_KEY: '',
     },
     pool: 'forks',
     fileParallelism: false,

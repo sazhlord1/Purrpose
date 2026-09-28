@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CAT_IDS, COMMITMENT_STATUSES, CONSEQUENCE_TYPES, TRANSACTION_TYPES } from './enums.js';
+import { itemIdSchema, loadoutSchema } from './items.js';
 
 export const consequenceTypeSchema = z.enum(CONSEQUENCE_TYPES);
 export const catIdSchema = z.enum(CAT_IDS);
@@ -64,9 +65,22 @@ export const commitmentDtoSchema = z.object({
 
 export type CommitmentDto = z.infer<typeof commitmentDtoSchema>;
 
+export const userRoleSchema = z.enum(['USER', 'ADMIN']);
+export type UserRole = z.infer<typeof userRoleSchema>;
+
 export const meResponseSchema = z.object({
-  user: z.object({ id: z.string(), createdAtISO: z.string() }),
+  user: z.object({
+    id: z.string(),
+    createdAtISO: z.string(),
+    /** Null while the user is still a guest (anonymous session). */
+    email: z.string().nullable(),
+    role: userRoleSchema,
+  }),
   balances: z.array(balanceViewSchema),
+  purr: z.number().int(),
+  unlockedCatIds: z.array(catIdSchema),
+  ownedItemIds: z.array(itemIdSchema),
+  loadout: loadoutSchema,
   serverTime: z.number(),
 });
 
@@ -94,3 +108,60 @@ export const historyResponseSchema = z.object({
 });
 
 export type HistoryResponse = z.infer<typeof historyResponseSchema>;
+
+// ─── Accounts ────────────────────────────────────────────────────────────────
+const emailSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .max(254)
+  .email();
+
+export const credentialsSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(8, 'Password must be at least 8 characters').max(128),
+});
+export type Credentials = z.infer<typeof credentialsSchema>;
+
+export const authResponseSchema = z.object({
+  token: z.string(),
+  userId: z.string(),
+  email: z.string(),
+  role: userRoleSchema,
+});
+export type AuthResponse = z.infer<typeof authResponseSchema>;
+
+// ─── Shop / PURR ─────────────────────────────────────────────────────────────
+export const unlockCatSchema = z.object({ catId: catIdSchema });
+export const checkoutSchema = z.object({ packId: z.string().min(1).max(40) });
+export const adminGrantSchema = z.object({
+  email: emailSchema,
+  amount: z.number().int().min(1).max(100_000),
+});
+
+// ─── Focus ───────────────────────────────────────────────────────────────────
+export const MAX_FOCUS_SESSION_SEC = 12 * 3600;
+export const focusSessionSchema = z.object({
+  commitmentId: z.string().min(1).max(40).optional(),
+  catId: catIdSchema,
+  durationSec: z.number().int().min(1).max(MAX_FOCUS_SESSION_SEC),
+  startedAtISO: z.string().refine(v => !Number.isNaN(Date.parse(v)), 'startedAtISO must be a date'),
+});
+export type FocusSessionInput = z.infer<typeof focusSessionSchema>;
+
+export const focusSummarySchema = z.object({
+  totalSec: z.number().int(),
+  todaySec: z.number().int(),
+  byCommitment: z.record(z.string(), z.number().int()),
+});
+export type FocusSummary = z.infer<typeof focusSummarySchema>;
+
+// ─── Web push ────────────────────────────────────────────────────────────────
+export const pushSubscribeSchema = z.object({
+  endpoint: z.string().url().max(2048).startsWith('https://'),
+  keys: z.object({
+    p256dh: z.string().min(16).max(256),
+    auth: z.string().min(8).max(64),
+  }),
+});
+export const pushUnsubscribeSchema = z.object({ endpoint: z.string().max(2048) });

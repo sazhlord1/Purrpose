@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { clock } from '../src/clock.js';
 import { checkDatabase, getPrisma } from '../src/db.js';
+import { wipeDatabase } from './helpers.js';
 import type { ConsequenceType } from '@purrpose/shared';
 
 const prisma = getPrisma();
@@ -12,7 +13,7 @@ let app: FastifyInstance;
 
 type InjectOptions = {
   token?: string;
-  body?: unknown;
+  body?: object;
 };
 
 async function api(method: 'GET' | 'POST' | 'DELETE', url: string, opts: InjectOptions = {}) {
@@ -20,37 +21,12 @@ async function api(method: 'GET' | 'POST' | 'DELETE', url: string, opts: InjectO
     method,
     url,
     headers: opts.token ? { authorization: `Bearer ${opts.token}` } : {},
-    ...(opts.body !== undefined ? { payload: opts.body } : {}),
+    payload: opts.body,
   });
 }
 
-async function seedCats() {
-  const cats = [
-    { id: 'orange', name: 'Miso', type: 'TABBY', personality: 'chaotic' },
-    { id: 'tuxedo', name: 'Winston', type: 'TUXEDO', personality: 'judgmental' },
-    { id: 'black', name: 'Nyx', type: 'MIDNIGHT', personality: 'mischievous' },
-    { id: 'boba', name: 'Boba', type: 'CALICO', personality: 'sleepy' },
-    { id: 'mochi', name: 'Mochi', type: 'BICOLOR', personality: 'gentle' },
-    { id: 'oreo', name: 'Oreo', type: 'MASKED', personality: 'observant' },
-    { id: 'pepper', name: 'Pepper', type: 'POLKADOT', personality: 'bubbly' },
-    { id: 'yuki', name: 'Yuki', type: 'SKETCH', personality: 'expressive' },
-  ];
-  for (const c of cats) {
-    await prisma.cat.upsert({
-      where: { id: c.id },
-      update: {},
-      create: { id: c.id, name: c.name, type: c.type, personality: c.personality, config: {} },
-    });
-  }
-}
-
 async function wipe() {
-  await prisma.creditTransaction.deleteMany({});
-  await prisma.commitment.deleteMany({});
-  await prisma.creditBalance.deleteMany({});
-  await prisma.appEvent.deleteMany({});
-  await prisma.session.deleteMany({});
-  await prisma.user.deleteMany({});
+  await wipeDatabase(prisma);
 }
 
 async function newSession(): Promise<{ token: string; userId: string }> {
@@ -77,7 +53,6 @@ describe.skipIf(!dbReady)('Purrpose API', () => {
   beforeEach(async () => {
     clock.reset();
     await wipe();
-    await seedCats();
   });
 
   it('exposes a public health endpoint', async () => {
@@ -104,6 +79,7 @@ describe.skipIf(!dbReady)('Purrpose API', () => {
     }
     const cats = (await api('GET', '/api/v1/cats')).json();
     expect(cats.cats.map((c: { id: string }) => c.id)).toEqual(['black', 'boba', 'mochi', 'orange', 'oreo', 'pepper', 'tuxedo', 'yuki']);
+    expect([...cats.freeCatIds].sort()).toEqual(['black', 'orange', 'tuxedo']);
   });
 
   it('creates commitments and enforces availability atomically', async () => {

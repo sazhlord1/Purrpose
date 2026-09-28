@@ -1,36 +1,56 @@
 import type { FastifyRequest } from 'fastify';
+import { bearerToken } from './auth.js';
 import { AppError } from './errors.js';
+import { hashToken } from './security.js';
 
-const buckets = new Map<string, number[]>();
+/**
+ * Sliding-window, in-memory rate limiter. Fine for a single server instance
+ * (Render web service). If you scale to several instances, move the buckets to
+ * Redis/Postgres so the limit is shared.
+ */
+export function createLimiter(limit: number, windowMs: number) {
+  const buckets = new Map<string, number[]>();
+
+  function hit(key: string, message: string): void {
+    const now = Date.now();
+    const recent = (buckets.get(key) ?? []).filter(t => now - t < windowMs);
+    if (recent.length >= limit) {
+      throw new AppError('RATE_LIMITED', { retryAfterMs: windowMs - (now - recent[0]) }, message);
+    }
+    recent.push(now);
+    buckets.set(key, recent);
+    if (buckets.size > 10_000) {
+      for (const [k, stamps] of buckets) {
+        if (stamps.every(t => now - t >= windowMs)) buckets.delete(k);
+      }
+    }
+  }
+
+  return { hit, reset: () => buckets.clear() };
+}
 
 export const RATE_LIMIT = 30;
 export const RATE_WINDOW_MS = 60_000;
 
-function tokenOf(request: FastifyRequest): string {
-  const header = request.headers.authorization;
-  return header?.startsWith('Bearer ') ? header.slice(7).trim() : 'anon';
-}
+const mutationLimiter = createLimiter(RATE_LIMIT, RATE_WINDOW_MS);
+/** Login / register / admin login: 10 attempts per 15 minutes per IP+email. */
+export const credentialLimiter = createLimiter(10, 15 * 60_000);
+/** Anonymous session creation: 30 per hour per IP. */
+export const sessionLimiter = createLimiter(30, 60 * 60_000);
 
 export async function rateLimitMutations(request: FastifyRequest): Promise<void> {
   if (request.method === 'GET' || request.method === 'HEAD' || request.method === 'OPTIONS') {
     return;
   }
-  const token = tokenOf(request);
-  const now = Date.now();
-  const window = (buckets.get(token) ?? []).filter(t => now - t < RATE_WINDOW_MS);
-  if (window.length >= RATE_LIMIT) {
-    const oldest = window[0];
-    throw new AppError(
-      'RATE_LIMITED',
-      { retryAfterMs: RATE_WINDOW_MS - (now - oldest) },
-      'Too many actions. Even cats need a breather.',
-    );
-  }
-  window.push(now);
-  buckets.set(token, window);
-  if (buckets.size > 5_000) {
-    for (const [key, stamps] of buckets) {
-      if (stamps.every(t => now - t >= RATE_WINDOW_MS)) buckets.delete(key);
-    }
-  }
+  const token = bearerToken(request);
+  mutationLimiter.hit(
+    token ? `t:${hashToken(token)}` : `ip:${request.ip}`,
+    'Too many actions. Even cats need a breather.',
+  );
+}
+
+export function resetRateLimits(): void {
+  mutationLimiter.reset();
+  credentialLimiter.reset();
+  sessionLimiter.reset();
 }

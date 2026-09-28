@@ -1,6 +1,18 @@
 import type { CatId } from '@purrpose/shared';
 import { DEFAULT_EXPRESSION, type CatState, type Expression } from './poses.js';
 import { catName, resolveCatConfig } from './config.js';
+import {
+  ACTION_EXPRESSION,
+  ExprEyes,
+  FACE_KIT_CSS,
+  FACE_SPECS,
+  FaceOverlays,
+  PAW_ACTIONS,
+  PawOverlay,
+  Wearables,
+  type CatAction,
+  type CatWear,
+} from './FaceKit.js';
 
 export interface CatProps {
   catId: CatId;
@@ -11,7 +23,16 @@ export interface CatProps {
   className?: string;
   title?: string;
   headTilt?: -1 | 0 | 1;
-  armUp?: boolean;
+  /** What the cat is doing right now (lick paw, yawn, swipe…) — see FaceKit. */
+  action?: CatAction | null;
+  /** Collar / bow tie from the shop. */
+  wear?: CatWear;
+  /** A shop toy is on the floor, so the bat action doesn't draw its own yarn. */
+  noYarn?: boolean;
+  /** Rotating 0–3 variant of the state's face details (see FaceOverlays). */
+  mood?: number;
+  /** Eyes to use when neither `expression` nor the current action decides them. */
+  idleExpression?: Expression;
 }
 
 export function Cat({
@@ -23,24 +44,20 @@ export function Cat({
   className,
   title,
   headTilt = 0,
-  armUp = false,
+  action = null,
+  wear,
+  noYarn = false,
+  mood = 0,
+  idleExpression,
 }: CatProps) {
-  // Safe config resolution with fallback
-  let config;
-  try {
-    config = resolveCatConfig(catId);
-  } catch {
-    config = resolveCatConfig('orange');
-  }
-
-  const expr = expression ?? DEFAULT_EXPRESSION[state];
+  const expr =
+    expression ?? (action ? ACTION_EXPRESSION[action] : undefined) ?? idleExpression ?? DEFAULT_EXPRESSION[state];
+  const spec = FACE_SPECS[catId] ?? FACE_SPECS.orange;
   const isSleeping = state === 'SLEEPING' || expr === 'sleep';
-  const isHappy = state === 'SATISFIED' || state === 'SUCCESS' || expr === 'happyShut';
-  const isSad = state === 'FAILURE' || expr === 'sad';
+  const isHappy = expr === 'happyShut';
+  const isSad = expr === 'sad';
 
   const tiltClass = headTilt === -1 ? 'lc-tilt-up' : headTilt === 1 ? 'lc-tilt-down' : '';
-  const headTransform = headTilt === -1 ? 'rotate(-6 120 145)' : headTilt === 1 ? 'rotate(6 120 145)' : undefined;
-  const armTransform = armUp ? 'translate(0, -8)' : undefined;
 
   return (
     <svg
@@ -52,7 +69,7 @@ export function Cat({
       data-cat={catId}
       data-state={state}
       data-expression={expr}
-      className={`pcat-root ${className ?? ''}`.trim()}
+      className={`pcat-root pcat-st-${state} ${action ? `pcat-act-${action}` : ''} ${action && PAW_ACTIONS.has(action) ? 'pcat-paw-on' : ''} ${className ?? ''}`.replace(/\s+/g, ' ').trim()}
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
@@ -117,6 +134,8 @@ export function Cat({
           .winston-tail { transform-origin: 75px 235px; animation: winstonTail ${isSleeping ? '6.0s' : '4.2s'} cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite; }
           .winston-ear-l { transform-origin: 78px 86px; animation: winstonEarL 5.5s cubic-bezier(0.34, 1.56, 0.64, 1) infinite; }
 
+          ${FACE_KIT_CSS}
+
           @media (prefers-reduced-motion: reduce) {
             .mochi-body, .mochi-eyes, .mochi-tail, .mochi-ear-l,
             .miso-body, .miso-tail, .miso-ear-r,
@@ -139,20 +158,20 @@ export function Cat({
         <g id="cat-mochi">
           {showGround && <ellipse cx="120" cy="254" rx="65" ry="8" fill="rgba(38,32,29,0.18)" />}
 
-          {/* Tail: Rooted seamlessly into left flank at X:52, Y:225 */}
-          <g className="mochi-tail" data-part="tail" data-tail="hookLeft">
-            <path
-              d="M52,225 C36,220 22,204 22,185 C22,168 34,166 38,174 C42,182 34,196 46,204 C50,207 54,208 58,210"
-              fill="none"
-              stroke="#26201D"
-              strokeWidth="12"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </g>
-
           {/* Body Group */}
-          <g className="mochi-body" data-part="body" transform={armTransform}>
+          <g className="mochi-body pcat-body" data-part="body">
+            {/* Tail sits inside the body group: it follows breathing/posture and always stays behind the body. */}
+            {/* Tail: Rooted seamlessly into left flank at X:52, Y:225 */}
+            <g className="mochi-tail pcat-tail" data-part="tail" data-tail="hookLeft">
+              <path
+                d="M52,225 C36,220 22,204 22,185 C22,168 34,166 38,174 C42,182 34,196 46,204 C50,207 54,208 58,210"
+                fill="none"
+                stroke="#26201D"
+                strokeWidth="12"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </g>
             {/* White Pear Body */}
             <path
               d="M78,130 C64,155 50,185 52,220 C54,245 70,252 120,252 C170,252 186,245 188,220 C190,185 176,155 162,130 Z"
@@ -174,15 +193,16 @@ export function Cat({
 
             {/* Front Legs "JJ" style */}
             <path d="M106,185 L106,238 C106,244 98,244 98,238" fill="none" stroke="#26201D" strokeWidth="3" strokeLinecap="round" />
-            <path d="M134,185 L134,238 C134,244 126,244 126,238" fill="none" stroke="#26201D" strokeWidth="3" strokeLinecap="round" />
+            <path className="pcat-leg-r" d="M134,185 L134,238 C134,244 126,244 126,238" fill="none" stroke="#26201D" strokeWidth="3" strokeLinecap="round" />
             <circle cx="106" cy="242" r="1.5" fill="#26201D" />
             <circle cx="134" cy="242" r="1.5" fill="#26201D" />
+            <Wearables wear={wear} spec={spec} />
           </g>
 
           {/* Head Group */}
-          <g id="head" data-part="head" className={tiltClass} transform={headTransform}>
+          <g id="head" data-part="head" className={`pcat-head ${tiltClass}`}>
             {/* Left Black Ear with white comb lines */}
-            <g className="mochi-ear-l" data-part="ears" data-ears="blackLeftComb">
+            <g className="mochi-ear-l pcat-ears" data-part="ears" data-ears="blackLeftComb">
               <path d="M60,90 L66,46 L86,82 Z" fill="#26201D" stroke="#26201D" strokeWidth="3" strokeLinejoin="round" />
               <path d="M68,58 L68,76" stroke="#FFFDF9" strokeWidth="2" strokeLinecap="round" />
               <path d="M74,64 L74,77" stroke="#FFFDF9" strokeWidth="2" strokeLinecap="round" />
@@ -211,7 +231,7 @@ export function Cat({
             </g>
 
             {/* Eyes */}
-            <g className="mochi-eyes" data-part="eyes" data-eyes="minimalDot">
+            <g className="mochi-eyes pcat-eyes" data-part="eyes" data-eyes="minimalDot">
               {isSleeping ? (
                 <>
                   <path d="M92 112 C96 108 104 108 108 112" fill="none" stroke="#26201D" strokeWidth="2.8" strokeLinecap="round" />
@@ -227,6 +247,8 @@ export function Cat({
                   <path d="M92 110 C96 114 104 114 108 110" fill="none" stroke="#26201D" strokeWidth="2.8" strokeLinecap="round" />
                   <path d="M132 110 C136 114 144 114 148 110" fill="none" stroke="#26201D" strokeWidth="2.8" strokeLinecap="round" />
                 </>
+              ) : expr === 'hopeful' || expr === 'stare' || expr === 'bored' ? (
+                <ExprEyes kind={expr} spec={spec} />
               ) : (
                 <>
                   <circle cx="98" cy="112" r="5.2" fill="#26201D" />
@@ -246,7 +268,9 @@ export function Cat({
               <line x1="160" y1="127" x2="192" y2="128" />
               <line x1="158" y1="134" x2="186" y2="138" />
             </g>
+            <FaceOverlays state={state} action={action} spec={spec} mood={mood} />
           </g>
+          <PawOverlay action={action} spec={spec} noYarn={noYarn} />
         </g>
       )}
 
@@ -257,34 +281,35 @@ export function Cat({
         <g id="cat-miso">
           {showGround && <ellipse cx="120" cy="254" rx="65" ry="8" fill="rgba(38,32,29,0.18)" />}
 
-          {/* Spiral Tail: Rooted seamlessly into right flank at X: 172, Y: 235 */}
-          <g className="miso-tail" data-part="tail" data-tail="spiralCurl">
-            <path
-              d="M172,235 C198,234 212,216 212,188 C212,158 198,142 184,146 C174,149 170,160 174,168 C178,176 190,172 189,164 C188,158 182,159 182,162"
-              fill="none"
-              stroke="#26201D"
-              strokeWidth="14"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M172,235 C198,234 212,216 212,188 C212,158 198,142 184,146 C174,149 170,160 174,168 C178,176 190,172 189,164 C188,158 182,159 182,162"
-              fill="none"
-              stroke="#EEB038"
-              strokeWidth="8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <g stroke="#26201D" strokeWidth="2" strokeLinecap="round">
-              <line x1="202" y1="220" x2="212" y2="218" />
-              <line x1="203" y1="200" x2="213" y2="196" />
-              <line x1="199" y1="178" x2="210" y2="172" />
-              <line x1="186" y1="160" x2="195" y2="154" />
-            </g>
-          </g>
 
           {/* Golden Body */}
-          <g className="miso-body" data-part="body" transform={armTransform}>
+          <g className="miso-body pcat-body" data-part="body">
+            {/* Tail sits inside the body group: it follows breathing/posture and always stays behind the body. */}
+            {/* Spiral Tail: Rooted seamlessly into right flank at X: 172, Y: 235 */}
+            <g className="miso-tail pcat-tail" data-part="tail" data-tail="spiralCurl">
+              <path
+                d="M172,235 C198,234 212,216 212,188 C212,158 198,142 184,146 C174,149 170,160 174,168 C178,176 190,172 189,164 C188,158 182,159 182,162"
+                fill="none"
+                stroke="#26201D"
+                strokeWidth="14"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M172,235 C198,234 212,216 212,188 C212,158 198,142 184,146 C174,149 170,160 174,168 C178,176 190,172 189,164 C188,158 182,159 182,162"
+                fill="none"
+                stroke="#EEB038"
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <g stroke="#26201D" strokeWidth="2" strokeLinecap="round">
+                <line x1="202" y1="220" x2="212" y2="218" />
+                <line x1="203" y1="200" x2="213" y2="196" />
+                <line x1="199" y1="178" x2="210" y2="172" />
+                <line x1="186" y1="160" x2="195" y2="154" />
+              </g>
+            </g>
             <path
               d="M84,136 C70,160 56,190 58,225 C60,250 74,254 120,254 C166,254 180,250 182,225 C184,190 170,160 156,136 Z"
               fill="#EEB038"
@@ -299,16 +324,17 @@ export function Cat({
             {/* Center Leg lines & Paws */}
             <path d="M102,195 L102,246 C102,254 94,254 94,246" fill="none" stroke="#26201D" strokeWidth="2.6" strokeLinecap="round" />
             <path d="M112,195 L112,252" stroke="#26201D" strokeWidth="2.6" strokeLinecap="round" />
-            <path d="M128,195 L128,252" stroke="#26201D" strokeWidth="2.6" strokeLinecap="round" />
-            <path d="M138,195 L138,246 C138,254 146,254 146,246" fill="none" stroke="#26201D" strokeWidth="2.6" strokeLinecap="round" />
+            <path className="pcat-leg-r" d="M128,195 L128,252" stroke="#26201D" strokeWidth="2.6" strokeLinecap="round" />
+            <path className="pcat-leg-r" d="M138,195 L138,246 C138,254 146,254 146,246" fill="none" stroke="#26201D" strokeWidth="2.6" strokeLinecap="round" />
 
             {/* Hind paw side curves */}
             <path d="M72,245 C78,255 86,255 90,250" fill="none" stroke="#26201D" strokeWidth="2.4" strokeLinecap="round" />
             <path d="M168,250 C172,255 180,255 186,245" fill="none" stroke="#26201D" strokeWidth="2.4" strokeLinecap="round" />
+            <Wearables wear={wear} spec={spec} />
           </g>
 
           {/* Head Group */}
-          <g id="head" data-part="head" className={tiltClass} transform={headTransform}>
+          <g id="head" data-part="head" className={`pcat-head ${tiltClass}`}>
             <path d="M66,96 L74,48 L94,88 Z" fill="#EEB038" stroke="#26201D" strokeWidth="3.2" strokeLinejoin="round" data-part="ears" data-ears="pointy" />
             <g className="miso-ear-r">
               <path d="M174,96 L166,48 L146,88 Z" fill="#EEB038" stroke="#26201D" strokeWidth="3.2" strokeLinejoin="round" />
@@ -331,12 +357,14 @@ export function Cat({
             </g>
 
             {/* Happy Closed Eyes */}
-            <g data-part="eyes" data-eyes="joyfulArch">
+            <g className="pcat-eyes" data-part="eyes" data-eyes="joyfulArch">
               {isSad ? (
                 <>
                   <path d="M90,112 C96,118 106,118 112,112" fill="none" stroke="#26201D" strokeWidth="3.2" strokeLinecap="round" />
                   <path d="M128,112 C134,118 144,118 150,112" fill="none" stroke="#26201D" strokeWidth="3.2" strokeLinecap="round" />
                 </>
+              ) : expr === 'hopeful' || expr === 'stare' || expr === 'bored' ? (
+                <ExprEyes kind={expr} spec={spec} />
               ) : (
                 <>
                   <path d="M90,108 C96,116 106,116 112,108" fill="none" stroke="#26201D" strokeWidth="3.2" strokeLinecap="round" />
@@ -358,7 +386,9 @@ export function Cat({
               <line x1="164" y1="125" x2="202" y2="126" />
               <line x1="162" y1="134" x2="196" y2="140" />
             </g>
+            <FaceOverlays state={state} action={action} spec={spec} mood={mood} />
           </g>
+          <PawOverlay action={action} spec={spec} noYarn={noYarn} />
         </g>
       )}
 
@@ -367,20 +397,21 @@ export function Cat({
           ========================================================================= */}
       {catId === 'oreo' && (
         <g id="cat-oreo">
-          {/* Upright Tail: Rooted into right flank at X:176, Y:225 */}
-          <g className="oreo-tail" data-part="tail" data-tail="uprightLedge">
-            <path
-              d="M176,225 C192,215 198,185 194,155 C192,142 186,144 182,150 C178,160 182,185 170,218"
-              fill="#26201D"
-              stroke="#26201D"
-              strokeWidth="10"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </g>
 
           {/* Body Group */}
-          <g className="oreo-body" data-part="body" transform={armTransform}>
+          <g className="oreo-body pcat-body" data-part="body">
+            {/* Tail sits inside the body group: it follows breathing/posture and always stays behind the body. */}
+            {/* Upright Tail: Rooted into right flank at X:176, Y:225 */}
+            <g className="oreo-tail pcat-tail" data-part="tail" data-tail="uprightLedge">
+              <path
+                d="M176,225 C192,215 198,185 194,155 C192,142 186,144 182,150 C178,160 182,185 170,218"
+                fill="#26201D"
+                stroke="#26201D"
+                strokeWidth="10"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </g>
             <path
               d="M72,125 C62,150 56,180 56,220 C56,242 66,245 120,245 C174,245 184,242 184,220 C184,180 178,150 168,125 Z"
               fill="#FFFDF9"
@@ -409,18 +440,19 @@ export function Cat({
             <path d="M94,242 L94,235 C94,231 100,231 100,235 L100,242" fill="none" stroke="#26201D" strokeWidth="2.2" />
             <path d="M100,242 L100,236 C100,232 106,232 106,236 L106,242" fill="none" stroke="#26201D" strokeWidth="2.2" />
 
-            <path d="M144,190 L144,242" fill="none" stroke="#26201D" strokeWidth="2.6" />
-            <path d="M136,242 L136,236 C136,232 142,232 142,236 L142,242" fill="none" stroke="#26201D" strokeWidth="2.2" />
-            <path d="M142,242 L142,235 C142,231 148,231 148,235 L148,242" fill="none" stroke="#26201D" strokeWidth="2.2" />
-            <path d="M148,242 L148,236 C148,232 154,232 154,236 L154,242" fill="none" stroke="#26201D" strokeWidth="2.2" />
+            <path className="pcat-leg-r" d="M144,190 L144,242" fill="none" stroke="#26201D" strokeWidth="2.6" />
+            <path className="pcat-leg-r" d="M136,242 L136,236 C136,232 142,232 142,236 L142,242" fill="none" stroke="#26201D" strokeWidth="2.2" />
+            <path className="pcat-leg-r" d="M142,242 L142,235 C142,231 148,231 148,235 L148,242" fill="none" stroke="#26201D" strokeWidth="2.2" />
+            <path className="pcat-leg-r" d="M148,242 L148,236 C148,232 154,232 154,236 L154,242" fill="none" stroke="#26201D" strokeWidth="2.2" />
 
             {/* Ledge line and support brackets */}
             <line x1="40" y1="245" x2="200" y2="245" stroke="#26201D" strokeWidth="3" strokeLinecap="round" />
             <path d="M85,245 v12 h8 v-12 M148,245 v12 h8 v-12" fill="none" stroke="#26201D" strokeWidth="2" />
+            <Wearables wear={wear} spec={spec} />
           </g>
 
           {/* Head Group with Mask */}
-          <g id="head" data-part="head" className={tiltClass} transform={headTransform}>
+          <g id="head" data-part="head" className={`pcat-head ${tiltClass}`}>
             <path
               d="M62,100 C56,60 184,60 178,100 C180,132 160,146 120,146 C80,146 60,132 62,100 Z"
               fill="#FFFDF9"
@@ -439,7 +471,7 @@ export function Cat({
             />
 
             {/* Ears */}
-            <g data-part="ears" data-ears="maskedPointy">
+            <g className="pcat-ears" data-part="ears" data-ears="maskedPointy">
               <path d="M66,88 L74,44 L90,80 Z" fill="#26201D" stroke="#26201D" strokeWidth="3.2" strokeLinejoin="round" />
               <path d="M74,56 L74,74" stroke="#FFFDF9" strokeWidth="2" strokeLinecap="round" />
               <path d="M174,88 L166,44 L150,80 Z" fill="#26201D" stroke="#26201D" strokeWidth="3.2" strokeLinejoin="round" />
@@ -447,7 +479,7 @@ export function Cat({
             </g>
 
             {/* Big Curious Round Eyes */}
-            <g className="oreo-eyes" data-part="eyes" data-eyes="bigRoundStare">
+            <g className="oreo-eyes pcat-eyes" data-part="eyes" data-eyes="bigRoundStare">
               {isSleeping ? (
                 <>
                   <path d="M86 94 C90 90 98 90 102 94" fill="none" stroke="#26201D" strokeWidth="2.8" strokeLinecap="round" />
@@ -458,6 +490,8 @@ export function Cat({
                   <path d="M86 96 C90 90 98 90 102 96" fill="none" stroke="#26201D" strokeWidth="3" strokeLinecap="round" />
                   <path d="M138 96 C142 90 150 90 154 96" fill="none" stroke="#26201D" strokeWidth="3" strokeLinecap="round" />
                 </>
+              ) : expr === 'hopeful' || expr === 'stare' || expr === 'bored' ? (
+                <ExprEyes kind={expr} spec={spec} />
               ) : (
                 <>
                   <circle cx="92" cy="94" r="8.5" fill="#FFFDF9" stroke="#26201D" strokeWidth="2.4" />
@@ -490,7 +524,9 @@ export function Cat({
               <line x1="166" y1="116" x2="204" y2="116" />
               <line x1="164" y1="124" x2="200" y2="128" />
             </g>
+            <FaceOverlays state={state} action={action} spec={spec} mood={mood} />
           </g>
+          <PawOverlay action={action} spec={spec} noYarn={noYarn} />
         </g>
       )}
 
@@ -501,20 +537,20 @@ export function Cat({
         <g id="cat-pepper">
           {showGround && <ellipse cx="120" cy="254" rx="60" ry="8" fill="rgba(38,32,29,0.18)" />}
 
-          {/* Ring-hook Tail: Rooted into right flank at X:172, Y:232 */}
-          <g className="pepper-tail" data-part="tail" data-tail="ringLoop">
-            <path
-              d="M172,232 C192,232 208,222 208,202 C208,184 190,178 180,188 C174,194 178,206 190,204 C198,202 202,192 196,186"
-              fill="none"
-              stroke="#26201D"
-              strokeWidth="12"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </g>
-
           {/* Body Group */}
-          <g className="pepper-body" data-part="body" transform={armTransform}>
+          <g className="pepper-body pcat-body" data-part="body">
+            {/* Tail sits inside the body group: it follows breathing/posture and always stays behind the body. */}
+            {/* Ring-hook Tail: Rooted into right flank at X:172, Y:232 */}
+            <g className="pepper-tail pcat-tail" data-part="tail" data-tail="ringLoop">
+              <path
+                d="M172,232 C192,232 208,222 208,202 C208,184 190,178 180,188 C174,194 178,206 190,204 C198,202 202,192 196,186"
+                fill="none"
+                stroke="#26201D"
+                strokeWidth="12"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </g>
             <path
               d="M78,135 C64,158 56,190 58,225 C60,250 74,254 120,254 C166,254 180,250 182,225 C184,190 176,158 162,135 Z"
               fill="#FFFDF9"
@@ -548,14 +584,15 @@ export function Cat({
 
             {/* Center Legs & Toes */}
             <path d="M106,195 L106,248" fill="none" stroke="#26201D" strokeWidth="2.8" strokeLinecap="round" />
-            <path d="M134,195 L134,248" fill="none" stroke="#26201D" strokeWidth="2.8" strokeLinecap="round" />
+            <path className="pcat-leg-r" d="M134,195 L134,248" fill="none" stroke="#26201D" strokeWidth="2.8" strokeLinecap="round" />
             <ellipse cx="104" cy="250" rx="6" ry="4" fill="#26201D" />
-            <ellipse cx="136" cy="250" rx="6" ry="4" fill="#26201D" />
+            <ellipse className="pcat-leg-r" cx="136" cy="250" rx="6" ry="4" fill="#26201D" />
+            <Wearables wear={wear} spec={spec} />
           </g>
 
           {/* Head Group */}
-          <g id="head" data-part="head" className={tiltClass} transform={headTransform}>
-            <g data-part="ears" data-ears="blackEarPair">
+          <g id="head" data-part="head" className={`pcat-head ${tiltClass}`}>
+            <g className="pcat-ears" data-part="ears" data-ears="blackEarPair">
               <path d="M66,94 L74,48 L90,82 Z" fill="#26201D" stroke="#26201D" strokeWidth="3.2" strokeLinejoin="round" />
               <path d="M174,94 L166,48 L150,82 Z" fill="#26201D" stroke="#26201D" strokeWidth="3.2" strokeLinejoin="round" />
             </g>
@@ -585,7 +622,7 @@ export function Cat({
             <circle cx="154" cy="122" r="7.5" fill="#F4978E" opacity="0.9" />
 
             {/* Eyes */}
-            <g className="pepper-eyes" data-part="eyes" data-eyes="blushGlint">
+            <g className="pepper-eyes pcat-eyes" data-part="eyes" data-eyes="blushGlint">
               {isSleeping ? (
                 <>
                   <path d="M96 112 C100 108 108 108 112 112" fill="none" stroke="#26201D" strokeWidth="2.8" strokeLinecap="round" />
@@ -596,6 +633,8 @@ export function Cat({
                   <path d="M96 114 C100 108 108 108 112 114" fill="none" stroke="#26201D" strokeWidth="3" strokeLinecap="round" />
                   <path d="M128 114 C132 108 140 108 144 114" fill="none" stroke="#26201D" strokeWidth="3" strokeLinecap="round" />
                 </>
+              ) : expr === 'hopeful' || expr === 'stare' || expr === 'bored' ? (
+                <ExprEyes kind={expr} spec={spec} />
               ) : (
                 <>
                   <circle cx="102" cy="112" r="5.5" fill="#26201D" />
@@ -617,7 +656,9 @@ export function Cat({
               <line x1="164" y1="125" x2="196" y2="125" />
               <line x1="162" y1="132" x2="192" y2="135" />
             </g>
+            <FaceOverlays state={state} action={action} spec={spec} mood={mood} />
           </g>
+          <PawOverlay action={action} spec={spec} noYarn={noYarn} />
         </g>
       )}
 
@@ -628,20 +669,21 @@ export function Cat({
         <g id="cat-yuki">
           {showGround && <ellipse cx="120" cy="254" rx="65" ry="8" fill="rgba(38,32,29,0.18)" />}
 
-          {/* Hook Tail: Rooted into right flank at X:176, Y:238 */}
-          <g className="yuki-tail" data-part="tail" data-tail="hookRight">
-            <path
-              d="M176,238 C198,236 210,218 206,192 C202,176 192,174 188,182 C184,190 194,210 180,228"
-              fill="#FFFDF9"
-              stroke="#26201D"
-              strokeWidth="3.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </g>
 
           {/* White Body Group */}
-          <g className="yuki-body" data-part="body" transform={armTransform}>
+          <g className="yuki-body pcat-body" data-part="body">
+            {/* Tail sits inside the body group: it follows breathing/posture and always stays behind the body. */}
+            {/* Hook Tail: Rooted into right flank at X:176, Y:238 */}
+            <g className="yuki-tail pcat-tail" data-part="tail" data-tail="hookRight">
+              <path
+                d="M176,238 C198,236 210,218 206,192 C202,176 192,174 188,182 C184,190 194,210 180,228"
+                fill="#FFFDF9"
+                stroke="#26201D"
+                strokeWidth="3.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </g>
             <path
               d="M82,130 C66,155 52,185 54,220 C56,245 70,252 120,252 C170,252 184,245 186,220 C188,185 174,155 158,130 Z"
               fill="#FFFDF9"
@@ -664,10 +706,11 @@ export function Cat({
             <g transform="translate(98, 238)">
               <path d="M4,10 C4,2 10,2 10,10 C10,2 16,2 16,10 C16,2 22,2 22,10" fill="none" stroke="#26201D" strokeWidth="2.4" strokeLinejoin="round" />
             </g>
+            <Wearables wear={wear} spec={spec} />
           </g>
 
           {/* Head Group with Alert Lines */}
-          <g id="head" data-part="head" className={tiltClass} transform={headTransform}>
+          <g id="head" data-part="head" className={`pcat-head ${tiltClass}`}>
             <g stroke="#26201D" strokeWidth="2.2" strokeLinecap="round">
               <line x1="48" y1="80" x2="62" y2="90" />
               <line x1="42" y1="92" x2="58" y2="100" />
@@ -675,7 +718,7 @@ export function Cat({
             </g>
 
             {/* White Ears */}
-            <g data-part="ears" data-ears="whiteSketch">
+            <g className="pcat-ears" data-part="ears" data-ears="whiteSketch">
               <path d="M66,94 L74,48 L92,84 Z" fill="#FFFDF9" stroke="#26201D" strokeWidth="3.2" strokeLinejoin="round" />
               <path d="M174,94 L166,48 L148,84 Z" fill="#FFFDF9" stroke="#26201D" strokeWidth="3.2" strokeLinejoin="round" />
             </g>
@@ -690,7 +733,7 @@ export function Cat({
             />
 
             {/* Eyes */}
-            <g className="yuki-eyes" data-part="eyes" data-eyes="alertDot">
+            <g className="yuki-eyes pcat-eyes" data-part="eyes" data-eyes="alertDot">
               {isSleeping ? (
                 <>
                   <path d="M92 114 C96 110 104 110 108 114" fill="none" stroke="#26201D" strokeWidth="2.8" strokeLinecap="round" />
@@ -701,6 +744,8 @@ export function Cat({
                   <path d="M92 116 C96 110 104 110 108 116" fill="none" stroke="#26201D" strokeWidth="3" strokeLinecap="round" />
                   <path d="M132 116 C136 110 144 110 148 116" fill="none" stroke="#26201D" strokeWidth="3" strokeLinecap="round" />
                 </>
+              ) : expr === 'hopeful' || expr === 'stare' || expr === 'bored' ? (
+                <ExprEyes kind={expr} spec={spec} />
               ) : (
                 <>
                   <circle cx="98" cy="114" r="4.8" fill="#26201D" />
@@ -718,7 +763,9 @@ export function Cat({
               <line x1="162" y1="125" x2="200" y2="125" />
               <line x1="160" y1="134" x2="194" y2="138" />
             </g>
+            <FaceOverlays state={state} action={action} spec={spec} mood={mood} />
           </g>
+          <PawOverlay action={action} spec={spec} noYarn={noYarn} />
         </g>
       )}
 
@@ -729,20 +776,21 @@ export function Cat({
         <g id="cat-nyx">
           {showGround && <ellipse cx="120" cy="254" rx="55" ry="8" fill="rgba(38,32,29,0.22)" />}
 
-          {/* Upright Sleek Black Tail: Rooted into right flank at X:158, Y:230 */}
-          <g className="nyx-tail" data-part="tail" data-tail="sleekUpright">
-            <path
-              d="M158,230 C172,222 176,198 174,175 C173,164 168,162 164,168 C161,175 163,192 154,220"
-              fill="#1E1B18"
-              stroke="#1E1B18"
-              strokeWidth="8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </g>
 
           {/* Slender Seated Black Body */}
-          <g className="nyx-body" data-part="body" transform={armTransform}>
+          <g className="nyx-body pcat-body" data-part="body">
+            {/* Tail sits inside the body group: it follows breathing/posture and always stays behind the body. */}
+            {/* Upright Sleek Black Tail: Rooted into right flank at X:158, Y:230 */}
+            <g className="nyx-tail pcat-tail" data-part="tail" data-tail="sleekUpright">
+              <path
+                d="M158,230 C172,222 176,198 174,175 C173,164 168,162 164,168 C161,175 163,192 154,220"
+                fill="#1E1B18"
+                stroke="#1E1B18"
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </g>
             <path
               d="M92,142 C78,165 66,195 68,225 C70,250 82,254 120,254 C158,254 170,250 172,225 C174,195 162,142 148,142 Z"
               fill="#1E1B18"
@@ -753,14 +801,15 @@ export function Cat({
 
             {/* White contour lines on black paws & chest */}
             <path d="M106,200 L106,248 C106,252 100,252 100,248" stroke="#FFFDF9" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.85" />
-            <path d="M134,200 L134,248 C134,252 140,252 140,248" stroke="#FFFDF9" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.85" />
+            <path className="pcat-leg-r" d="M134,200 L134,248 C134,252 140,252 140,248" stroke="#FFFDF9" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.85" />
             <line x1="114" y1="244" x2="114" y2="252" stroke="#FFFDF9" strokeWidth="2" strokeLinecap="round" opacity="0.85" />
-            <line x1="126" y1="244" x2="126" y2="252" stroke="#FFFDF9" strokeWidth="2" strokeLinecap="round" opacity="0.85" />
+            <line className="pcat-leg-r" x1="126" y1="244" x2="126" y2="252" stroke="#FFFDF9" strokeWidth="2" strokeLinecap="round" opacity="0.85" />
+            <Wearables wear={wear} spec={spec} />
           </g>
 
           {/* Head Group with Pointed Ears and Pink Interior */}
-          <g id="head" data-part="head" className={tiltClass} transform={headTransform}>
-            <g data-part="ears" data-ears="pinkInner">
+          <g id="head" data-part="head" className={`pcat-head ${tiltClass}`}>
+            <g className="pcat-ears" data-part="ears" data-ears="pinkInner">
               <path d="M68,100 L76,52 L94,90 Z" fill="#1E1B18" stroke="#1E1B18" strokeWidth="3" strokeLinejoin="round" />
               <path d="M74,92 L78,62 L86,86 Z" fill="#E05368" />
               <path d="M172,100 L164,52 L146,90 Z" fill="#1E1B18" stroke="#1E1B18" strokeWidth="3" strokeLinejoin="round" />
@@ -777,7 +826,7 @@ export function Cat({
             />
 
             {/* Big Luminous Glowing White Eyes looking upward */}
-            <g className="nyx-eyes" data-part="eyes" data-eyes="luminousOval">
+            <g className="nyx-eyes pcat-eyes" data-part="eyes" data-eyes="luminousOval">
               {isSleeping ? (
                 <>
                   <path d="M92 116 C96 112 104 112 108 116" fill="none" stroke="#FFFDF9" strokeWidth="2.6" strokeLinecap="round" />
@@ -788,6 +837,8 @@ export function Cat({
                   <path d="M92 118 C96 112 104 112 108 118" fill="none" stroke="#FFFDF9" strokeWidth="2.8" strokeLinecap="round" />
                   <path d="M132 118 C136 112 144 112 148 118" fill="none" stroke="#FFFDF9" strokeWidth="2.8" strokeLinecap="round" />
                 </>
+              ) : expr === 'hopeful' || expr === 'stare' || expr === 'bored' ? (
+                <ExprEyes kind={expr} spec={spec} />
               ) : (
                 <>
                   <ellipse cx="98" cy="116" rx="9" ry="8" fill="#FFFDF9" />
@@ -814,7 +865,9 @@ export function Cat({
               <line x1="158" y1="131" x2="192" y2="132" />
               <line x1="156" y1="138" x2="186" y2="144" />
             </g>
+            <FaceOverlays state={state} action={action} spec={spec} mood={mood} />
           </g>
+          <PawOverlay action={action} spec={spec} noYarn={noYarn} />
         </g>
       )}
 
@@ -825,20 +878,21 @@ export function Cat({
         <g id="cat-boba">
           {showGround && <ellipse cx="120" cy="254" rx="65" ry="8" fill="rgba(38,32,29,0.18)" />}
 
-          {/* Tail extending along ground: Rooted into right flank at X:172, Y:248 */}
-          <g className="boba-tail" data-part="tail" data-tail="groundTail">
-            <path
-              d="M172,248 C195,248 215,242 220,248 C222,252 216,256 195,254 L172,254"
-              fill="#26201D"
-              stroke="#26201D"
-              strokeWidth="8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </g>
 
           {/* Calico Body Group */}
-          <g className="boba-body" data-part="body" transform={armTransform}>
+          <g className="boba-body pcat-body" data-part="body">
+            {/* Tail sits inside the body group: it follows breathing/posture and always stays behind the body. */}
+            {/* Tail extending along ground: Rooted into right flank at X:172, Y:248 */}
+            <g className="boba-tail pcat-tail" data-part="tail" data-tail="groundTail">
+              <path
+                d="M172,248 C195,248 215,242 220,248 C222,252 216,256 195,254 L172,254"
+                fill="#26201D"
+                stroke="#26201D"
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </g>
             <path
               d="M86,136 C72,160 58,190 60,225 C62,250 76,254 120,254 C164,254 178,250 180,225 C182,190 168,160 154,136 Z"
               fill="#FFFDF9"
@@ -854,7 +908,7 @@ export function Cat({
 
             {/* Front Leg lines */}
             <path d="M106,192 L106,252" fill="none" stroke="#26201D" strokeWidth="2.6" strokeLinecap="round" />
-            <path d="M134,192 L134,252" fill="none" stroke="#26201D" strokeWidth="2.6" strokeLinecap="round" />
+            <path className="pcat-leg-r" d="M134,192 L134,252" fill="none" stroke="#26201D" strokeWidth="2.6" strokeLinecap="round" />
 
             {/* Texture speckles on patches */}
             <g fill="#26201D">
@@ -863,11 +917,12 @@ export function Cat({
               <circle cx="72" cy="235" r="1.4" />
               <circle cx="82" cy="242" r="1.4" />
             </g>
+            <Wearables wear={wear} spec={spec} />
           </g>
 
           {/* Calico Head Group */}
-          <g id="head" data-part="head" className={tiltClass} transform={headTransform}>
-            <g data-part="ears" data-ears="splitCalico">
+          <g id="head" data-part="head" className={`pcat-head ${tiltClass}`}>
+            <g className="pcat-ears" data-part="ears" data-ears="splitCalico">
               <path d="M66,96 L74,48 L92,84 Z" fill="#E07A5F" stroke="#26201D" strokeWidth="3" strokeLinejoin="round" />
               <path d="M174,96 L166,48 L148,84 Z" fill="#26201D" stroke="#26201D" strokeWidth="3" strokeLinejoin="round" />
             </g>
@@ -885,7 +940,7 @@ export function Cat({
             <path d="M68,106 C62,80 88,74 116,74 L116,118 C96,122 78,118 68,106 Z" fill="#E07A5F" stroke="#E07A5F" strokeWidth="1.5" />
 
             {/* Big Curious Round Eyes looking up-right (Side-Glance) */}
-            <g className="boba-eyes" data-part="eyes" data-eyes="sideGlance">
+            <g className="boba-eyes pcat-eyes" data-part="eyes" data-eyes="sideGlance">
               {isSleeping ? (
                 <>
                   <path d="M88 108 C92 104 100 104 104 108" fill="none" stroke="#26201D" strokeWidth="2.8" strokeLinecap="round" />
@@ -896,6 +951,8 @@ export function Cat({
                   <path d="M88 110 C92 104 100 104 104 110" fill="none" stroke="#26201D" strokeWidth="3" strokeLinecap="round" />
                   <path d="M136 110 C140 104 148 104 152 110" fill="none" stroke="#26201D" strokeWidth="3" strokeLinecap="round" />
                 </>
+              ) : expr === 'hopeful' || expr === 'stare' || expr === 'bored' ? (
+                <ExprEyes kind={expr} spec={spec} />
               ) : (
                 <>
                   <circle cx="94" cy="108" r="8.5" fill="#FFFDF9" stroke="#26201D" strokeWidth="2.6" />
@@ -918,7 +975,9 @@ export function Cat({
               <line x1="162" y1="116" x2="198" y2="114" />
               <line x1="164" y1="125" x2="202" y2="126" />
             </g>
+            <FaceOverlays state={state} action={action} spec={spec} mood={mood} />
           </g>
+          <PawOverlay action={action} spec={spec} noYarn={noYarn} />
         </g>
       )}
 
@@ -929,30 +988,30 @@ export function Cat({
         <g id="cat-winston">
           {showGround && <ellipse cx="120" cy="254" rx="65" ry="8" fill="rgba(38,32,29,0.18)" />}
 
-          {/* Striped Curl Tail: Rooted seamlessly into left flank at X: 75, Y: 235 */}
-          <g className="winston-tail" data-part="tail" data-tail="rootedStripedCurl">
-            <path
-              d="M75,235 C52,230 34,212 32,185 C30,155 48,125 74,125 C88,125 98,136 96,150 C94,162 80,170 68,162 C58,154 58,142 62,137 C64,135 68,135 68,140"
-              fill="none"
-              stroke="#26201D"
-              strokeWidth="15"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            {/* Tail horizontal white stripes */}
-            <g stroke="#FFFDF9" strokeWidth="2.8" strokeLinecap="round">
-              <line x1="45" y1="216" x2="60" y2="222" />
-              <line x1="36" y1="198" x2="51" y2="202" />
-              <line x1="34" y1="180" x2="49" y2="182" />
-              <line x1="38" y1="162" x2="52" y2="158" />
-              <line x1="46" y1="146" x2="58" y2="140" />
-              <line x1="62" y1="134" x2="74" y2="128" />
-              <line x1="82" y1="140" x2="90" y2="148" />
-            </g>
-          </g>
-
           {/* Body Group */}
-          <g className="winston-body" data-part="body" transform={armTransform}>
+          <g className="winston-body pcat-body" data-part="body">
+            {/* Tail sits inside the body group: it follows breathing/posture and always stays behind the body. */}
+            {/* Striped Curl Tail: Rooted seamlessly into left flank at X: 75, Y: 235 */}
+            <g className="winston-tail pcat-tail" data-part="tail" data-tail="rootedStripedCurl">
+              <path
+                d="M75,235 C52,230 34,212 32,185 C30,155 48,125 74,125 C88,125 98,136 96,150 C94,162 80,170 68,162 C58,154 58,142 62,137 C64,135 68,135 68,140"
+                fill="none"
+                stroke="#26201D"
+                strokeWidth="15"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              {/* Tail horizontal white stripes */}
+              <g stroke="#FFFDF9" strokeWidth="2.8" strokeLinecap="round">
+                <line x1="45" y1="216" x2="60" y2="222" />
+                <line x1="36" y1="198" x2="51" y2="202" />
+                <line x1="34" y1="180" x2="49" y2="182" />
+                <line x1="38" y1="162" x2="52" y2="158" />
+                <line x1="46" y1="146" x2="58" y2="140" />
+                <line x1="62" y1="134" x2="74" y2="128" />
+                <line x1="82" y1="140" x2="90" y2="148" />
+              </g>
+            </g>
             {/* Left flank with horizontal white stripes */}
             <path
               d="M82,148 C66,168 54,200 56,238 C57,252 66,254 85,254 C94,254 98,245 98,230 L98,165 Z"
@@ -1004,18 +1063,19 @@ export function Cat({
 
             {/* Front Legs & Paws */}
             <line x1="108" y1="200" x2="108" y2="248" fill="none" stroke="#26201D" strokeWidth="2.8" strokeLinecap="round" />
-            <line x1="132" y1="200" x2="132" y2="248" fill="none" stroke="#26201D" strokeWidth="2.8" strokeLinecap="round" />
+            <line className="pcat-leg-r" x1="132" y1="200" x2="132" y2="248" fill="none" stroke="#26201D" strokeWidth="2.8" strokeLinecap="round" />
             <g transform="translate(96, 240)">
               <path d="M2,14 C2,6 8,6 8,14 C8,6 14,6 14,14 C14,6 20,6 20,14" fill="#FFFDF9" stroke="#26201D" strokeWidth="2.4" strokeLinejoin="round" />
             </g>
-            <g transform="translate(124, 240)">
+            <g className="pcat-leg-r" transform="translate(124, 240)">
               <path d="M2,14 C2,6 8,6 8,14 C8,6 14,6 14,14 C14,6 20,6 20,14" fill="#FFFDF9" stroke="#26201D" strokeWidth="2.4" strokeLinejoin="round" />
             </g>
+            <Wearables wear={wear} spec={spec} />
           </g>
 
           {/* Head Group */}
-          <g id="head" data-part="head" className={tiltClass} transform={headTransform}>
-            <g data-part="ears" data-ears="tallStriped">
+          <g id="head" data-part="head" className={`pcat-head ${tiltClass}`}>
+            <g className="pcat-ears" data-part="ears" data-ears="tallStriped">
               <g className="winston-ear-l">
                 <path d="M70,96 L78,50 L94,88 Z" fill="#26201D" stroke="#26201D" strokeWidth="3" strokeLinejoin="round" />
                 <path d="M78,64 L78,82" stroke="#FFFDF9" strokeWidth="2" strokeLinecap="round" />
@@ -1053,7 +1113,7 @@ export function Cat({
             <circle cx="154" cy="122" r="7.5" fill="#F4978E" opacity="0.9" />
 
             {/* Eyes */}
-            <g className="winston-eyes" data-part="eyes" data-eyes="dotWide">
+            <g className="winston-eyes pcat-eyes" data-part="eyes" data-eyes="dotWide">
               {isSleeping ? (
                 <>
                   <path d="M96 112 C100 108 108 108 112 112" fill="none" stroke="#26201D" strokeWidth="2.8" strokeLinecap="round" />
@@ -1069,6 +1129,8 @@ export function Cat({
                   <path d="M96 110 C100 114 108 114 112 110" fill="none" stroke="#26201D" strokeWidth="2.8" strokeLinecap="round" />
                   <path d="M128 110 C132 114 140 114 144 110" fill="none" stroke="#26201D" strokeWidth="2.8" strokeLinecap="round" />
                 </>
+              ) : expr === 'hopeful' || expr === 'stare' || expr === 'bored' ? (
+                <ExprEyes kind={expr} spec={spec} />
               ) : (
                 <>
                   <circle cx="102" cy="112" r="5.5" fill="#26201D" />
@@ -1093,7 +1155,9 @@ export function Cat({
               <line x1="164" y1="124" x2="196" y2="124" />
               <line x1="162" y1="132" x2="192" y2="135" />
             </g>
+            <FaceOverlays state={state} action={action} spec={spec} mood={mood} />
           </g>
+          <PawOverlay action={action} spec={spec} noYarn={noYarn} />
         </g>
       )}
     </svg>

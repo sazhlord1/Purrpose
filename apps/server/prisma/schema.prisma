@@ -25,46 +25,78 @@ enum TransactionType {
   FAILURE_DEDUCTION
 }
 
+enum UserRole {
+  USER
+  ADMIN
+}
+
+/// PURR ledger movements. `amount` is always > 0; direction comes from the type.
+enum PurrTxnType {
+  PURCHASE // bought with real money through a payment provider (+)
+  SANDBOX_PURCHASE // test-mode purchase, PAYMENTS_MODE=sandbox only (+)
+  ADMIN_GRANT // granted by an admin (+)
+  SPEND // spent in the shop, e.g. unlocking a cat (-)
+}
+
+enum NotificationKind {
+  T24H
+  T1H
+  FAILED
+}
+
 model User {
-  id           String              @id @default(cuid())
-  name         String?
-  createdAt    DateTime            @default(now())
-  balances     CreditBalance[]
-  commitments  Commitment[]
-  transactions CreditTransaction[]
-  sessions     Session[]
+  id            String              @id @default(cuid())
+  name          String?
+  /// Lower-cased. Null for anonymous (guest) users.
+  email         String?             @unique
+  /// scrypt hash — never the raw password.
+  passwordHash  String?
+  role          UserRole            @default(USER)
+  purrBalance   Int                 @default(0)
+  /// Equipped shop items, one per slot, e.g. {"toy":"ball"}. Validated on read.
+  loadout       Json                @default("{}")
+  lastLoginAt   DateTime?
+  createdAt     DateTime            @default(now())
+  balances      CreditBalance[]
+  commitments   Commitment[]
+  transactions  CreditTransaction[]
+  sessions      Session[]
+  purrTxns      PurrTransaction[]
+  catUnlocks    CatUnlock[]
+  itemUnlocks   ItemUnlock[]
+  focusSessions FocusSession[]
+  pushSubs      PushSubscription[]
 }
 
 model Session {
-  token     String   @id @default(cuid())
+  /// SHA-256 (hex) of the bearer token. The raw token only ever lives on the client.
+  tokenHash String    @id @map("token")
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
-}
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  /// Null = guest session that never expires. Logged-in sessions expire.
+  expiresAt DateTime?
 
-model Cat {
-  id          String @id
-  name        String
-  type        String
-  personality String
-  config      Json
+  @@index([userId])
 }
 
 model Commitment {
-  id                String            @id @default(cuid())
+  id                String              @id @default(cuid())
   userId            String
-  user              User              @relation(fields: [userId], references: [id])
+  user              User                @relation(fields: [userId], references: [id])
   title             String
   description       String?
   deadline          DateTime
-  status            CommitmentStatus  @default(ACTIVE)
+  status            CommitmentStatus    @default(ACTIVE)
   catId             String
   consequenceType   ConsequenceType
   consequenceAmount Int
-  createdAt         DateTime          @default(now())
+  createdAt         DateTime            @default(now())
   completedAt       DateTime?
   failedAt          DateTime?
   transactions      CreditTransaction[]
+  focusSessions     FocusSession[]
+  notifications     NotificationLog[]
 
   @@index([userId, status])
   @@index([status, deadline])
@@ -91,6 +123,77 @@ model CreditTransaction {
   createdAt    DateTime        @default(now())
 
   @@index([userId, createdAt])
+}
+
+model PurrTransaction {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+  type      PurrTxnType
+  amount    Int
+  /// What was bought, e.g. "cat:mochi" or "pack:purr_300".
+  itemId    String?
+  /// External payment reference. Unique so a provider webhook can never credit twice.
+  reference String?     @unique
+  createdAt DateTime    @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model CatUnlock {
+  userId    String
+  catId     String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@id([userId, catId])
+}
+
+model ItemUnlock {
+  userId    String
+  itemId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@id([userId, itemId])
+}
+
+model FocusSession {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id])
+  commitmentId String?
+  commitment   Commitment? @relation(fields: [commitmentId], references: [id], onDelete: SetNull)
+  catId        String
+  durationSec  Int
+  startedAt    DateTime
+  endedAt      DateTime
+  createdAt    DateTime    @default(now())
+
+  @@index([userId, createdAt])
+  @@index([commitmentId])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// One row per (commitment, kind) — guarantees each push is sent at most once.
+model NotificationLog {
+  commitmentId String
+  kind         NotificationKind
+  commitment   Commitment       @relation(fields: [commitmentId], references: [id], onDelete: Cascade)
+  sentAt       DateTime         @default(now())
+
+  @@id([commitmentId, kind])
 }
 
 model AppEvent {

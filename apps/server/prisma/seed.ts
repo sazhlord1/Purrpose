@@ -1,31 +1,16 @@
-import { PrismaClient } from '@prisma/client';
-import { CAT_SEED } from '@purrpose/shared';
+/**
+ * The cat catalog lives in code now, so the only thing to seed is the admin
+ * account (from ADMIN_EMAIL / ADMIN_PASSWORD). The server also does this on boot.
+ */
+import '../src/loadenv.js';
+import { getPrisma } from '../src/db.js';
+import { getEnv } from '../src/env.js';
+import { ensureAdmin } from '../src/services/accounts.js';
 
-const prisma = new PrismaClient();
+const prisma = getPrisma();
 
-async function main() {
-  for (const cat of CAT_SEED) {
-    await prisma.cat.upsert({
-      where: { id: cat.id },
-      update: {
-        name: cat.name,
-        type: cat.type,
-        personality: cat.personality,
-        config: cat.config,
-      },
-      create: {
-        id: cat.id,
-        name: cat.name,
-        type: cat.type,
-        personality: cat.personality,
-        config: cat.config,
-      },
-    });
-  }
-  console.log(`seeded ${CAT_SEED.length} cats`);
-}
-
-main()
+ensureAdmin(prisma, getEnv())
+  .then(result => console.log(`admin: ${result}`))
   .catch(err => {
     console.error(err);
     process.exit(1);

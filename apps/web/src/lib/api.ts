@@ -13,7 +13,7 @@ export class ApiError extends Error {
 }
 
 const TOKEN_KEY = 'purrpose.session';
-const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) ? (import.meta.env.VITE_API_URL as string).replace(/\/$/, '') : '';
+export const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) ? (import.meta.env.VITE_API_URL as string).replace(/\/$/, '') : '';
 
 export function getToken(): string | null {
   return typeof localStorage !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
@@ -54,12 +54,21 @@ export async function ensureSession(): Promise<string> {
   return sessionInitPromise;
 }
 
+const PUBLIC_PATHS = new Set([
+  '/session',
+  '/healthz',
+  '/cats',
+  '/auth/login',
+  '/auth/admin/login',
+  '/push/public-key',
+]);
+
 export async function api<T>(
   path: string,
   opts: { method?: 'GET' | 'POST' | 'DELETE'; body?: unknown; retryOn401?: boolean } = {},
 ): Promise<T> {
   let token = getToken();
-  const isPublic = path === '/session' || path === '/healthz' || path === '/cats';
+  const isPublic = PUBLIC_PATHS.has(path);
   if (!token && !isPublic) {
     try {
       token = await ensureSession();
@@ -80,17 +89,18 @@ export async function api<T>(
   if (res.status === 401 && opts.retryOn401 !== false && !isPublic) {
     clearToken();
     try {
-      const newToken = await ensureSession();
+      await ensureSession();
       return api<T>(path, { ...opts, retryOn401: false });
     } catch {
       // proceed to standard error handling
     }
   }
 
-  const json: unknown = await res.json().catch(() => null);
+  const json: unknown = res.status === 204 ? null : await res.json().catch(() => null);
   if (json && typeof json === 'object' && 'serverTime' in json) {
     setSkewOffset((json as { serverTime?: unknown }).serverTime);
   }
+  if (res.status === 204) return undefined as T;
   if (!res.ok) {
     const err = (json as { error?: { code?: string; message?: string; details?: unknown } })
       ?.error;

@@ -45,6 +45,8 @@ export interface CatSeed {
   name: string;
   type: string;
   personality: string;
+  /** 0 = free for everyone. Otherwise the PURR price to unlock this cat. */
+  pricePurr: number;
   config: CatSeedConfig;
 }
 
@@ -57,6 +59,7 @@ export const CAT_SEED: CatSeed[] = [
     name: 'Miso',
     type: 'TABBY',
     personality: 'Joyful / optimistic / warm sunbather',
+    pricePurr: 0,
     config: {
       palette: {
         body: '#EEB038',
@@ -99,6 +102,7 @@ export const CAT_SEED: CatSeed[] = [
     name: 'Winston',
     type: 'TUXEDO',
     personality: 'Aristocratic / dignified / sardonic',
+    pricePurr: 0,
     config: {
       palette: {
         body: '#FFFDF9',
@@ -142,6 +146,7 @@ export const CAT_SEED: CatSeed[] = [
     name: 'Nyx',
     type: 'MIDNIGHT',
     personality: 'Mysterious / graceful / luminous-eyed',
+    pricePurr: 0,
     config: {
       palette: {
         body: '#1E1B18',
@@ -185,6 +190,7 @@ export const CAT_SEED: CatSeed[] = [
     name: 'Boba',
     type: 'CALICO',
     personality: 'Curious / sweet / cheeky side-glancer',
+    pricePurr: 150,
     config: {
       palette: {
         body: '#FFFDF9',
@@ -228,6 +234,7 @@ export const CAT_SEED: CatSeed[] = [
     name: 'Mochi',
     type: 'BICOLOR',
     personality: 'Quiet / gentle / marshmallow soft',
+    pricePurr: 150,
     config: {
       palette: {
         body: '#FFFDF9',
@@ -270,6 +277,7 @@ export const CAT_SEED: CatSeed[] = [
     name: 'Oreo',
     type: 'MASKED',
     personality: 'Inquisitive / observant / mustache gentleman',
+    pricePurr: 200,
     config: {
       palette: {
         body: '#FFFDF9',
@@ -312,6 +320,7 @@ export const CAT_SEED: CatSeed[] = [
     name: 'Pepper',
     type: 'POLKADOT',
     personality: 'Playful / bubbly / spotty sweetheart',
+    pricePurr: 200,
     config: {
       palette: {
         body: '#FFFDF9',
@@ -355,6 +364,7 @@ export const CAT_SEED: CatSeed[] = [
     name: 'Yuki',
     type: 'SKETCH',
     personality: 'Energetic / expressive / playful ghost',
+    pricePurr: 250,
     config: {
       palette: {
         body: '#FFFDF9',
@@ -391,6 +401,16 @@ export const CAT_SEED: CatSeed[] = [
     },
   },
 ];
+
+export const FREE_CAT_IDS: readonly CatId[] = CAT_SEED.filter(c => c.pricePurr === 0).map(c => c.id);
+
+export function catById(id: string): CatSeed | undefined {
+  return CAT_SEED.find(c => c.id === id);
+}
+
+export function isFreeCat(id: string): boolean {
+  return (catById(id)?.pricePurr ?? 1) === 0;
+}
 
 export const CONSEQUENCE_TYPE_BY_LABEL: Record<string, ConsequenceType> = {
   meals: 'MEALS',

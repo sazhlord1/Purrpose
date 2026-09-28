@@ -75,9 +75,12 @@ export const LIVING_CSS = `
    2. PHYSICS-LIKE MULTI-HARMONIC TAIL SWAY & FLICK
    ========================================================================= */
 
+/* The tail lives inside .pcat-body, so it inherits breathing/posture and stays
+   attached. Its pivot is the root point each cat defines in Cat.tsx
+   (e.g. .miso-tail { transform-origin: 172px 235px }), in view-box units.
+   Keep the swing small: the root must never visibly leave the flank. */
 .pcat-tail {
-  transform-box: fill-box;
-  transform-origin: 92% 92%;
+  transform-box: view-box;
   transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -95,16 +98,16 @@ export const LIVING_CSS = `
 
 @keyframes pcat-tail-physics {
   0% { transform: rotate(0deg); }
-  25% { transform: rotate(7deg) skewX(1deg); }
-  55% { transform: rotate(-5deg) skewX(-1.5deg); }
-  80% { transform: rotate(3deg) skewX(0.5deg); }
+  25% { transform: rotate(5deg); }
+  55% { transform: rotate(-4deg); }
+  80% { transform: rotate(2deg); }
   100% { transform: rotate(0deg); }
 }
 
 @keyframes pcat-flick {
   0%, 100% { transform: rotate(0deg); }
-  30% { transform: rotate(-18deg); }
-  65% { transform: rotate(14deg); }
+  30% { transform: rotate(-9deg); }
+  65% { transform: rotate(7deg); }
 }
 
 /* =========================================================================
@@ -283,6 +286,42 @@ export const LIVING_CSS = `
 @keyframes pcat-pop-in {
   from { opacity: 0; transform: scale(0.7) translateY(8px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Moving day: the scene fades in and the cat drops into its new home. */
+.lc-scene-enter {
+  animation: pcat-scene-enter 0.9s ease-out both;
+}
+@keyframes pcat-scene-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.lc-move-hop {
+  animation: pcat-move-hop 1.15s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+@keyframes pcat-move-hop {
+  0% { opacity: 0; transform: translateY(-150px) scale(0.9); }
+  45% { opacity: 1; transform: translateY(0) scale(1.06, 0.9); }
+  65% { transform: translateY(-12px) scale(0.98, 1.03); }
+  100% { transform: translateY(0) scale(1); }
+}
+.lc-moving-banner {
+  animation: pcat-banner 3s ease both;
+}
+@keyframes pcat-banner {
+  0% { opacity: 0; transform: translateY(-10px); }
+  12%, 80% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-6px); }
+}
+.lc-twinkle {
+  animation: pcat-twinkle 3.2s ease-in-out infinite;
+}
+.lc-twinkle:nth-of-type(2n) { animation-delay: 1.4s; }
+@keyframes pcat-twinkle {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

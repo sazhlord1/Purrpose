@@ -2,7 +2,9 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { clock } from '../clock.js';
 import { getPrisma } from '../db.js';
+import { getEnv } from '../env.js';
 import { parse } from '../validate.js';
+import { ensureAdmin } from '../services/accounts.js';
 
 const travelQuerySchema = z.object({ addMinutes: z.coerce.number().min(-1000000).max(1000000) });
 
@@ -16,6 +18,12 @@ export function registerDevRoutes(app: FastifyInstance): void {
   app.post('/api/v1/dev/reset-demo', async () => {
     const prisma = getPrisma();
     await prisma.$transaction(async tx => {
+      await tx.notificationLog.deleteMany({});
+      await tx.pushSubscription.deleteMany({});
+      await tx.focusSession.deleteMany({});
+      await tx.catUnlock.deleteMany({});
+      await tx.itemUnlock.deleteMany({});
+      await tx.purrTransaction.deleteMany({});
       await tx.creditTransaction.deleteMany({});
       await tx.commitment.deleteMany({});
       await tx.creditBalance.deleteMany({});
@@ -24,6 +32,7 @@ export function registerDevRoutes(app: FastifyInstance): void {
       await tx.user.deleteMany({});
     });
     clock.reset();
+    await ensureAdmin(prisma, getEnv());
     return { ok: true, serverTime: clock.now() };
   });
 

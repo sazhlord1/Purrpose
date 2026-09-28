@@ -3,6 +3,8 @@ import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { clock } from '../src/clock.js';
 import { checkDatabase, getPrisma } from '../src/db.js';
+import { hashToken } from '../src/security.js';
+import { wipeDatabase } from './helpers.js';
 import type { ConsequenceType } from '@purrpose/shared';
 
 const prisma = getPrisma();
@@ -11,29 +13,16 @@ const dbReady = await checkDatabase(prisma);
 let app: FastifyInstance;
 let token: string;
 
-async function seedCats() {
-  await prisma.cat.upsert({
-    where: { id: 'orange' },
-    update: {},
-    create: { id: 'orange', name: 'Miso', type: 'ORANGE', personality: 'chaotic', config: {} },
-  });
-}
-
 async function wipe() {
-  await prisma.creditTransaction.deleteMany({});
-  await prisma.commitment.deleteMany({});
-  await prisma.creditBalance.deleteMany({});
-  await prisma.appEvent.deleteMany({});
-  await prisma.session.deleteMany({});
-  await prisma.user.deleteMany({});
+  await wipeDatabase(prisma);
 }
 
-async function call(method: 'GET' | 'POST', url: string, body?: unknown) {
+async function call(method: 'GET' | 'POST', url: string, body?: object) {
   return app.inject({
     method,
     url,
     headers: { authorization: `Bearer ${token}` },
-    ...(body !== undefined ? { payload: body } : {}),
+    payload: body,
   });
 }
 
@@ -55,7 +44,6 @@ describe.skipIf(!dbReady)('Wallet economy', () => {
   beforeEach(async () => {
     clock.reset();
     await wipe();
-    await seedCats();
     const session = await app.inject({ method: 'POST', url: '/api/v1/session' });
     token = session.json().token;
   });
@@ -76,7 +64,7 @@ describe.skipIf(!dbReady)('Wallet economy', () => {
 
   it('recreates a missing balance row on demand', async () => {
     await prisma.creditBalance.delete({
-      where: { userId_creditType: { userId: (await prisma.session.findUniqueOrThrow({ where: { token } })).userId, creditType: 'VET_CARE' } },
+      where: { userId_creditType: { userId: (await prisma.session.findUniqueOrThrow({ where: { tokenHash: hashToken(token) } })).userId, creditType: 'VET_CARE' } },
     });
     const res = await call('POST', '/api/v1/wallet/topup', { creditType: 'VET_CARE', amount: 3 });
     expect(res.statusCode).toBe(200);

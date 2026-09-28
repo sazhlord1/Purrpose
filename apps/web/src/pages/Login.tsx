@@ -1,0 +1,94 @@
+import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
+import { DoodleButton, SketchCard } from '../components/ui/index.js';
+import { ApiError } from '../lib/api.js';
+import { createAccount, signIn } from '../lib/auth.js';
+import { useMe } from '../lib/queries.js';
+
+type Mode = 'signin' | 'register';
+
+export function Login() {
+  const me = useMe();
+  const isGuest = me.data ? me.data.user.email === null : true;
+  const [mode, setMode] = useState<Mode>(isGuest ? 'register' : 'signin');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      if (mode === 'register') await createAccount(email, password);
+      else await signIn(email, password);
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.code === 'INVALID_INPUT'
+            ? 'Check the email, and use a password of at least 8 characters.'
+            : err.message
+          : 'Could not reach the server.',
+      );
+      setBusy(false);
+    }
+  };
+
+  if (me.data?.user.email) {
+    return (
+      <main>
+        <h1>You're signed in</h1>
+        <p className="muted">as {me.data.user.email}</p>
+        <DoodleButton href="/settings">Go to settings</DoodleButton>
+      </main>
+    );
+  }
+
+  return (
+    <main>
+      <h1>{mode === 'register' ? 'Keep your cats safe' : 'Welcome back'}</h1>
+      <div className="chip-row" role="tablist">
+        <button role="tab" aria-selected={mode === 'register'} className={`chip ${mode === 'register' ? 'chip-active' : ''}`} onClick={() => setMode('register')}>
+          Create account
+        </button>
+        <button role="tab" aria-selected={mode === 'signin'} className={`chip ${mode === 'signin' ? 'chip-active' : ''}`} onClick={() => setMode('signin')}>
+          Sign in
+        </button>
+      </div>
+
+      <SketchCard variant="a">
+        <p className="muted" style={{ marginTop: 0 }}>
+          {mode === 'register'
+            ? 'Everything on this device — your pacts, pantry and PURR — moves into your new account, so you can sign in anywhere.'
+            : 'Signing in switches this device to your account. Progress made here as a guest stays with the guest.'}
+        </p>
+        <form className="auth-form" onSubmit={submit}>
+          <label className="field">
+            <span>Email</span>
+            <input type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} />
+          </label>
+          <label className="field">
+            <span>Password</span>
+            <input
+              type="password"
+              autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+              required
+              minLength={8}
+              maxLength={128}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+            />
+          </label>
+          {error && <p className="form-error" role="alert">{error}</p>}
+          <DoodleButton type="submit" variant="primary" size="big" disabled={busy}>
+            {busy ? '…' : mode === 'register' ? 'Create account' : 'Sign in'}
+          </DoodleButton>
+        </form>
+      </SketchCard>
+      <p className="muted">
+        <Link to="/">← back home</Link>
+      </p>
+    </main>
+  );
+}

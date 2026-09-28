@@ -10,11 +10,6 @@ export type MacroName =
   | 'lookAround'
   | 'lookAtUser'
   | 'lookAtClock'
-  | 'walkToScratcher'
-  | 'walkToToy'
-  | 'walkToBowl'
-  | 'walkToCabinet'
-  | 'walkToBed'
   | 'scratch'
   | 'batToy'
   | 'playWithYarn'
@@ -33,7 +28,12 @@ export type MacroName =
   | 'excitedHop'
   | 'stareAtUser'
   | 'freeze'
-  | 'lickPaw';
+  | 'lickPaw'
+  // Shop-item behaviors — only picked when the item is equipped (see itemMacros).
+  | 'tossMouse'
+  | 'napInBed'
+  | 'kneadBlanket'
+  | 'watchFish';
 
 export type MicroName =
   | 'blink'
@@ -70,25 +70,20 @@ export const MACRO_TABLE: Record<ActivePhase, WeightedMacro[]> = {
     M('shiftWeight', 2, 700, 1000),
     M('lookAround', 3, 1400, 2000),
     M('lookAtClock', 2, 1200, 1800),
-    M('walkToScratcher', 2, 0, 0),
     M('scratch', 3, 2200, 3000),
     M('batToy', 2, 1200, 1800),
     M('playWithYarn', 2, 1800, 2600),
     M('playPounce', 2, 1200, 1800),
-    M('walkToBed', 2, 0, 0),
     M('napOnBed', 2, 2400, 3200),
     M('bigStretch', 2, 1800, 2400),
-    M('walkToToy', 1, 0, 0),
     M('yawn', 2, 1500, 2000),
     M('groom', 2, 2000, 2600),
     M('lickPaw', 2, 1400, 1900),
     M('sniffBowl', 2, 1200, 1800),
   ],
   ANTICIPATING: [
-    M('walkToBowl', 3, 0, 0),
     M('inspectBowl', 3, 1600, 2200),
     M('sniffBowl', 3, 1000, 1500),
-    M('walkToCabinet', 2, 0, 0),
     M('inspectCabinet', 2, 1600, 2200),
     M('groom', 1, 2000, 2600),
     M('lookAtUser', 2, 1200, 1800),
@@ -102,8 +97,6 @@ export const MACRO_TABLE: Record<ActivePhase, WeightedMacro[]> = {
     M('excitedHop', 3, 900, 1400),
     M('stareAtUser', 3, 2200, 3000),
     M('freeze', 1, 500, 800),
-    M('walkToCabinet', 1, 0, 0),
-    M('walkToBowl', 2, 0, 0),
   ],
 };
 
@@ -166,6 +159,59 @@ export interface PickContext {
   last?: MacroName;
   cooldownUntil?: Partial<Record<MacroName, number>>;
   nowMs: number;
+  /** Extra behaviors unlocked by equipped items. */
+  extra?: WeightedMacro[];
+  /** Behaviors that make no physical sense right now (e.g. batting a toy from inside the box). */
+  exclude?: ReadonlySet<MacroName>;
+}
+
+/**
+ * What the cat has around it in the current stage (built by CatScene).
+ * The cat never walks anywhere: every behavior happens where it sits, so
+ * each one is only offered when the thing it needs is actually in reach.
+ */
+export interface ItemBehaviors {
+  /** Equipped toy id, if any. */
+  toy?: string;
+  /** The cat sits on the floor (or a cushion on it), so a toy by its paw is reachable. */
+  canPlay?: boolean;
+  /** A scratcher stands right at the cat's side. */
+  canScratch?: boolean;
+  /** There is a food bowl in the scene (not yet out on the street). */
+  hasBowl?: boolean;
+  bed?: boolean;
+  blanket?: boolean;
+  aquarium?: boolean;
+}
+
+/** Behaviors to leave out because what they need isn't there. */
+export function excludedMacros(items: ItemBehaviors | undefined): Set<MacroName> {
+  const out = new Set<MacroName>();
+  if (!items) return out;
+  if (!items.canPlay) {
+    out.add('batToy').add('playWithYarn').add('playPounce').add('tossMouse');
+  }
+  if (!items.canScratch) out.add('scratch');
+  if (!items.hasBowl) out.add('sniffBowl').add('inspectBowl').add('dragBowl');
+  return out;
+}
+
+/** Item behaviors per phase. The final countdown (VERY_CLOSE) stays about the food cabinet. */
+export function itemMacros(phase: ActivePhase, items: ItemBehaviors | undefined): WeightedMacro[] {
+  if (!items || phase === 'VERY_CLOSE') return [];
+  const out: WeightedMacro[] = [];
+  const idle = phase === 'WAITING';
+  const light = phase === 'INITIAL';
+  if (items.canPlay && (items.toy === 'ball' || items.toy === 'yarn')) {
+    if (idle) out.push(M('batToy', 3, 1200, 1800), M('playPounce', 3, 1200, 1800));
+    if (light) out.push(M('batToy', 1, 1000, 1400));
+  }
+  if (items.canPlay && items.toy === 'mouse' && (idle || light)) out.push(M('tossMouse', idle ? 4 : 1, 1400, 2000));
+  if (items.bed && idle) out.push(M('napInBed', 3, 1200, 1800));
+  if (items.canScratch && idle) out.push(M('scratch', 2, 2200, 3000));
+  if (items.blanket && (idle || light)) out.push(M('kneadBlanket', idle ? 2 : 1, 1000, 1600));
+  if (items.aquarium && (idle || phase === 'ANTICIPATING')) out.push(M('watchFish', 2, 1200, 1800));
+  return out;
 }
 
 export function pickMacro(
@@ -173,11 +219,11 @@ export function pickMacro(
   rng: () => number,
   ctx: PickContext,
 ): WeightedMacro | null {
-  const table = MACRO_TABLE[phase];
+  const table = ctx.extra?.length ? [...MACRO_TABLE[phase], ...ctx.extra] : MACRO_TABLE[phase];
   const eligible = table.filter(
     m =>
       m.name !== ctx.last &&
-      m.minMs > 0 &&
+      !ctx.exclude?.has(m.name) &&
       (!(ctx.cooldownUntil?.[m.name]) || (ctx.cooldownUntil?.[m.name] as number) <= ctx.nowMs),
   );
   if (eligible.length === 0) return null;
@@ -210,7 +256,6 @@ export function macroCooldownMs(
 }
 
 export function durationFor(m: WeightedMacro, rng: () => number): number {
-  if (m.maxMs === 0) return 0;
   return m.minMs + rng() * (m.maxMs - m.minMs);
 }
 
@@ -233,24 +278,6 @@ export const SPEECH_CHANCE: Record<ActivePhase, number> = {
 export function rollSpeech(phase: ActivePhase, rng: () => number, force = false): boolean {
   return force || rng() < SPEECH_CHANCE[phase];
 }
-
-export const WALK_TARGET: Partial<Record<MacroName, string>> = {
-  walkToScratcher: 'scratcher',
-  scratch: 'scratcher',
-  walkToToy: 'toy',
-  batToy: 'toy',
-  playWithYarn: 'toy',
-  playPounce: 'toy',
-  walkToBowl: 'bowl',
-  sniffBowl: 'bowl',
-  inspectBowl: 'bowl',
-  walkToCabinet: 'cabinet',
-  inspectCabinet: 'cabinet',
-  pawCabinet: 'cabinet',
-  attemptOpenCabinet: 'cabinet',
-  walkToBed: 'bed',
-  napOnBed: 'bed',
-};
 
 export function isTerminal(state: CatState): boolean {
   return state === 'SUCCESS' || state === 'FAILURE' || state === 'SLEEPING' || state === 'SATISFIED';

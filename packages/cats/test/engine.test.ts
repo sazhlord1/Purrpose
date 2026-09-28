@@ -94,12 +94,11 @@ describe('pickMacro', () => {
     expect(pickMacro('INITIAL', mulberry32(1), { cooldownUntil: blocked, nowMs: 0 })).toBeNull();
   });
 
-  it('excludes zero-duration walk entries from idle picking', () => {
+  it('only picks behaviors that actually animate (positive duration)', () => {
     const rng = mulberry32(3);
     for (let i = 0; i < 40; i++) {
       const picked = pickMacro('ANTICIPATING', rng, { nowMs: i * 1000 });
-      expect(picked?.name).not.toBe('walkToBowl');
-      expect(picked?.name).not.toBe('walkToCabinet');
+      expect(picked?.minMs ?? 1).toBeGreaterThan(0);
     }
   });
 

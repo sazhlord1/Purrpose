@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { clock } from '../src/clock.js';
 import { checkDatabase, getPrisma } from '../src/db.js';
+import { wipeDatabase } from './helpers.js';
 
 const prisma = getPrisma();
 const dbReady = await checkDatabase(prisma);
@@ -11,12 +12,7 @@ let app: FastifyInstance;
 let token: string;
 
 async function wipe() {
-  await prisma.creditTransaction.deleteMany({});
-  await prisma.commitment.deleteMany({});
-  await prisma.creditBalance.deleteMany({});
-  await prisma.appEvent.deleteMany({});
-  await prisma.session.deleteMany({});
-  await prisma.user.deleteMany({});
+  await wipeDatabase(prisma);
 }
 
 describe.skipIf(!dbReady)('Mutation rate limiting', () => {
@@ -32,11 +28,6 @@ describe.skipIf(!dbReady)('Mutation rate limiting', () => {
   beforeEach(async () => {
     clock.reset();
     await wipe();
-    await prisma.cat.upsert({
-      where: { id: 'orange' },
-      update: {},
-      create: { id: 'orange', name: 'Miso', type: 'ORANGE', personality: 'chaotic', config: {} },
-    });
     const session = await app.inject({ method: 'POST', url: '/api/v1/session' });
     token = session.json().token;
   });

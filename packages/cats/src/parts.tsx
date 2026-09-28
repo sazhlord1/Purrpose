@@ -182,7 +182,7 @@ export function Ears({ config }: { config: CatSeedConfig }) {
 // 3. HEAD MARKINGS & CHEEKS
 // ============================================================================
 
-export function HeadMarkings({ config, hs = 1 }: { config: CatSeedConfig; hs?: number }) {
+export function HeadMarkings({ config }: { config: CatSeedConfig; hs?: number }) {
   const catId = config.structure.ears;
   const ink = config.palette.ink ?? INK;
 
@@ -267,7 +267,7 @@ export function HeadMarkings({ config, hs = 1 }: { config: CatSeedConfig; hs?: n
 // 4. BODY MARKINGS & PATTERNS
 // ============================================================================
 
-export function BodyMarkings({ config, poseName }: { config: CatSeedConfig; poseName?: string }) {
+export function BodyMarkings({ config }: { config: CatSeedConfig; poseName?: string }) {
   const posture = config.structure.postureDefault;
 
   // Winston: Striped flanks on left and right

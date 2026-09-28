@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { CatId } from '@purrpose/shared';
-import { Cat, type CatState } from '@purrpose/cats';
+import { Cat, type CatState, type CatWear } from '@purrpose/cats';
 
 const SCENE_WIDTH = 380;
 const SCENE_HEIGHT = 480;
@@ -12,55 +12,51 @@ interface FocusSceneProps {
   isFocusing: boolean;
   isFinished: boolean;
   reduced?: boolean;
+  /** Collar / bow tie from the shop. */
+  wear?: CatWear;
 }
 
-function RainStreakGroup() {
+interface RainLayerSpec {
+  /** Horizontal gap between columns. */
+  colGap: number;
+  /** Vertical gap between drops in one column = the distance one animation loop travels. */
+  rowGap: number;
+  /** Sideways drift per rowGap — every drop falls along the same slant. */
+  drift: number;
+  length: number;
+  width: number;
+  opacity: number;
+}
+
+const NEAR_RAIN: RainLayerSpec = { colGap: 26, rowGap: 64, drift: 6, length: 22, width: 1.6, opacity: 0.7 };
+const FAR_RAIN: RainLayerSpec = { colGap: 19, rowGap: 46, drift: 4, length: 12, width: 1, opacity: 0.35 };
+
+/**
+ * Evenly spaced rain on one slant. Each column gets a fixed stagger so it doesn't
+ * look like a grid, and each row is shifted by `drift` so that sliding the whole
+ * layer by (-drift, rowGap) lands every drop exactly on the next one — a seamless loop.
+ */
+function RainLayer({ spec }: { spec: RainLayerSpec }) {
+  const lines: JSX.Element[] = [];
+  const cols = Math.ceil((SCENE_WIDTH + 60) / spec.colGap);
+  const rows = Math.ceil((SILL_Y + spec.rowGap * 2) / spec.rowGap) + 1;
+  const dx = (spec.drift * spec.length) / spec.rowGap;
+  for (let c = 0; c < cols; c++) {
+    const stagger = ((c * 37) % 11) / 11; // deterministic 0..1 pattern, never random
+    for (let r = -2; r < rows; r++) {
+      const y = r * spec.rowGap + stagger * spec.rowGap;
+      const x = c * spec.colGap + 8 - (y / spec.rowGap) * spec.drift;
+      lines.push(<line key={`${c}:${r}`} x1={x} y1={y} x2={x - dx} y2={y + spec.length} />);
+    }
+  }
   return (
-    <g stroke="#93C5FD" strokeWidth={1.4} strokeLinecap="round" opacity={0.65}>
-      {/* Column 1 */}
-      <line x1={30} y1={10} x2={20} y2={58} />
-      <line x1={38} y1={120} x2={28} y2={168} />
-      <line x1={25} y1={230} x2={15} y2={278} />
-
-      {/* Column 2 */}
-      <line x1={70} y1={40} x2={60} y2={88} />
-      <line x1={78} y1={150} x2={68} y2={198} />
-      <line x1={65} y1={260} x2={55} y2={305} />
-
-      {/* Column 3 */}
-      <line x1={115} y1={15} x2={105} y2={62} />
-      <line x1={125} y1={130} x2={115} y2={178} />
-      <line x1={110} y1={240} x2={100} y2={288} />
-
-      {/* Column 4 */}
-      <line x1={165} y1={45} x2={155} y2={92} />
-      <line x1={172} y1={165} x2={162} y2={212} />
-      <line x1={160} y1={270} x2={150} y2={310} />
-
-      {/* Column 5 */}
-      <line x1={215} y1={20} x2={205} y2={68} />
-      <line x1={225} y1={135} x2={215} y2={182} />
-      <line x1={210} y1={245} x2={200} y2={292} />
-
-      {/* Column 6 */}
-      <line x1={265} y1={50} x2={255} y2={98} />
-      <line x1={272} y1={160} x2={262} y2={208} />
-      <line x1={260} y1={270} x2={250} y2={310} />
-
-      {/* Column 7 */}
-      <line x1={310} y1={25} x2={300} y2={72} />
-      <line x1={320} y1={140} x2={310} y2={188} />
-      <line x1={305} y1={250} x2={295} y2={298} />
-
-      {/* Column 8 */}
-      <line x1={355} y1={55} x2={345} y2={102} />
-      <line x1={362} y1={170} x2={352} y2={218} />
-      <line x1={350} y1={275} x2={340} y2={315} />
+    <g stroke="#9CC9F5" strokeWidth={spec.width} strokeLinecap="round" opacity={spec.opacity}>
+      {lines}
     </g>
   );
 }
 
-export function FocusScene({ catId, isFocusing, isFinished, reduced = false }: FocusSceneProps) {
+export function FocusScene({ catId, isFocusing, isFinished, reduced = false, wear }: FocusSceneProps) {
   const [headTilt, setHeadTilt] = useState<-1 | 0 | 1>(0);
 
   // During post-focus, cat occasionally looks around gently
@@ -161,11 +157,11 @@ export function FocusScene({ catId, isFocusing, isFinished, reduced = false }: F
         className={`focus-rain-layer ${isFinished && !isFocusing ? 'focus-rain-fading' : ''}`}
         pointerEvents="none"
       >
-        <g className="lc-seamless-rain-1">
-          <RainStreakGroup />
+        <g className="lc-rain-far">
+          <RainLayer spec={FAR_RAIN} />
         </g>
-        <g className="lc-seamless-rain-2">
-          <RainStreakGroup />
+        <g className="lc-rain-near">
+          <RainLayer spec={NEAR_RAIN} />
         </g>
 
         {/* Rain Droplets on Window Glass */}
@@ -251,6 +247,7 @@ export function FocusScene({ catId, isFocusing, isFinished, reduced = false }: F
           expression={isFocusing ? 'sleep' : isFinished ? 'happyShut' : 'hopeful'}
           headTilt={headTilt}
           size={240}
+          wear={wear}
         />
       </g>
 

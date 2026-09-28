@@ -1,3 +1,6 @@
+-- Fresh install: run this file first, then infra/supabase_upgrade_v2.sql.
+-- (The Cat table created below is dropped by the v2 upgrade; the cat catalog now lives in code.)
+
 -- 1. Create Enums
 DO $$ BEGIN
     CREATE TYPE "CommitmentStatus" AS ENUM ('ACTIVE', 'COMPLETED', 'FAILED');

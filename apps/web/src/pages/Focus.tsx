@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { CAT_SEED, type CatId, type CommitmentDto } from '@purrpose/shared';
+import { useQueryClient } from '@tanstack/react-query';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { CAT_SEED, FREE_CAT_IDS, type CatId } from '@purrpose/shared';
 import { api } from '../lib/api.js';
+import { useCommitments, useMe } from '../lib/queries.js';
 import { ambient } from '../lib/ambient.js';
 import { FocusScene } from '../components/FocusScene.js';
 import { DoodleButton, Chip, SketchCard, Field, Select } from '../components/ui/index.js';
@@ -18,26 +20,74 @@ function fmtDuration(totalSeconds: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+const LEGACY_PREFIX = 'purrpose.focus_time.';
+
+/** One-time move of focus minutes that older versions kept only in this browser. */
+async function migrateLegacyFocusTime(): Promise<boolean> {
+  let keys: string[] = [];
+  try {
+    keys = Object.keys(localStorage).filter(k => k.startsWith(LEGACY_PREFIX));
+  } catch {
+    return false;
+  }
+  for (const key of keys) {
+    const secs = Math.min(12 * 3600, Math.floor(Number(localStorage.getItem(key)) || 0));
+    const commitmentId = key.slice(LEGACY_PREFIX.length);
+    if (secs > 0) {
+      await api('/focus/sessions', {
+        method: 'POST',
+        body: {
+          commitmentId,
+          catId: 'orange',
+          durationSec: secs,
+          startedAtISO: new Date(Date.now() - secs * 1000).toISOString(),
+        },
+      }).catch(() => undefined); // commitment may be gone — nothing to keep then
+    }
+    localStorage.removeItem(key);
+  }
+  return keys.length > 0;
+}
+
 export function Focus() {
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const me = useMe();
+  const unlocked: readonly string[] = me.data?.unlockedCatIds ?? FREE_CAT_IDS;
   const [status, setStatus] = useState<FocusStatus>('idle');
   const [seconds, setSeconds] = useState(0);
   const [selectedCat, setSelectedCat] = useState<CatId>(() => {
     if (typeof localStorage === 'undefined') return 'orange';
     const saved = localStorage.getItem('purrpose.focus_cat') as CatId;
-    return CAT_SEED.some(c => c.id === saved) ? saved : 'orange';
+    return (FREE_CAT_IDS as readonly string[]).includes(saved) ? saved : 'orange';
   });
-  const [selectedCommitmentId, setSelectedCommitmentId] = useState<string>('');
+  const [selectedCommitmentId, setSelectedCommitmentId] = useState<string>(() => params.get('commitment') ?? '');
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const startedAtRef = useRef<number | null>(null);
+  const savedCatRef = useRef<string | null>(
+    typeof localStorage !== 'undefined' ? localStorage.getItem('purrpose.focus_cat') : null,
+  );
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [zenMode, setZenMode] = useState(false);
   const [sessionSavedTime, setSessionSavedTime] = useState<number | null>(null);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const commitments = useQuery({
-    queryKey: ['commitments'],
-    queryFn: () => api<{ commitments: CommitmentDto[] }>('/commitments'),
-  });
+  const commitments = useCommitments();
   const activeCommitments = (commitments.data?.commitments ?? []).filter(c => c.status === 'ACTIVE');
+
+  useEffect(() => {
+    void migrateLegacyFocusTime().then(moved => {
+      if (moved) void qc.invalidateQueries({ queryKey: ['focus-summary'] });
+    });
+  }, [qc]);
+
+  // Restore a saved premium companion once we know it's unlocked.
+  useEffect(() => {
+    const saved = savedCatRef.current;
+    if (saved && unlocked.includes(saved)) setSelectedCat(saved as CatId);
+  }, [me.data]);
 
   // Persist selected cat
   useEffect(() => {
@@ -78,6 +128,8 @@ export function Focus() {
   const startFocus = () => {
     setStatus('focusing');
     setSessionSavedTime(null);
+    setSaveError(null);
+    startedAtRef.current = Date.now();
     if (soundEnabled) {
       ambient.startFocus();
     }
@@ -108,15 +160,25 @@ export function Focus() {
       ambient.stop();
     }
 
-    // Save tracked time to associated commitment if selected
-    if (selectedCommitmentId && finalSeconds > 0) {
-      const storageKey = `purrpose.focus_time.${selectedCommitmentId}`;
-      const prev = Number(localStorage.getItem(storageKey) || '0');
-      localStorage.setItem(storageKey, String(prev + finalSeconds));
+    // Save the session on the server (linked to a commitment if one was picked).
+    if (finalSeconds > 0) {
+      const startedAt = startedAtRef.current ?? Date.now() - finalSeconds * 1000;
+      api('/focus/sessions', {
+        method: 'POST',
+        body: {
+          ...(selectedCommitmentId ? { commitmentId: selectedCommitmentId } : {}),
+          catId: selectedCat,
+          durationSec: Math.min(finalSeconds, 12 * 3600),
+          startedAtISO: new Date(startedAt).toISOString(),
+        },
+      })
+        .then(() => qc.invalidateQueries({ queryKey: ['focus-summary'] }))
+        .catch(() => setSaveError('Could not save this session. Check your connection.'));
     }
   };
 
   const resetSession = () => {
+    startedAtRef.current = null;
     setStatus('idle');
     setSeconds(0);
     setSessionSavedTime(null);
@@ -186,6 +248,7 @@ export function Focus() {
           catId={selectedCat}
           isFocusing={isFocusing}
           isFinished={isFinished}
+          wear={{ collar: me.data?.loadout.neck === 'collar-bell', bow: me.data?.loadout.neck === 'bow-tie' }}
         />
       </section>
 
@@ -262,6 +325,7 @@ export function Focus() {
           <p style={{ margin: '0 0 8px', fontSize: 14.5 }}>
             You stayed in deep flow for <strong>{fmtDuration(sessionSavedTime)}</strong>. The rain has stopped and fireflies are dancing outside the window.
           </p>
+          {saveError && <p className="form-error">{saveError}</p>}
           {selectedCommitmentId && (
             <p className="chip" style={{ display: 'inline-block', background: 'var(--paper-warm)', fontSize: 12 }}>
               ⏱ Time added to: {activeCommitments.find(c => c.id === selectedCommitmentId)?.title}
@@ -279,15 +343,17 @@ export function Focus() {
               Choose your focus companion:
             </span>
             <div className="chip-row" style={{ margin: 0 }}>
-              {CAT_SEED.map(c => (
-                <Chip
-                  key={c.id}
-                  active={selectedCat === c.id}
-                  onClick={() => setSelectedCat(c.id)}
-                >
-                  {c.name} ({c.type.toLowerCase()})
-                </Chip>
-              ))}
+              {CAT_SEED.map(c =>
+                unlocked.includes(c.id) ? (
+                  <Chip key={c.id} active={selectedCat === c.id} onClick={() => setSelectedCat(c.id)}>
+                    {c.name} ({c.type.toLowerCase()})
+                  </Chip>
+                ) : (
+                  <Chip key={c.id} onClick={() => navigate(`/shop?cat=${c.id}`)}>
+                    🔒 {c.name} · {c.pricePurr}
+                  </Chip>
+                ),
+              )}
             </div>
           </div>
 

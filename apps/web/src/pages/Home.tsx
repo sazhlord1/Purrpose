@@ -1,48 +1,59 @@
-import { useEffect, useRef, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
-import { CatScene, quirkFor, seedFor, type CatState } from '@purrpose/cats';
-import { computePhase, now, type CommitmentDto, type MeResponse } from '@purrpose/shared';
-import { api } from '../lib/api.js';
-import { fmtRemaining } from '../lib/format.js';
-import { notifyFailure } from '../lib/notifications.js';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
+import { CatScene } from '@purrpose/cats';
+import { catById, now } from '@purrpose/shared';
+import { CatCard } from '../components/CatCard.js';
+import { StagePath } from '../components/StagePath.js';
 import { DoodleButton, Skeleton, SketchCard } from '../components/ui/index.js';
+import { commitmentView, localHour } from '../lib/commitmentView.js';
+import { fmtRemaining } from '../lib/format.js';
+import { catNameOf, moodLabel, sceneCaption } from '../lib/labels.js';
+import { notifyFailure } from '../lib/notifications.js';
+import { useCommitments, useMe } from '../lib/queries.js';
 
-function greeting(): string {
-  const h = new Date(now()).getHours();
-  if (h < 5) return 'Up late.';
-  if (h < 12) return 'Good morning.';
-  if (h < 18) return 'Good afternoon.';
+function greeting(hour: number): string {
+  if (hour < 5) return 'Up late.';
+  if (hour < 12) return 'Good morning.';
+  if (hour < 18) return 'Good afternoon.';
   return 'Good evening.';
 }
 
+function isReduced(): boolean {
+  try {
+    return localStorage.getItem('purrpose.reducedMotion') === '1';
+  } catch {
+    return false;
+  }
+}
+
 export function Home() {
-  const navigate = useNavigate();
   const qc = useQueryClient();
-  const me = useQuery({ queryKey: ['me'], queryFn: () => api<MeResponse>('/me') });
-  const commitments = useQuery({
-    queryKey: ['commitments'],
-    queryFn: () => api<{ commitments: CommitmentDto[] }>('/commitments'),
-    refetchInterval: 30_000,
-  });
+  const me = useMe();
+  const commitments = useCommitments(30_000);
   const [, setTick] = useState(0);
   const crossedRef = useRef<Set<string>>(new Set());
+  const prevStatuses = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
     const t = setInterval(() => setTick(n => n + 1), 1000);
     return () => clearInterval(t);
   }, []);
 
-  const all = commitments.data?.commitments ?? [];
-  const active = all.filter(c => c.status === 'ACTIVE');
-  const mealsAtStake = me.data?.balances.find(b => b.creditType === 'MEALS')?.stakedActive ?? 0;
-  const mealsAvailable = me.data?.balances.find(b => b.creditType === 'MEALS')?.available ?? 0;
   const t = now();
-  const reduced = typeof localStorage !== 'undefined' && localStorage.getItem('purrpose.reducedMotion') === '1';
+  const hour = localHour(t);
+  const reduced = isReduced();
+  const all = useMemo(() => commitments.data?.commitments ?? [], [commitments.data]);
 
-  const topActive = active[0];
+  // Most urgent first: the featured cat is the one closest to its deadline.
+  const active = all
+    .filter(c => c.status === 'ACTIVE')
+    .map(c => ({ c, view: commitmentView(c, t) }))
+    .sort((a, b) => a.view.deadlineMs - b.view.deadlineMs);
+  const [featured, ...others] = active;
 
-  const prevStatuses = useRef<Map<string, string>>(new Map());
+  const meals = me.data?.balances.find(b => b.creditType === 'MEALS');
+
   useEffect(() => {
     if (!commitments.data) return;
     for (const c of all) {
@@ -52,19 +63,24 @@ export function Home() {
     }
   }, [commitments.data, all]);
 
-  for (const c of active) {
-    if (Date.parse(c.deadlineISO) <= t && !crossedRef.current.has(c.id)) {
+  // A deadline passed while watching: ask the server to settle it.
+  for (const { c, view } of active) {
+    if (view.pending && !crossedRef.current.has(c.id)) {
       crossedRef.current.add(c.id);
       void qc.invalidateQueries({ queryKey: ['commitments'] });
       void qc.invalidateQueries({ queryKey: ['me'] });
     }
   }
 
+  const hungry = active.find(a => a.view.phase === 'VERY_CLOSE');
+  // The cat's pressure line ("you won't make it. i can smell it.") — not a stage celebration line.
+  const taunt = hungry ? (catById(hungry.c.catId)?.config.quirks.closeLines[0] ?? null) : null;
+
   return (
     <main>
       <header style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <h1>{greeting()}</h1>
+          <h1>{greeting(hour)}</h1>
           <Link to="/settings" className="muted" aria-label="Settings">
             ⚙ settings
           </Link>
@@ -74,25 +90,23 @@ export function Home() {
             {active.length} active
           </span>
           <span className="chip" style={{ color: 'var(--stamp-red)', fontWeight: 600 }}>
-            {mealsAtStake} meals at stake
+            {meals?.stakedActive ?? 0} meals at stake
           </span>
           <span className="chip" style={{ color: '#2E6930', fontWeight: 600 }}>
-            pantry: {mealsAvailable}
+            pantry: {meals?.available ?? 0}
           </span>
+          <Link to="/shop" className="chip" style={{ textDecoration: 'none', fontWeight: 600 }}>
+            🪙 {me.data?.purr ?? 0} PURR
+          </Link>
         </div>
-        {(() => {
-          const closeOne = active.find(c => c.phase === 'VERY_CLOSE');
-          if (!closeOne) return null;
-          const quip = quirkFor(closeOne.catId, 'VERY_CLOSE', 4);
-          return quip ? (
-            <p className="muted" style={{ marginTop: -8 }} role="status">
-              "{quip}"
-            </p>
-          ) : null;
-        })()}
+        {taunt && hungry && (
+          <p className="muted" style={{ marginTop: -8 }} role="status">
+            {catNameOf(hungry.c.catId)}: “{taunt}”
+          </p>
+        )}
       </header>
 
-      <section aria-label="The cat world">
+      <section aria-label="Your cats">
         {commitments.isLoading ? (
           <div style={{ padding: 12, display: 'grid', gap: 12 }}>
             <Skeleton h={380} />
@@ -104,16 +118,9 @@ export function Home() {
             <p>The cats scattered. Something went wrong on the way home.</p>
             <DoodleButton onClick={() => void commitments.refetch()}>Try again</DoodleButton>
           </SketchCard>
-        ) : active.length === 0 ? (
+        ) : !featured ? (
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
-            <CatScene
-              catId="orange"
-              state="SLEEPING"
-              phaseRatio={0.05}
-              seed={1234}
-              reduced={reduced}
-              showMarkers={false}
-            />
+            <CatScene catId="orange" state="SLEEPING" phaseRatio={0.05} seed={1234} reduced={reduced} hour={hour} items={me.data?.loadout} />
             <div style={{ marginTop: 14 }}>
               <p className="muted">
                 A stray cat is waiting in its box.
@@ -128,60 +135,50 @@ export function Home() {
             </div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {topActive && (
+          <>
+            {/* Not a link: tap the cat to pet it. The title below opens the pact. */}
+            <div className="featured-scene">
               <CatScene
-                catId={topActive.catId}
-                state={(
-                  topActive.phase && ['INITIAL', 'WAITING', 'ANTICIPATING', 'VERY_CLOSE'].includes(topActive.phase)
-                    ? topActive.phase
-                    : computePhase({
-                        status: topActive.status,
-                        createdAtISO: topActive.createdAtISO,
-                        deadlineISO: topActive.deadlineISO,
-                        nowMs: t,
-                      }) === 'PAST_DUE'
-                      ? 'VERY_CLOSE'
-                      : 'WAITING'
-                ) as CatState}
-                phaseRatio={Math.min(
-                  1,
-                  Math.max(0, (t - Date.parse(topActive.createdAtISO)) / Math.max(1, Date.parse(topActive.deadlineISO) - Date.parse(topActive.createdAtISO))),
-                )}
-                createdAtISO={topActive.createdAtISO}
-                deadlineISO={topActive.deadlineISO}
-                seed={seedFor(topActive.id, Date.parse(topActive.createdAtISO), t)}
+                catId={featured.c.catId}
+                state={featured.view.sceneState}
+                phaseRatio={featured.view.phaseRatio}
+                seed={featured.view.seed}
                 reduced={reduced}
-                showMarkers={true}
+                hour={hour}
+                items={me.data?.loadout}
+                interactive
               />
-            )}
-            <div style={{ padding: '0 4px 8px' }}>
-              {active.map(c => {
-                const crossed = Date.parse(c.deadlineISO) <= t;
-                return (
-                  <div className="row" key={c.id}>
-                    <div>
-                      <Link to={`/commitment/${c.id}`}>
-                        <strong style={{ fontSize: 16 }}>{c.title}</strong>
-                      </Link>
-                      <div className="muted" style={{ marginTop: 2 }}>
-                        {c.consequenceAmount} at stake ·{' '}
-                        {crossed ? 'checking on your cat…' : fmtRemaining(Math.max(0, Date.parse(c.deadlineISO) - t))}
-                      </div>
-                    </div>
-                    <span className={`stamp ${crossed || c.phase === 'VERY_CLOSE' ? 'stamp-fed' : ''}`}>
-                      {crossed ? '…' : (c.phase ?? c.status)}
-                    </span>
-                  </div>
-                );
-              })}
-              <div style={{ marginTop: 14 }}>
-                <DoodleButton href="/new" variant="primary" size="big">
-                  + New Commitment
-                </DoodleButton>
-              </div>
             </div>
-          </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginTop: 10 }}>
+              <Link to={`/commitment/${featured.c.id}`} style={{ fontSize: 17, fontWeight: 700, color: 'var(--ink)' }}>
+                {featured.c.title} →
+              </Link>
+              <span className={`stamp ${moodLabel(featured.view.pending ? undefined : featured.view.phase).hot ? 'stamp-fed' : ''}`}>
+                {featured.view.pending ? '…' : fmtRemaining(featured.view.remainingMs)}
+              </span>
+            </div>
+            <p className="muted" style={{ margin: '4px 0 0' }}>
+              {sceneCaption(featured.c.catId, featured.view.phase, featured.view.stage.label, featured.view.pending)}
+            </p>
+            <StagePath stage={featured.view.stage} nextStageInMs={featured.view.nextStageInMs} />
+
+            {others.length > 0 && (
+              <>
+                <h2 style={{ marginBottom: 0 }}>Your other cats</h2>
+                <div className="cat-grid">
+                  {others.map(({ c, view }) => (
+                    <CatCard key={c.id} c={c} view={view} hour={hour} items={me.data?.loadout} />
+                  ))}
+                </div>
+              </>
+            )}
+
+            <div style={{ marginTop: 14 }}>
+              <DoodleButton href="/new" variant="primary" size="big">
+                + New Commitment
+              </DoodleButton>
+            </div>
+          </>
         )}
       </section>
     </main>

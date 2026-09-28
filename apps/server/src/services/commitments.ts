@@ -1,19 +1,18 @@
 import type { CatId, ConsequenceType } from '@purrpose/shared';
 import {
-  CAT_SEED,
+  GRACE_WINDOW_MS,
   buildTimeView,
   canStake,
-  computePhase,
   type CommitmentDto,
   type CreateCommitmentInput,
 } from '@purrpose/shared';
 import { Prisma, type PrismaClient, type Commitment } from '@prisma/client';
 import { AppError } from '../errors.js';
 import type { ClockApi } from '../clock.js';
+import type { Role } from '../auth.js';
+import { assertCatUsable } from './shop.js';
 
 type Tx = Prisma.TransactionClient;
-
-const GRACE_WINDOW_MS = 5 * 60_000;
 
 async function deductForFailure(tx: Tx, commitment: Commitment): Promise<void> {
   await tx.creditTransaction.create({
@@ -58,34 +57,11 @@ async function deductForFailure(tx: Tx, commitment: Commitment): Promise<void> {
 export function makeCommitmentEngine(prisma: PrismaClient, clock: ClockApi) {
   async function createCommitment(
     userId: string,
+    role: Role | undefined,
     input: CreateCommitmentInput,
   ): Promise<Commitment> {
-    let cat = await prisma.cat.findUnique({ where: { id: input.catId } });
-    if (!cat) {
-      const seedCat = CAT_SEED.find(c => c.id === input.catId);
-      if (seedCat) {
-        cat = await prisma.cat.upsert({
-          where: { id: seedCat.id },
-          update: {
-            name: seedCat.name,
-            type: seedCat.type,
-            personality: seedCat.personality,
-            config: seedCat.config as any,
-          },
-          create: {
-            id: seedCat.id,
-            name: seedCat.name,
-            type: seedCat.type,
-            personality: seedCat.personality,
-            config: seedCat.config as any,
-          },
-        });
-      } else {
-        throw new AppError('NOT_FOUND', { catId: input.catId }, 'Unknown cat');
-      }
-    }
-
     return prisma.$transaction(async tx => {
+      await assertCatUsable(tx, userId, role, input.catId);
       const rows = await tx.$queryRaw<{ amount: number }[]>`
         SELECT "amount" FROM "CreditBalance"
         WHERE "userId" = ${userId} AND "creditType" = ${input.consequenceType}::"ConsequenceType"
@@ -270,11 +246,3 @@ export function makeCommitmentEngine(prisma: PrismaClient, clock: ClockApi) {
 
 export type CommitmentEngine = ReturnType<typeof makeCommitmentEngine>;
 
-export function phaseOf(dto: CommitmentDto): string {
-  return dto.phase ?? computePhase({
-    status: dto.status,
-    createdAtISO: dto.createdAtISO,
-    deadlineISO: dto.deadlineISO,
-    nowMs: Date.now(),
-  });
-}

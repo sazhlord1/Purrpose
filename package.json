@@ -16,11 +16,12 @@
     "db:down": "docker compose -f infra/docker-compose.yml down",
     "db:migrate": "pnpm --filter @purrpose/server migrate:deploy",
     "db:seed": "pnpm --filter @purrpose/server seed",
-    "dev": "pnpm --parallel \"/^dev:.*/\"",
+    "dev": "pnpm --parallel --filter @purrpose/server --filter @purrpose/web dev",
     "dev:server": "pnpm --filter @purrpose/server dev",
     "dev:web": "pnpm --filter @purrpose/web dev",
     "smoke": "node scripts/smoke-api.mjs",
-    "gallery:capture": "node scripts/capture-cats.mjs"
+    "gallery:capture": "node scripts/capture-cats.mjs",
+    "vapid:generate": "pnpm --filter @purrpose/server vapid:generate"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

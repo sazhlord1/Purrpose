@@ -1,14 +1,16 @@
-import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
+  CAT_IDS,
   CAT_SEED,
   CONSEQUENCE_TYPES,
   CREDIT_TYPE_LABELS,
+  FREE_CAT_IDS,
+  now,
   type CatId,
   type CommitmentDto,
   type ConsequenceType,
-  type MeResponse,
 } from '@purrpose/shared';
 import { Cat } from '@purrpose/cats';
 import { api, ApiError } from '../lib/api.js';
@@ -16,10 +18,7 @@ import { requestNotificationPermission } from '../lib/notifications.js';
 import { AmountPicker, Chip, DoodleButton, Field, Input, SketchCard } from '../components/ui/index.js';
 import { CanTin, KibbleBag, VetCare } from '../components/doodles/index.js';
 import { PawShake } from '../components/PawShake.js';
-
-interface CatsResponse {
-  cats: Array<{ id: string; name: string; personality: string }>;
-}
+import { useMe } from '../lib/queries.js';
 
 const CAT_QUIPS: Record<string, string> = Object.fromEntries(
   CAT_SEED.map(c => [c.id, c.config.quirks.chosenLine]),
@@ -59,33 +58,64 @@ function localInputValue(ms: number): string {
   return d.toISOString().slice(0, 16);
 }
 
+/** Turns the server's validation details into one readable sentence. */
+function firstFieldError(details: unknown): string | null {
+  const fields = (details as { fieldErrors?: Record<string, string[] | undefined> } | undefined)?.fieldErrors;
+  if (!fields) return null;
+  for (const [field, messages] of Object.entries(fields)) {
+    const msg = messages?.[0];
+    if (!msg) continue;
+    if (field === 'deadlineISO') return `Deadline: ${msg}.`;
+    if (field === 'title') return 'Give your pact a title (up to 80 characters).';
+    return msg;
+  }
+  return null;
+}
+
 export function NewCommitment() {
   const navigate = useNavigate();
-  const cats = useQuery({ queryKey: ['cats'], queryFn: () => api<CatsResponse>('/cats') });
-  const me = useQuery({ queryKey: ['me'], queryFn: () => api<MeResponse>('/me') });
+  const qc = useQueryClient();
+  const [params] = useSearchParams();
+  const me = useMe();
+  const unlocked: readonly string[] = me.data?.unlockedCatIds ?? FREE_CAT_IDS;
 
   const [title, setTitle] = useState('');
-  const [when, setWhen] = useState(() => localInputValue(Date.now() + 24 * 3_600_000));
+  const [when, setWhen] = useState(() => localInputValue(now() + 24 * 3_600_000));
   const [selectedQuick, setSelectedQuick] = useState<'Tonight' | 'Tomorrow' | 'Next week' | null>('Tomorrow');
+  // The first server reply tells us its clock; re-anchor the default deadline to it.
+  useEffect(() => {
+    if (selectedQuick === 'Tomorrow') setWhen(localInputValue(now() + 24 * 3_600_000));
+  }, [me.data?.serverTime]);
   const [creditType, setCreditType] = useState<ConsequenceType>('MEALS');
   const [amount, setAmount] = useState(5);
-  const [catId, setCatId] = useState<CatId>('orange');
+  const requestedCat = params.get('cat');
+  const [catId, setCatId] = useState<CatId>(() =>
+    requestedCat && (FREE_CAT_IDS as readonly string[]).includes(requestedCat) ? (requestedCat as CatId) : 'orange',
+  );
+
+  // "New pact with Mochi" from a result screen: select the requested cat once we know it's unlocked.
+  useEffect(() => {
+    if (requestedCat && (CAT_IDS as readonly string[]).includes(requestedCat) && unlocked.includes(requestedCat)) {
+      setCatId(requestedCat as CatId);
+    }
+  }, [requestedCat, me.data]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [sealedCommitmentId, setSealedCommitmentId] = useState<string | null>(null);
   const [showPawShake, setShowPawShake] = useState(false);
 
-  const minWhen = localInputValue(Date.now() + 6 * 60_000);
+  const minWhen = localInputValue(now() + 6 * 60_000);
   const available = me.data?.balances.find(b => b.creditType === creditType)?.available ?? 0;
   const overstaked = amount > available;
-  const isValid = title.trim().length > 0 && !overstaked;
+  const catUnlocked = unlocked.includes(catId);
+  const isValid = title.trim().length > 0 && !overstaked && catUnlocked;
 
   const currentCat = CAT_SEED.find(c => c.id === catId) ?? CAT_SEED[0];
 
   const handleQuickDeadline = (label: 'Tonight' | 'Tomorrow' | 'Next week', ms: number) => {
     setSelectedQuick(label);
-    setWhen(localInputValue(Date.now() + ms));
+    setWhen(localInputValue(now() + ms));
   };
 
   async function handleConfirmSubmit() {
@@ -104,6 +134,8 @@ export function NewCommitment() {
         },
       });
       void requestNotificationPermission();
+      void qc.invalidateQueries({ queryKey: ['commitments'] });
+      void qc.invalidateQueries({ queryKey: ['me'] });
       setSealedCommitmentId(res.commitment.id);
       setShowPawShake(true);
     } catch (e) {
@@ -112,7 +144,11 @@ export function NewCommitment() {
         e instanceof ApiError
           ? e.code === 'INSUFFICIENT_AVAILABLE'
             ? OVERSTAKE_QUIPS[catId] ?? 'Not enough available credits.'
-            : e.message
+            : e.code === 'CAT_LOCKED'
+              ? `${currentCat.name} is locked. Unlock them in the Cat Shop first.`
+              : e.code === 'INVALID_INPUT'
+                ? firstFieldError(e.details) ?? e.message
+                : e.message
           : 'Something went wrong.',
       );
       setBusy(false);
@@ -230,14 +266,16 @@ export function NewCommitment() {
             >
               {CAT_SEED.map(cat => {
                 const isSelected = catId === cat.id;
+                const locked = !unlocked.includes(cat.id);
                 return (
                   <button
                     key={cat.id}
                     type="button"
                     role="radio"
                     aria-checked={isSelected}
-                    onClick={() => setCatId(cat.id as CatId)}
-                    className={`chip ${isSelected ? 'chip-active' : ''}`}
+                    aria-label={locked ? `${cat.name} — locked, ${cat.pricePurr} PURR in the shop` : cat.name}
+                    onClick={() => (locked ? navigate(`/shop?cat=${cat.id}`) : setCatId(cat.id))}
+                    className={`chip ${isSelected ? 'chip-active' : ''} ${locked ? 'lock-chip' : ''}`}
                     style={{
                       fontSize: 12,
                       padding: '3px 10px',
@@ -245,7 +283,7 @@ export function NewCommitment() {
                       cursor: 'pointer',
                     }}
                   >
-                    {cat.name}
+                    {locked ? `🔒 ${cat.name} · ${cat.pricePurr}` : cat.name}
                   </button>
                 );
               })}

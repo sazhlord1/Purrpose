@@ -19,7 +19,7 @@ export const CAT_STATES: CatState[] = [
   'SATISFIED',
 ];
 
-export type Expression = 'neutral' | 'hopeful' | 'stare' | 'sad' | 'happyShut' | 'sleep';
+export type Expression = 'neutral' | 'bored' | 'hopeful' | 'stare' | 'sad' | 'happyShut' | 'sleep';
 
 export type TailHint = 'up' | 'limp' | 'brace';
 
@@ -133,7 +133,7 @@ export const POSE_BY_STATE: Record<CatState, PoseDef> = {
 
 export const DEFAULT_EXPRESSION: Record<CatState, Expression> = {
   INITIAL: 'neutral',
-  WAITING: 'hopeful',
+  WAITING: 'bored',
   ANTICIPATING: 'hopeful',
   VERY_CLOSE: 'stare',
   SUCCESS: 'sad',

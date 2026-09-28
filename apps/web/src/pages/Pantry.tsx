@@ -5,14 +5,13 @@ import {
   CREDIT_TYPE_LABELS,
   type ConsequenceType,
   type HistoryResponse,
-  type MeResponse,
 } from '@purrpose/shared';
 import { api } from '../lib/api.js';
+import { useMe } from '../lib/queries.js';
 import { fmtDate } from '../lib/format.js';
 import {
   AmountPicker,
   AnimatedNumber,
-  Chip,
   DoodleButton,
   Sheet,
   SketchCard,
@@ -21,12 +20,7 @@ import {
 import {
   BowlEmpty,
   CanTin,
-  CatGrass,
-  CatnipPouch,
-  ChuruTreat,
-  FeatherWand,
   KibbleBag,
-  PlushBed,
   VetCare,
   type DoodleProps,
 } from '../components/doodles/index.js';
@@ -34,61 +28,12 @@ import {
 interface PantryItemMeta {
   id: string;
   name: string;
-  category: 'consequence' | 'treat' | 'toy' | 'comfort' | 'wellness';
   badge: string;
   description: string;
   icon: FC<DoodleProps>;
   creditType?: ConsequenceType;
   stock?: number;
 }
-
-const PANTRY_TREATS_AND_TOYS: PantryItemMeta[] = [
-  {
-    id: 'catnip',
-    name: 'Organic Catnip Pouch',
-    category: 'treat',
-    badge: 'Zoomies Catalyst',
-    description: 'Triggers 15 minutes of chaotic zoomies and playful distraction.',
-    icon: CatnipPouch,
-    stock: 4,
-  },
-  {
-    id: 'churu',
-    name: 'Creamy Tuna Churu',
-    category: 'treat',
-    badge: 'Emergency Bribe',
-    description: 'Helps the cat recover faster after a missed goal with pure gourmet puree.',
-    icon: ChuruTreat,
-    stock: 6,
-  },
-  {
-    id: 'feather-wand',
-    name: 'Feather Wand & Bell',
-    category: 'toy',
-    badge: 'Play & Focus',
-    description: 'Increases energy and keeps your opponent pleasantly occupied during study sessions.',
-    icon: FeatherWand,
-    stock: 1,
-  },
-  {
-    id: 'plush-bed',
-    name: 'Plush Donut Cat Bed',
-    category: 'comfort',
-    badge: 'Recovery',
-    description: 'Cloud-soft resting cushion that encourages deep, peaceful cat naps.',
-    icon: PlushBed,
-    stock: 1,
-  },
-  {
-    id: 'cat-grass',
-    name: 'Fresh Cat Grass Pot',
-    category: 'wellness',
-    badge: 'Zen & Digestion',
-    description: 'Organic green sprouts that boost digestion and promote serene feline zen.',
-    icon: CatGrass,
-    stock: 2,
-  },
-];
 
 const CONSEQUENCE_META: Record<ConsequenceType, { description: string; badge: string; icon: FC<DoodleProps> }> = {
   MEALS: {
@@ -110,7 +55,7 @@ const CONSEQUENCE_META: Record<ConsequenceType, { description: string; badge: st
 
 export function Pantry() {
   const qc = useQueryClient();
-  const me = useQuery({ queryKey: ['me'], queryFn: () => api<MeResponse>('/me') });
+  const me = useMe();
   const history = useQuery({ queryKey: ['history'], queryFn: () => api<HistoryResponse>('/history') });
 
   const [selectedItem, setSelectedItem] = useState<PantryItemMeta | null>(null);
@@ -156,7 +101,6 @@ export function Pantry() {
     openItemDetail({
       id: creditType,
       name: CREDIT_TYPE_LABELS[creditType],
-      category: 'consequence',
       badge: meta.badge,
       description: meta.description,
       icon: meta.icon,
@@ -178,7 +122,9 @@ export function Pantry() {
         )}
       </h1>
       <div className="chip-row">
-        <span className="chip">dev mode: no real payments</span>
+        <DoodleButton href="/shop" variant="primary">
+          🪙 {me.data?.purr ?? 0} PURR · Cat Shop →
+        </DoodleButton>
         <span className="chip">click any item to inspect</span>
       </div>
 
@@ -284,81 +230,6 @@ export function Pantry() {
         );
       })}
 
-      <div style={{ margin: '28px 0 16px' }}>
-        <h2>Treats & Play Catalog</h2>
-        <p className="muted" style={{ marginTop: -6 }}>
-          Special items to keep your opponent active, cozy, and well-cared for.
-        </p>
-      </div>
-
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-          gap: 12,
-          marginBottom: 24,
-        }}
-      >
-        {PANTRY_TREATS_AND_TOYS.map(item => {
-          const Icon = item.icon;
-          return (
-            <div
-              key={item.id}
-              className="card card-a"
-              style={{
-                margin: 0,
-                padding: '12px 10px',
-                cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                textAlign: 'center',
-                position: 'relative',
-              }}
-              onClick={() => openItemDetail(item)}
-              tabIndex={0}
-              role="button"
-              aria-label={`Inspect ${item.name}`}
-              onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && openItemDetail(item)}
-            >
-              <span
-                style={{
-                  position: 'absolute',
-                  top: 8,
-                  right: 8,
-                  fontSize: 10.5,
-                  fontWeight: 600,
-                  background: 'var(--paper)',
-                  border: '1px solid var(--ink)',
-                  borderRadius: 999,
-                  padding: '1px 6px',
-                }}
-              >
-                x{item.stock}
-              </span>
-              <div
-                style={{
-                  width: 54,
-                  height: 54,
-                  display: 'grid',
-                  placeItems: 'center',
-                  background: 'var(--paper)',
-                  border: '1.5px solid var(--ink)',
-                  borderRadius: '45% 55% 50% 50%',
-                  margin: '6px 0 8px',
-                }}
-              >
-                <Icon size={32} strokeWidth={2} />
-              </div>
-              <strong style={{ fontSize: 13.5, lineHeight: 1.2 }}>{item.name}</strong>
-              <span className="muted" style={{ fontSize: 11, marginTop: 4 }}>
-                {item.badge}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
       <p className="muted" style={{ fontSize: 13 }}>
         Available = balance − active stakes. That's the part you can still promise to cats.
       </p>
@@ -429,7 +300,7 @@ export function Pantry() {
               {selectedItem.description}
             </p>
 
-            {selectedItem.creditType ? (
+            {selectedItem.creditType && (
               <div style={{ width: '100%', marginTop: 8 }}>
                 <p className="muted" style={{ marginBottom: 8, fontSize: 13 }}>
                   Select top-up amount for {selectedItem.name}:
@@ -445,19 +316,6 @@ export function Pantry() {
                   </DoodleButton>
                   <DoodleButton onClick={() => setSelectedItem(null)}>Close</DoodleButton>
                 </div>
-              </div>
-            ) : (
-              <div style={{ marginTop: 12, display: 'flex', gap: 12 }}>
-                <DoodleButton
-                  variant="primary"
-                  onClick={() => {
-                    setNote(`Offered ${selectedItem.name} to your cat! Purrs heard in distance.`);
-                    setSelectedItem(null);
-                  }}
-                >
-                  Offer to Cat ✨
-                </DoodleButton>
-                <DoodleButton onClick={() => setSelectedItem(null)}>Close</DoodleButton>
               </div>
             )}
           </div>

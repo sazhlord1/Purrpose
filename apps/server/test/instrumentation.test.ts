@@ -3,6 +3,8 @@ import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { clock } from '../src/clock.js';
 import { checkDatabase, getPrisma } from '../src/db.js';
+import { hashToken } from '../src/security.js';
+import { wipeDatabase } from './helpers.js';
 
 const prisma = getPrisma();
 const dbReady = await checkDatabase(prisma);
@@ -11,12 +13,7 @@ let app: FastifyInstance;
 let token: string;
 
 async function wipe() {
-  await prisma.creditTransaction.deleteMany({});
-  await prisma.commitment.deleteMany({});
-  await prisma.creditBalance.deleteMany({});
-  await prisma.appEvent.deleteMany({});
-  await prisma.session.deleteMany({});
-  await prisma.user.deleteMany({});
+  await wipeDatabase(prisma);
 }
 
 async function eventNames(): Promise<Record<string, number>> {
@@ -91,7 +88,7 @@ describe.skipIf(!dbReady)('AppEvent instrumentation', () => {
     const headers = { authorization: `Bearer ${token}` };
     const commitment = await prisma.commitment.create({
       data: {
-        userId: (await prisma.session.findUniqueOrThrow({ where: { token } })).userId,
+        userId: (await prisma.session.findUniqueOrThrow({ where: { tokenHash: hashToken(token) } })).userId,
         title: 'Doomed instrument',
         deadline: new Date(clock.now() - 60_000),
         catId: 'orange',
