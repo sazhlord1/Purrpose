@@ -6,6 +6,7 @@ import { api } from '../lib/api.js';
 import { useCommitments, useMe } from '../lib/queries.js';
 import { ambient } from '../lib/ambient.js';
 import { FocusScene } from '../components/FocusScene.js';
+import { AppIcon } from '@purrpose/cats';
 import { DoodleButton, Chip, SketchCard, Field, Select } from '../components/ui/index.js';
 
 type FocusStatus = 'idle' | 'focusing' | 'paused' | 'finished';
@@ -225,14 +226,14 @@ export function Focus() {
                 aria-label={soundEnabled ? 'Mute ambient sound' : 'Enable ambient sound'}
                 style={{ fontWeight: 600 }}
               >
-                {soundEnabled ? '🔊 Sound ON' : '🔇 Muted'}
+                {soundEnabled ? <><AppIcon name="sound" size={16} /> Sound on</> : <><AppIcon name="mute" size={16} /> Muted</>}
               </button>
               <button
                 className="chip"
                 onClick={() => setZenMode(z => !z)}
                 aria-label="Toggle Zen mode"
               >
-                Zen ⛶
+                <AppIcon name="expand" size={16} /> Zen
               </button>
             </div>
           </div>
@@ -320,7 +321,7 @@ export function Focus() {
       {isFinished && sessionSavedTime !== null && (
         <SketchCard variant="a" style={{ marginBottom: 16 }}>
           <h2 style={{ fontSize: 22, color: 'var(--accent-green)', margin: '0 0 4px' }}>
-            ✨ Focus Complete!
+            <AppIcon name="sparkle" size={22} /> Focus complete!
           </h2>
           <p style={{ margin: '0 0 8px', fontSize: 14.5 }}>
             You stayed in deep flow for <strong>{fmtDuration(sessionSavedTime)}</strong>. The rain has stopped and fireflies are dancing outside the window.

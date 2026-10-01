@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type FC } from 'react';
 import {
-  CREDIT_TYPE_ICONS,
   CREDIT_TYPE_LABELS,
   type ConsequenceType,
   type HistoryResponse,
 } from '@purrpose/shared';
+import { AppIcon, type IconName } from '@purrpose/cats';
 import { api } from '../lib/api.js';
 import { useMe } from '../lib/queries.js';
 import { fmtDate } from '../lib/format.js';
@@ -19,11 +19,14 @@ import {
 } from '../components/ui/index.js';
 import {
   BowlEmpty,
-  CanTin,
-  KibbleBag,
-  VetCare,
   type DoodleProps,
 } from '../components/doodles/index.js';
+
+/** Coloured doodles for the three credit types (same look as the landing page). */
+const CREDIT_ICON: Record<ConsequenceType, IconName> = { MEALS: 'meals', DRY_FOOD: 'dryFood', VET_CARE: 'vetCare' };
+const MealsIcon: FC<DoodleProps> = ({ size }) => <AppIcon name="meals" size={size} />;
+const DryFoodIcon: FC<DoodleProps> = ({ size }) => <AppIcon name="dryFood" size={size} />;
+const VetCareIcon: FC<DoodleProps> = ({ size }) => <AppIcon name="vetCare" size={size} />;
 
 interface PantryItemMeta {
   id: string;
@@ -39,17 +42,17 @@ const CONSEQUENCE_META: Record<ConsequenceType, { description: string; badge: st
   MEALS: {
     description: 'Gourmet wet food feast — your prime currency staked against procrastination.',
     badge: 'Primary Stake',
-    icon: CanTin,
+    icon: MealsIcon,
   },
   DRY_FOOD: {
     description: 'Crispy crunchy kibble that keeps feline energy steady for long stakeouts.',
     badge: 'Daily Ration',
-    icon: KibbleBag,
+    icon: DryFoodIcon,
   },
   VET_CARE: {
     description: 'Comprehensive medical wellness and checkups for absolute peace of mind.',
     badge: 'High Stakes',
-    icon: VetCare,
+    icon: VetCareIcon,
   },
 };
 
@@ -123,7 +126,7 @@ export function Pantry() {
       </h1>
       <div className="chip-row">
         <DoodleButton href="/shop" variant="primary">
-          🪙 {me.data?.purr ?? 0} PURR · Cat Shop →
+          <AppIcon name="purr" size={18} /> {me.data?.purr ?? 0} PURR · Cat Shop →
         </DoodleButton>
         <span className="chip">click any item to inspect</span>
       </div>
@@ -240,7 +243,7 @@ export function Pantry() {
         {recent.map(e => (
           <div className="row" key={e.id}>
             <span>
-              {CREDIT_TYPE_ICONS[e.creditType]} {e.amount > 0 ? e.amount : ''}{' '}
+              <AppIcon name={CREDIT_ICON[e.creditType]} size={16} /> {e.amount > 0 ? e.amount : ''}{' '}
               {CREDIT_TYPE_LABELS[e.creditType]}
               {e.type === 'FAILURE_DEDUCTION' && ' — fed a cat'}
               {e.type === 'TOPUP' && ' — top-up'}

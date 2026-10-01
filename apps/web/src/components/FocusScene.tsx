@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { CatId } from '@purrpose/shared';
-import { Cat, type CatState, type CatWear } from '@purrpose/cats';
+import { Cat, useGazeFollow, useTextWidth, type CatState, type CatWear } from '@purrpose/cats';
 
 const SCENE_WIDTH = 380;
 const SCENE_HEIGHT = 480;
 const SILL_Y = 320;
 const INK = '#26201D';
+/** Blanket outline: a soft dome over the curled-up cat, tucked into the bed. */
+const BLANKET = 'M156 376 C150 330 176 294 240 292 C304 294 330 330 324 376 Z';
 
 interface FocusSceneProps {
   catId: CatId;
@@ -56,36 +58,51 @@ function RainLayer({ spec }: { spec: RainLayerSpec }) {
   );
 }
 
+/** Fireflies: each wanders its own loop and blinks on its own beat. */
+const FIREFLIES: Array<{ x: number; y: number; path: 'a' | 'b' | 'c'; dur: number; delay: number; blink: number; r: number; tint: string }> = [
+  { x: 60, y: 238, path: 'a', dur: 9, delay: 0, blink: 2.6, r: 2.6, tint: '#E9FF8A' },
+  { x: 118, y: 268, path: 'b', dur: 11, delay: -3, blink: 3.4, r: 2.2, tint: '#FFE27A' },
+  { x: 152, y: 205, path: 'c', dur: 13, delay: -6, blink: 2.2, r: 1.9, tint: '#D4FF9A' },
+  { x: 214, y: 252, path: 'a', dur: 10, delay: -2, blink: 3, r: 2.4, tint: '#FFE27A' },
+  { x: 250, y: 184, path: 'b', dur: 12, delay: -7, blink: 2.8, r: 1.8, tint: '#E9FF8A' },
+  { x: 304, y: 228, path: 'c', dur: 9.5, delay: -4, blink: 3.8, r: 2.5, tint: '#D4FF9A' },
+  { x: 92, y: 172, path: 'c', dur: 14, delay: -9, blink: 2.4, r: 1.6, tint: '#FFF3A6' },
+  { x: 336, y: 270, path: 'a', dur: 11.5, delay: -5, blink: 3.2, r: 2.1, tint: '#FFE27A' },
+  { x: 182, y: 286, path: 'b', dur: 8.5, delay: -1, blink: 2.9, r: 2.3, tint: '#E9FF8A' },
+];
+
 export function FocusScene({ catId, isFocusing, isFinished, reduced = false, wear }: FocusSceneProps) {
   const [headTilt, setHeadTilt] = useState<-1 | 0 | 1>(0);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  // Awake → the eyes follow your mouse / finger. Asleep → they stay shut and still.
+  useGazeFollow(svgRef, !reduced && !isFocusing);
 
-  // During post-focus, cat occasionally looks around gently
+  // After a session the cat looks around, content.
   useEffect(() => {
     if (!isFinished || isFocusing) {
-      setHeadTilt(0);
+      setHeadTilt(isFocusing ? 1 : 0);
       return;
     }
     const interval = setInterval(() => {
       const tilts: Array<-1 | 0 | 1> = [-1, 0, 1, 0];
-      const nextTilt = tilts[Math.floor(Math.random() * tilts.length)];
-      setHeadTilt(nextTilt);
+      setHeadTilt(tilts[Math.floor(Math.random() * tilts.length)]);
     }, 3600);
     return () => clearInterval(interval);
   }, [isFinished, isFocusing]);
 
-  const catState: CatState = isFocusing
-    ? 'SLEEPING'
-    : isFinished
-      ? 'SATISFIED'
-      : 'WAITING';
+  const catState: CatState = isFocusing ? 'SLEEPING' : isFinished ? 'SATISFIED' : 'WAITING';
+  const badge = isFocusing ? 'FOCUSING…' : isFinished ? 'SESSION DONE' : 'READY TO FOCUS';
+  const badgeRef = useRef<SVGTextElement | null>(null);
+  const badgeW = useTextWidth(badgeRef, badge, badge.length * 6.6);
 
   return (
     <svg
+      ref={svgRef}
       viewBox={`0 0 ${SCENE_WIDTH} ${SCENE_HEIGHT}`}
       width="100%"
-      className="purrpose-focus-scene"
+      className={`purrpose-focus-scene ${isFocusing ? 'is-focusing' : ''} ${reduced ? 'is-reduced' : ''}`}
       role="img"
-      aria-label={`Focus mode window scene with ${catId} cat`}
+      aria-label={`Focus room at night with ${catId} cat ${isFocusing ? 'asleep under a blanket' : 'watching you'}`}
       style={{
         borderRadius: 'var(--radius-sketch-a)',
         overflow: 'hidden',
@@ -94,67 +111,71 @@ export function FocusScene({ catId, isFocusing, isFinished, reduced = false, wea
       }}
     >
       <defs>
-        {/* Deep Night Sky Gradient */}
         <linearGradient id="focusNightSky" x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor="#141C2B" />
           <stop offset="60%" stopColor="#1C273C" />
           <stop offset="100%" stopColor="#25344D" />
         </linearGradient>
-
-        {/* Firefly Aura */}
-        <filter id="fireflyAura" x="-100%" y="-100%" width="300%" height="300%">
-          <feGaussianBlur stdDeviation="3" result="glow" />
+        <radialGradient id="focusLamp" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#FFE3A3" stopOpacity={0.75} />
+          <stop offset="45%" stopColor="#F5B04B" stopOpacity={0.32} />
+          <stop offset="100%" stopColor="#F59E0B" stopOpacity={0} />
+        </radialGradient>
+        <radialGradient id="focusCatGlow" cx="50%" cy="55%" r="50%">
+          <stop offset="0%" stopColor="#FFCF8A" stopOpacity={0.42} />
+          <stop offset="70%" stopColor="#E89A5A" stopOpacity={0.12} />
+          <stop offset="100%" stopColor="#E89A5A" stopOpacity={0} />
+        </radialGradient>
+        {/* Warm lamp rim-light around the cat, so dark cats still read against the night. */}
+        <filter id="focusRim" x="-20%" y="-20%" width="140%" height="140%">
+          <feMorphology in="SourceAlpha" operator="dilate" radius="2.2" result="grown" />
+          <feGaussianBlur in="grown" stdDeviation="2.6" result="soft" />
+          <feFlood floodColor="#FFC983" floodOpacity="0.75" />
+          <feComposite in2="soft" operator="in" result="rim" />
           <feMerge>
-            <feMergeNode in="glow" />
+            <feMergeNode in="rim" />
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
-
-        {/* Window Area Clip */}
+        <filter id="fireflyAura" x="-200%" y="-200%" width="500%" height="500%">
+          <feGaussianBlur stdDeviation="2.4" />
+        </filter>
         <clipPath id="focusWindowClip">
           <rect x={15} y={10} width={SCENE_WIDTH - 30} height={SILL_Y - 10} rx={4} />
         </clipPath>
+        <clipPath id="focusBlanketShape">
+          <path d={BLANKET} />
+        </clipPath>
+        <clipPath id="focusBlanketClip">
+          <rect x={120} y={200} width={240} height={180} />
+        </clipPath>
       </defs>
 
-      {/* =========================================================================
-          1. NIGHT SKY & DISTANT RAINY NEIGHBORHOOD (OUTSIDE WINDOW)
-          ========================================================================= */}
+      {/* 1. NIGHT OUTSIDE THE WINDOW */}
       <rect x={0} y={0} width={SCENE_WIDTH} height={SCENE_HEIGHT} fill="url(#focusNightSky)" />
-
-      {/* Distant House Silhouette & Warm Lit Window */}
-      <polygon points="275,320 275,230 335,180 380,210 380,320" fill="#111824" />
-      <rect x="295" y="235" width="20" height="20" rx="2" fill="#F6C445" stroke={INK} strokeWidth={2} />
-      <line x1="305" y1="235" x2="305" y2="255" stroke={INK} strokeWidth={1.5} />
-      <line x1="295" y1="245" x2="315" y2="245" stroke={INK} strokeWidth={1.5} />
-
-      {/* Distant Bokeh Night Lights */}
-      <g opacity={0.55} pointerEvents="none">
-        <circle cx={60} cy={140} r={14} fill="#FDE047" opacity={0.4} />
-        <circle cx={140} cy={200} r={12} fill="#60A5FA" opacity={0.35} />
-        <circle cx={220} cy={160} r={15} fill="#F472B6" opacity={0.3} />
+      <g pointerEvents="none">
+        {[[42, 40, 1.4], [120, 70, 1.1], [190, 34, 1.6], [262, 58, 1.2], [330, 30, 1.5], [300, 104, 1]].map(([x, y, r]) => (
+          <circle key={`${x}-${y}`} className="focus-star" cx={x} cy={y} r={r} fill="#FFF7D6" style={{ animationDelay: `${(x % 7) * 0.4}s` }} />
+        ))}
       </g>
+      {/* A neighbour's house far away on the left, its window glowing (clear of the cat) */}
+      <polygon points="15,320 15,214 44,186 74,212 74,320" fill="#111824" />
+      <rect x="32" y="222" width="20" height="20" rx="2" fill="#F6C445" stroke={INK} strokeWidth={2} className="focus-far-window" />
+      <line x1="42" y1="222" x2="42" y2="242" stroke={INK} strokeWidth={1.5} />
+      <line x1="32" y1="232" x2="52" y2="232" stroke={INK} strokeWidth={1.5} />
+      {/* Dark garden bushes the fireflies hover over */}
+      <path d="M15 320 C20 280 60 270 84 292 C100 262 150 262 168 292 C186 270 226 270 240 296 C262 276 300 282 310 300 L310 320 Z" fill="#0F1A1E" />
 
-      {/* POST-FOCUS CLEAR SKY: Crescent Moon */}
       {isFinished && !isFocusing && (
         <g className="focus-clear-sky" opacity={0.95} pointerEvents="none">
-          <path
-            d="M75 50 A16 16 0 0 0 88 79 A20 20 0 1 1 75 50 Z"
-            fill="#FEF08A"
-            stroke="#FDE047"
-            strokeWidth={1.2}
-          />
-          <circle cx={165} cy={55} r={1.8} fill="#FFFFFF" opacity={0.9} />
-          <circle cx={245} cy={45} r={2.2} fill="#FFFFFF" opacity={0.95} />
-          <circle cx={325} cy={65} r={1.6} fill="#FFFFFF" opacity={0.85} />
+          <path d="M75 50 A16 16 0 0 0 88 79 A20 20 0 1 1 75 50 Z" fill="#FEF08A" stroke="#FDE047" strokeWidth={1.2} />
         </g>
       )}
 
-      {/* =========================================================================
-          2. SEAMLESS RAINFALL (Active during focus)
-          ========================================================================= */}
+      {/* 2. RAIN while you focus */}
       <g
         clipPath="url(#focusWindowClip)"
-        className={`focus-rain-layer ${isFinished && !isFocusing ? 'focus-rain-fading' : ''}`}
+        className={`focus-rain-layer ${isFocusing ? '' : 'focus-rain-fading'}`}
         pointerEvents="none"
       >
         <g className="lc-rain-far">
@@ -163,8 +184,6 @@ export function FocusScene({ catId, isFocusing, isFinished, reduced = false, wea
         <g className="lc-rain-near">
           <RainLayer spec={NEAR_RAIN} />
         </g>
-
-        {/* Rain Droplets on Window Glass */}
         <g fill="#BFDBFE" opacity={0.65}>
           <circle cx={45} cy={80} r={1.6} />
           <circle cx={90} cy={130} r={2} />
@@ -172,118 +191,117 @@ export function FocusScene({ catId, isFocusing, isFinished, reduced = false, wea
           <circle cx={210} cy={110} r={2.2} />
           <circle cx={265} cy={65} r={1.6} />
           <circle cx={325} cy={125} r={1.8} />
-          <circle cx={65} cy={210} r={1.8} />
-          <circle cx={135} cy={195} r={1.5} />
-          <circle cx={235} cy={220} r={2} />
         </g>
       </g>
 
-      {/* =========================================================================
-          3. GLOWING FIREFLIES (Post-Focus)
-          ========================================================================= */}
-      {isFinished && !isFocusing && (
-        <g className="focus-fireflies-layer" filter="url(#fireflyAura)" pointerEvents="none">
-          <g className="lc-firefly-1">
-            <circle cx={80} cy={140} r={3.2} fill="#D9F99D" />
-            <circle cx={80} cy={140} r={7} fill="#BEF264" opacity={0.5} />
+      {/* 3. FIREFLIES — alive whenever it isn't raining: drifting, blinking */}
+      <g clipPath="url(#focusWindowClip)" className={`focus-fireflies ${isFocusing ? 'is-hidden' : ''}`} pointerEvents="none">
+        {FIREFLIES.map((f, i) => (
+          <g key={i} transform={`translate(${f.x} ${f.y})`}>
+            <g className={`ff-wander ff-${f.path}`} style={{ animationDuration: `${f.dur}s`, animationDelay: `${f.delay}s` }}>
+              <g className="ff-blink" style={{ animationDuration: `${f.blink}s`, animationDelay: `${f.delay / 2}s` }}>
+                <circle r={f.r * 3.2} fill={f.tint} opacity={0.55} filter="url(#fireflyAura)" />
+                <circle r={f.r} fill="#FFFDE8" />
+              </g>
+            </g>
           </g>
-          <g className="lc-firefly-2">
-            <circle cx={275} cy={120} r={3.6} fill="#FDE047" />
-            <circle cx={275} cy={120} r={8} fill="#FACC15" opacity={0.5} />
-          </g>
-          <g className="lc-firefly-3">
-            <circle cx={155} cy={185} r={3.0} fill="#A7F3D0" />
-            <circle cx={155} cy={185} r={6.5} fill="#6EE7B7" opacity={0.5} />
-          </g>
-        </g>
-      )}
+        ))}
+      </g>
 
-      {/* =========================================================================
-          4. WOODEN WINDOW FRAME & MULLIONS
-          ========================================================================= */}
+      {/* 4. WINDOW FRAME */}
       <g stroke={INK} strokeWidth={3.5} fill="none" pointerEvents="none">
         <rect x={15} y={8} width={SCENE_WIDTH - 30} height={SILL_Y - 8} rx={4} />
         <line x1={SCENE_WIDTH / 2} y1={8} x2={SCENE_WIDTH / 2} y2={SILL_Y} strokeWidth={3.5} />
       </g>
 
-      {/* =========================================================================
-          5. DARK COZY ROOM SILL & WARM BEDSIDE LAMP ON TABLE
-          ========================================================================= */}
+      {/* 5. ROOM: floor, breathing bedside lamp */}
       <g data-part="room-floor">
-        {/* Dark Room Floor / Sill Base */}
-        <rect x={0} y={SILL_Y} width={SCENE_WIDTH} height={SCENE_HEIGHT - SILL_Y} fill="#544136" stroke={INK} strokeWidth={2.8} />
-
-        {/* Soft Warm Amber Lamp Glow */}
-        <circle cx={86} cy={270} r={70} fill="#F59E0B" opacity={0.22} pointerEvents="none" />
-        <circle cx={86} cy={270} r={42} fill="#FDE68A" opacity={0.48} pointerEvents="none" />
-
-        {/* Small Wooden Side Table on Left */}
+        <rect x={0} y={SILL_Y} width={SCENE_WIDTH} height={SCENE_HEIGHT - SILL_Y} fill="#4A382E" stroke={INK} strokeWidth={2.8} />
+        <ellipse cx={240} cy={300} rx={150} ry={150} fill="url(#focusCatGlow)" pointerEvents="none" />
+        <g className="focus-lamp-glow" pointerEvents="none">
+          <circle cx={86} cy={266} r={120} fill="url(#focusLamp)" />
+        </g>
         <g stroke={INK} strokeWidth={2.6} strokeLinejoin="round">
           <rect x={58} y={320} width={56} height={12} rx="2" fill="#75553D" />
           <rect x={66} y={332} width={8} height={90} fill="#5C3E28" />
           <rect x={98} y={332} width={8} height={90} fill="#5C3E28" />
-          {/* Lamp Base & Stand */}
           <path d="M76 320 C76 310 96 310 96 320 Z" fill="#8A6A4E" />
           <line x1={86} y1={310} x2={86} y2={280} strokeWidth={3.5} />
-          {/* Lampshade (Normal Cozy Orientation: Wide at bottom, narrower at top) */}
-          <polygon points="65,280 107,280 98,245 74,245" fill="#F0C056" />
+          <polygon className="focus-lampshade" points="65,280 107,280 98,245 74,245" fill="#F7C860" />
+          <path d="M70 280 L102 280" stroke="#FFE7A8" strokeWidth={2} />
         </g>
 
-        {/* Deep Plum Round Floor Cushion Centered */}
-        <g transform="translate(240, 360)">
-          <ellipse cx={0} cy={22} rx={78} ry={16} fill="rgba(20,15,12,0.35)" stroke="none" />
-          <ellipse cx={0} cy={10} rx={74} ry={24} fill="#5B435A" stroke={INK} strokeWidth={2.8} />
-          <ellipse cx={0} cy={5} rx={58} ry={16} fill="#6C536B" stroke={INK} strokeWidth={2.2} />
+        {/* Warm plush bed: back half (the front rim is drawn over the cat) */}
+        <g transform="translate(240, 372)">
+          <ellipse cx={0} cy={18} rx={98} ry={18} fill="rgba(10,6,4,0.4)" />
+          <path d="M-94 0 C-98 -26 -60 -36 0 -36 C60 -36 98 -26 94 0 C90 18 50 26 0 26 C-50 26 -90 18 -94 0 Z" fill="#C9673F" stroke={INK} strokeWidth={2.8} />
+          <ellipse cx={0} cy={-10} rx={70} ry={17} fill="#F3D9B5" stroke={INK} strokeWidth={2.2} />
+          <path d="M-52 -14 q8 -4 16 0 M-14 -20 q8 -4 16 0 M26 -14 q8 -4 16 0" fill="none" stroke="#DDBB92" strokeWidth={1.6} strokeLinecap="round" />
         </g>
       </g>
 
-      {/* =========================================================================
-          6. THE CAT (FRONT-FACING SEATED ON CUSHION)
-          ========================================================================= */}
-      <g transform="translate(240, 360) scale(0.95) translate(-120, -254)">
-        <Cat
-          catId={catId}
-          state={catState}
-          expression={isFocusing ? 'sleep' : isFinished ? 'happyShut' : 'hopeful'}
-          headTilt={headTilt}
-          size={240}
-          wear={wear}
-        />
+      {/* 6. THE CAT — awake and watching you; on Start it settles, curls and sleeps */}
+      <g transform="translate(240, 372) scale(0.92)">
+        <g className={`focus-cat ${isFocusing ? 'is-asleep' : ''}`}>
+          <g transform="translate(-120, -254)" filter="url(#focusRim)">
+            <Cat
+              catId={catId}
+              state={catState}
+              expression={isFocusing ? 'sleep' : isFinished ? 'happyShut' : 'hopeful'}
+              headTilt={headTilt}
+              size={240}
+              wear={wear}
+            />
+          </g>
+        </g>
       </g>
 
-      {/* =========================================================================
-          7. PURRING NOTES (During Active Focus)
-          ========================================================================= */}
+      {/* 7. Tucked in: a knitted blanket slides up over the sleeping cat */}
+      <g clipPath="url(#focusBlanketClip)" pointerEvents="none">
+        <g className={`focus-blanket ${isFocusing ? 'is-on' : ''}`}>
+          {/* Draped over the shoulders like a little dome, up to the chin */}
+          <path d={BLANKET} fill="#E8A87C" stroke={INK} strokeWidth={2.6} strokeLinejoin="round" />
+          <g clipPath="url(#focusBlanketShape)">
+            <g fill="none" stroke="#C97B4F" strokeWidth={1.6} strokeLinecap="round">
+              {[326, 342, 358].map(y => (
+                <path key={y} d={Array.from({ length: 18 }, (_, i) => `M${152 + i * 10} ${y} l4 4 l4 -4`).join(' ')} />
+              ))}
+            </g>
+          </g>
+          {/* Turned-down hem along the top */}
+          <path
+            d="M166 344 C164 316 190 298 240 296 C290 298 316 316 314 344 C306 324 284 310 240 309 C196 310 174 324 166 344 Z"
+            fill="#F3C9A6"
+            stroke={INK}
+            strokeWidth={2}
+            strokeLinejoin="round"
+          />
+        </g>
+      </g>
+
+      {/* Front rim of the bed, over the cat's paws (the "loaf" look) */}
+      <g transform="translate(240, 372)" pointerEvents="none">
+        <path d="M-94 0 C-90 18 -50 26 0 26 C50 26 90 18 94 0 C92 -6 84 -12 70 -16 C58 -10 30 -8 0 -8 C-30 -8 -58 -10 -70 -16 C-84 -10 -92 -6 -94 0 Z" fill="#D9774C" stroke={INK} strokeWidth={2.8} strokeLinejoin="round" />
+        <path d="M-66 8 q10 5 20 0 M-10 12 q10 5 20 0 M46 8 q10 5 20 0" fill="none" stroke="#B4572F" strokeWidth={1.8} strokeLinecap="round" />
+      </g>
+
+      {/* 7b. Purr notes while asleep */}
       {isFocusing && !reduced && (
         <g opacity={0.95} pointerEvents="none">
-          <text x={130} y={230} fontSize={22} fill="#F59E0B" style={{ fontFamily: 'Gochi Hand, cursive', fontWeight: 'bold' }} className="lc-zzz">
-            ♪
+          <text x={150} y={230} fontSize={20} fill="#F59E0B" style={{ fontFamily: 'Gochi Hand, cursive', fontWeight: 'bold' }} className="lc-zzz">
+            z
           </text>
-          <text x={330} y={220} fontSize={20} fill="#E07A5F" style={{ fontFamily: 'Gochi Hand, cursive', fontWeight: 'bold' }} className="lc-zzz">
-            ♫
-          </text>
-          <text x={285} y={185} fontSize={18} fill="#F59E0B" style={{ fontFamily: 'Gochi Hand, cursive', fontWeight: 'bold' }} className="lc-zzz">
+          <text x={286} y={214} fontSize={18} fill="#F5C08B" style={{ fontFamily: 'Gochi Hand, cursive', fontWeight: 'bold' }} className="lc-zzz">
             purr…
           </text>
         </g>
       )}
 
-      {/* =========================================================================
-          8. FOCUS STATUS BADGE
-          ========================================================================= */}
+      {/* 8. STATUS BADGE (sized to its text) */}
       <g transform="translate(20, 20)" pointerEvents="none">
-        <rect
-          x={0}
-          y={0}
-          rx={12}
-          ry={12}
-          width={isFocusing ? 130 : isFinished ? 140 : 120}
-          height={26}
-          fill="#FFFDF8"
-          stroke={INK}
-          strokeWidth={1.8}
-        />
+        <rect x={0} y={0} rx={13} ry={13} width={Math.round(badgeW + 24)} height={26} fill="#FFFDF8" stroke={INK} strokeWidth={1.8} />
         <text
+          ref={badgeRef}
           x={12}
           y={17}
           fontSize={12}
@@ -291,7 +309,7 @@ export function FocusScene({ catId, isFocusing, isFinished, reduced = false, wea
           fill={isFocusing ? '#D97706' : isFinished ? '#16A34A' : INK}
           style={{ fontFamily: 'Gochi Hand, cursive', letterSpacing: '0.3px' }}
         >
-          {isFocusing ? '🌧 FOCUSING…' : isFinished ? '✨ SESSION DONE' : '🌙 READY TO FOCUS'}
+          {badge}
         </text>
       </g>
     </svg>

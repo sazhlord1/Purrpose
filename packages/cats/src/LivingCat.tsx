@@ -21,6 +21,7 @@ import {
   type MacroName,
 } from './engine.js';
 import { injectLivingStyle } from './livingCss.js';
+import { useTextWidth } from './textFit.js';
 import { catName, resolveCatConfig } from './config.js';
 import type { CatAction, CatWear } from './FaceKit.js';
 
@@ -808,7 +809,10 @@ function wrapBubble(text: string, max = 26): string[] {
 function SpeechBubble({ text }: { text: string }) {
   const lines = wrapBubble(text);
   const longest = Math.max(...lines.map(l => l.length));
-  const w = Math.max(140, Math.min(300, longest * 8.4 + 36));
+  const textRef = useRef<SVGTextElement | null>(null);
+  // Measured once the handwriting font is in, so the bubble hugs the words.
+  const textW = useTextWidth(textRef, text, longest * 7.6);
+  const w = Math.max(90, Math.min(320, textW + 32));
   const h = 20 * lines.length + 18;
   const mid = w / 2;
   // Outer <g> positions the bubble; the inner <g> carries the pop-in CSS animation.
@@ -826,6 +830,7 @@ function SpeechBubble({ text }: { text: string }) {
         />
         <path d={`M${mid - 8} ${h - 3} h18 v3 h-18 z`} fill="#FFFDF8" stroke="none" />
         <text
+          ref={textRef}
           x={mid}
           y={24}
           textAnchor="middle"

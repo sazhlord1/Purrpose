@@ -12,7 +12,7 @@ import {
   type CommitmentDto,
   type ConsequenceType,
 } from '@purrpose/shared';
-import { Cat } from '@purrpose/cats';
+import { AppIcon, Cat } from '@purrpose/cats';
 import { api, ApiError } from '../lib/api.js';
 import { requestNotificationPermission } from '../lib/notifications.js';
 import { AmountPicker, Chip, DoodleButton, Field, Input, SketchCard } from '../components/ui/index.js';
@@ -193,7 +193,7 @@ export function NewCommitment() {
               background: 'var(--paper)',
             }}
           >
-            ★ FELINE COMMITMENT PACT ★
+            FELINE COMMITMENT PACT
           </span>
         </div>
 
@@ -283,7 +283,7 @@ export function NewCommitment() {
                       cursor: 'pointer',
                     }}
                   >
-                    {locked ? `🔒 ${cat.name} · ${cat.pricePurr}` : cat.name}
+                    {locked ? <><AppIcon name="lock" size={14} /> {cat.name} · {cat.pricePurr}</> : cat.name}
                   </button>
                 );
               })}
@@ -391,7 +391,7 @@ export function NewCommitment() {
               onClick={() => setConfirming(true)}
               style={{ width: '100%', textAlign: 'center', justifyContent: 'center' }}
             >
-              🐾 Seal the Pact
+              <AppIcon name="paw" size={18} /> Seal the Pact
             </DoodleButton>
           </div>
         ) : (

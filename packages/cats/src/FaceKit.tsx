@@ -32,17 +32,21 @@ export interface FaceSpec {
   leg: [number, number];
   /** Under the chin, where a collar / bow tie sits: [centre x, y, half width]. */
   neck: [number, number, number];
+  /** Where the front paws rest (y of the paw centre). */
+  foot: number;
+  /** Paw colour when it differs from the body (white socks, dark points…). */
+  paw?: string;
 }
 
 export const FACE_SPECS: Record<CatId, FaceSpec> = {
-  mochi: { left: [98, 112], right: [142, 112], r: 5.2, pupil: INK, noseY: 125, body: PAPER, leg: [134, 185], neck: [120, 147, 30] },
-  orange: { left: [101, 111], right: [139, 111], r: 5.5, pupil: INK, noseY: 125, body: '#EEB038', leg: [133, 195], neck: [120, 152, 30] },
-  oreo: { left: [92, 94], right: [148, 94], r: 4.5, sclera: 8.5, pupil: INK, noseY: 115, body: PAPER, leg: [144, 190], neck: [120, 147, 32] },
-  pepper: { left: [102, 112], right: [138, 112], r: 5.5, pupil: INK, noseY: 124, body: PAPER, leg: [134, 195], neck: [120, 152, 29] },
-  yuki: { left: [98, 114], right: [142, 114], r: 4.8, pupil: INK, noseY: 124, body: PAPER, leg: [128, 192], neck: [120, 150, 29] },
-  black: { left: [98, 116], right: [142, 116], r: 5, sclera: 9, pupil: '#1E1B18', noseY: 128, body: '#1E1B18', dark: true, leg: [134, 200], neck: [120, 151, 25] },
-  boba: { left: [94, 108], right: [146, 108], r: 4.5, sclera: 8.5, pupil: INK, noseY: 124, body: PAPER, leg: [134, 192], neck: [120, 152, 32] },
-  tuxedo: { left: [102, 112], right: [138, 112], r: 5.5, pupil: INK, noseY: 124, body: PAPER, leg: [132, 200], neck: [120, 152, 29] },
+  mochi: { left: [98, 112], right: [142, 112], r: 5.2, pupil: INK, noseY: 125, body: '#F6E7D2', paw: '#5B4033', leg: [134, 182], foot: 245, neck: [120, 147, 30] },
+  orange: { left: [101, 111], right: [139, 111], r: 5.5, pupil: INK, noseY: 125, body: '#EEB038', leg: [132, 196], foot: 247, neck: [120, 152, 30] },
+  oreo: { left: [92, 94], right: [148, 94], r: 4.5, sclera: 8.5, pupil: INK, noseY: 115, body: '#2B2522', paw: PAPER, leg: [142, 188], foot: 241, neck: [120, 147, 32] },
+  pepper: { left: [102, 112], right: [138, 112], r: 5.5, pupil: INK, noseY: 124, body: '#D8D2C8', leg: [134, 195], foot: 247, neck: [120, 152, 29] },
+  yuki: { left: [98, 114], right: [142, 114], r: 4.8, pupil: INK, noseY: 124, body: PAPER, leg: [134, 190], foot: 245, neck: [120, 150, 29] },
+  black: { left: [98, 116], right: [142, 116], r: 5, sclera: 9, pupil: '#1E1B18', noseY: 128, body: '#1E1B18', dark: true, leg: [134, 200], foot: 247, neck: [120, 151, 25] },
+  boba: { left: [94, 108], right: [146, 108], r: 4.5, sclera: 8.5, pupil: INK, noseY: 124, body: PAPER, leg: [134, 192], foot: 247, neck: [120, 152, 32] },
+  tuxedo: { left: [102, 112], right: [138, 112], r: 5.5, pupil: INK, noseY: 124, body: PAPER, leg: [132, 200], foot: 247, neck: [120, 152, 29] },
 };
 
 /** Things a cat can be doing right now (driven by LivingCat's behavior engine). */
@@ -339,6 +343,62 @@ export function FaceOverlays({
 
 // ─── The cat's own right front paw, lifted ────────────────────────────────────
 
+const DARK_OUTLINE = '#8A817A';
+
+/**
+ * The two front legs as real limbs: a column in the body colour with its two
+ * side lines, ending in a round paw with toe creases. Same shapes as the lifted
+ * paw (PawOverlay), so a leg rising for an action looks like the same leg.
+ */
+export function FrontPaws({ spec }: { spec: FaceSpec }) {
+  const [lx, ly] = spec.leg;
+  const foot = spec.foot;
+  const outline = spec.dark ? DARK_OUTLINE : INK;
+  const legs: Array<[number, 1 | -1]> = [
+    [240 - lx, -1],
+    [lx, 1],
+  ];
+  return (
+    <g data-part="front-paws">
+      {legs.map(([x, side]) => {
+        const px = x + side * 1.5;
+        const bottom = foot - 3;
+        return (
+          <g key={side} className={side === 1 ? 'pcat-leg-r' : undefined}>
+            {/* A chunky foreleg filled with the body colour: slightly wider at the wrist,
+                outlined only on its sides so the top melts into the chest. */}
+            <path
+              d={`M${x - 8} ${ly} L${x + 8} ${ly} L${x + 9.5} ${bottom} L${x - 9.5} ${bottom} Z`}
+              fill={spec.body}
+            />
+            <path
+              d={`M${x - 8} ${ly + 5} L${x - 9.5} ${bottom} M${x + 8} ${ly + 5} L${x + 9.5} ${bottom}`}
+              stroke={outline}
+              strokeWidth={2.6}
+              strokeLinecap="round"
+              fill="none"
+            />
+            {/* A round mitten of a paw with two toe creases */}
+            <path
+              d={`M${px - 12} ${foot + 3} C${px - 12} ${foot - 6} ${px - 6} ${foot - 8} ${px} ${foot - 8} C${px + 6} ${foot - 8} ${px + 12} ${foot - 6} ${px + 12} ${foot + 3} Z`}
+              fill={spec.paw ?? spec.body}
+              stroke={outline}
+              strokeWidth={2.4}
+              strokeLinejoin="round"
+            />
+            <path
+              d={`M${px - 4} ${foot + 2.5} v-4 M${px + 4} ${foot + 2.5} v-4`}
+              stroke={outline}
+              strokeWidth={1.8}
+              strokeLinecap="round"
+            />
+          </g>
+        );
+      })}
+    </g>
+  );
+}
+
 /** Actions performed with the paw. While one runs, the drawn right leg is hidden (.pcat-leg-r). */
 export const PAW_ACTIONS: ReadonlySet<CatAction> = new Set<CatAction>(['lickPaw', 'scratch', 'bat', 'pawUp', 'knead', 'scratchPost']);
 
@@ -355,7 +415,7 @@ export function PawOverlay({ action, spec, noYarn = false }: { action?: CatActio
   if (!action || !PAW_ACTIONS.has(action)) return null;
   const [lx, ly] = spec.leg;
   const [px, py] = pawTarget(action, spec);
-  const outline = spec.dark ? '#FFFDF9' : INK;
+  const outline = spec.dark ? DARK_OUTLINE : INK;
   const limb = `M${lx} ${ly} Q${(lx + px) / 2 + 6} ${(ly + py) / 2} ${px} ${py}`;
   const origin = { transformOrigin: `${lx}px ${ly}px` };
   const loop =
@@ -373,14 +433,14 @@ export function PawOverlay({ action, spec, noYarn = false }: { action?: CatActio
     <g data-part="paw" className="fk-paw-in" style={origin}>
       <g className={loop} style={origin}>
         {/* Same line weight as the drawn legs, filled with the body colour. */}
-        <path d={limb} stroke={outline} strokeWidth={10} strokeLinecap="round" fill="none" opacity={spec.dark ? 0.85 : 1} />
-        <path d={limb} stroke={spec.body} strokeWidth={5.4} strokeLinecap="round" fill="none" />
-        <ellipse cx={px} cy={py} rx={7.5} ry={6.8} fill={spec.body} stroke={outline} strokeWidth={2.2} opacity={spec.dark ? 0.95 : 1} />
+        <path d={limb} stroke={outline} strokeWidth={21} strokeLinecap="round" fill="none" />
+        <path d={limb} stroke={spec.body} strokeWidth={16} strokeLinecap="round" fill="none" />
+        <ellipse cx={px} cy={py} rx={11.5} ry={9} fill={spec.paw ?? spec.body} stroke={outline} strokeWidth={2.2} />
         <g fill="#F4A3AE">
-          <circle cx={px - 3} cy={py - 2.4} r={1.4} />
-          <circle cx={px} cy={py - 3.6} r={1.4} />
-          <circle cx={px + 3} cy={py - 2.4} r={1.4} />
-          <ellipse cx={px} cy={py + 1.8} rx={2.6} ry={2} />
+          <circle cx={px - 4} cy={py - 3} r={1.8} />
+          <circle cx={px} cy={py - 4.6} r={1.8} />
+          <circle cx={px + 4} cy={py - 3} r={1.8} />
+          <ellipse cx={px} cy={py + 2.2} rx={3.4} ry={2.6} />
         </g>
       </g>
       {action === 'scratch' && (
@@ -453,6 +513,13 @@ export const FACE_KIT_CSS = `
   .pcat-body { transition: scale 0.5s cubic-bezier(0.34,1.56,0.64,1), translate 0.5s ease; }
   /* Eyes follow your cursor / finger: CatScene sets --gx/--gy (action looks below still win). */
   .pcat-eyes { translate: var(--gx, 0px) var(--gy, 0px); transition: translate 0.25s ease; }
+  /* …and the head turns and leans toward it (a wrapper, so state/action head poses still apply). */
+  .pcat-gaze-head {
+    transform-box: fill-box;
+    transform-origin: 50% 95%;
+    transform: translate(var(--hx, 0px), var(--hy, 0px)) rotate(var(--hr, 0deg));
+    transition: transform 0.35s cubic-bezier(0.34, 1.3, 0.64, 1);
+  }
 
   /* State postures — individual transform properties stack on top of the breathing/tail animations. */
   .pcat-st-INITIAL .pcat-head { translate: 0 -3px; }

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { CatScene, type CatState, type LivingCatHandle } from '@purrpose/cats';
+import { AppIcon, CatScene, type CatState, type LivingCatHandle } from '@purrpose/cats';
 import { CREDIT_TYPE_LABELS, now, type CommitmentDto } from '@purrpose/shared';
 import { GraceDelete } from '../components/GraceDelete.js';
 import { StagePath } from '../components/StagePath.js';
@@ -173,7 +173,7 @@ export function CommitmentDetail() {
             className="chip"
             style={{ background: 'var(--paper-warm)', color: 'var(--ink)', textDecoration: 'none' }}
           >
-            🌙 Focus Room →
+            <AppIcon name="focus" size={16} /> Focus Room →
           </Link>
         )}
         {pending && <span className="chip">checking on {catName}…</span>}
@@ -200,10 +200,10 @@ export function CommitmentDetail() {
       {showBanner && (
         <div className="result-actions">
           <DoodleButton href={`/new?cat=${c.catId}`} variant="primary">
-            🐾 New pact with {catName}
+            <AppIcon name="paw" size={18} /> New pact with {catName}
           </DoodleButton>
           <DoodleButton onClick={() => void onShare()} disabled={shareState === 'busy'}>
-            {shareState === 'busy' ? 'Drawing…' : shareState === 'done' ? '✓ Shared' : '📤 Share'}
+            {shareState === 'busy' ? 'Drawing…' : shareState === 'done' ? '✓ Shared' : <><AppIcon name="share" size={18} /> Share</>}
           </DoodleButton>
           <DoodleButton href="/">Home</DoodleButton>
         </div>

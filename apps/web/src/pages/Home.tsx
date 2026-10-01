@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { CatScene } from '@purrpose/cats';
+import { AppIcon, CatScene } from '@purrpose/cats';
 import { catById, now } from '@purrpose/shared';
 import { CatCard } from '../components/CatCard.js';
 import { StagePath } from '../components/StagePath.js';
@@ -82,7 +82,7 @@ export function Home() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <h1>{greeting(hour)}</h1>
           <Link to="/settings" className="muted" aria-label="Settings">
-            ⚙ settings
+            <AppIcon name="settings" size={16} /> settings
           </Link>
         </div>
         <div className="chip-row" aria-label="Summary">
@@ -96,7 +96,7 @@ export function Home() {
             pantry: {meals?.available ?? 0}
           </span>
           <Link to="/shop" className="chip" style={{ textDecoration: 'none', fontWeight: 600 }}>
-            🪙 {me.data?.purr ?? 0} PURR
+            <AppIcon name="purr" size={16} /> {me.data?.purr ?? 0} PURR
           </Link>
         </div>
         {taunt && hungry && (

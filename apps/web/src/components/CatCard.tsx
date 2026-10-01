@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { CatScene } from '@purrpose/cats';
+import { AppIcon, CatScene } from '@purrpose/cats';
 import type { CommitmentDto, Loadout } from '@purrpose/shared';
 import type { CommitmentView } from '../lib/commitmentView.js';
 import { fmtRemaining } from '../lib/format.js';
@@ -23,7 +23,7 @@ export function CatCard({ c, view, hour, items }: CatCardProps) {
       <div className="cat-card-body">
         <strong className="cat-card-title">{c.title}</strong>
         <span className="muted cat-card-meta">
-          {view.stage.icon} {catNameOf(c.catId)} · {view.pending ? 'checking…' : fmtRemaining(view.remainingMs)}
+          <AppIcon name={view.stage.icon} size={14} /> {catNameOf(c.catId)} · {view.pending ? 'checking…' : fmtRemaining(view.remainingMs)}
         </span>
         <span className={`stamp ${mood.hot ? 'stamp-fed' : ''}`}>{mood.short}</span>
       </div>

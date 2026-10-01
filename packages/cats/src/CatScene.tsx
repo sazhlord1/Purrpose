@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { CatId, ItemId, Loadout } from '@purrpose/shared';
 import { LivingCat, quirkFor, type LivingCatHandle, type LivingItems } from './LivingCat.js';
+import { IconGlyph } from './icons.js';
+import { useTextWidth } from './textFit.js';
+import { useGazeFollow } from './gaze.js';
 import {
   AquariumArt,
   BallArt,
@@ -494,52 +497,6 @@ function assignRef<T>(ref: React.Ref<T> | undefined, value: T | null): void {
   else (ref as React.MutableRefObject<T | null>).current = value;
 }
 
-/**
- * Pou-style: the cat's eyes follow the mouse or your finger. Writes CSS
- * variables straight onto the <svg> (no re-render); after a few quiet seconds
- * the cat looks back at you.
- */
-function useGazeFollow(svgRef: React.RefObject<SVGSVGElement | null>, enabled: boolean): void {
-  useEffect(() => {
-    const svg = svgRef.current;
-    if (!enabled || !svg || typeof window === 'undefined') return undefined;
-    let frame = 0;
-    let idle = 0;
-    let px = 0;
-    let py = 0;
-    const apply = () => {
-      frame = 0;
-      const eyes = svg.querySelector('.pcat-eyes');
-      if (!eyes) return;
-      const r = eyes.getBoundingClientRect();
-      const dx = px - (r.left + r.width / 2);
-      const dy = py - (r.top + r.height / 2);
-      const dist = Math.hypot(dx, dy) || 1;
-      const reach = Math.min(1, dist / 140); // close to the face → small movement
-      svg.style.setProperty('--gx', `${((dx / dist) * 4 * reach).toFixed(2)}px`);
-      svg.style.setProperty('--gy', `${((dy / dist) * 3 * reach).toFixed(2)}px`);
-    };
-    const onMove = (e: PointerEvent) => {
-      px = e.clientX;
-      py = e.clientY;
-      if (!frame) frame = window.requestAnimationFrame(apply);
-      window.clearTimeout(idle);
-      idle = window.setTimeout(() => {
-        svg.style.setProperty('--gx', '0px');
-        svg.style.setProperty('--gy', '0px');
-      }, 2500);
-    };
-    window.addEventListener('pointermove', onMove, { passive: true });
-    window.addEventListener('pointerdown', onMove, { passive: true });
-    return () => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerdown', onMove);
-      window.cancelAnimationFrame(frame);
-      window.clearTimeout(idle);
-    };
-  }, [enabled, svgRef]);
-}
-
 export function CatScene({
   catId,
   state,
@@ -686,7 +643,12 @@ export function CatScene({
     savePlace('toy', clampPlace('toy', effectiveStage, { x: toyAt.x + side * 26, y: toyAt.y + 3 }));
   }, [fx.swat]);
 
-  const badgeText = `${info.icon} STAGE ${info.stage}: ${info.label.toUpperCase()}`;
+  const badgeTextRef = useRef<SVGTextElement | null>(null);
+  const movingTextRef = useRef<SVGTextElement | null>(null);
+  const movingText = moving ? `Moving day! ${stageInfo(moving.to).label}` : '';
+  const movingW = useTextWidth(movingTextRef, movingText, movingText.length * 8.2);
+  const badgeText = `STAGE ${info.stage} · ${info.label.toUpperCase()}`;
+  const badgeW = useTextWidth(badgeTextRef, badgeText, badgeText.length * 6.6);
   const canMove = interactive && !reduced;
 
   const toSvg = (e: React.PointerEvent): Pt => {
@@ -918,12 +880,16 @@ export function CatScene({
         </g>
       )}
 
-      {/* 7. LIFE PROGRESSION BADGE PILL */}
-      <g transform="translate(24, 24)" pointerEvents="none">
-        <rect x={0} y={0} rx={12} ry={12} width={Math.round(badgeText.length * 7.1 + 22)} height={26} fill="#FFFDF8" stroke={INK} strokeWidth={1.8} />
+      {/* 7. LIFE PROGRESSION BADGE PILL (sized to its text) */}
+      <g transform="translate(20, 20)" pointerEvents="none">
+        <rect x={0} y={0} rx={13} ry={13} width={Math.round(badgeW + 44)} height={28} fill="#FFFDF8" stroke={INK} strokeWidth={1.8} />
+        <g transform="translate(8 4) scale(0.83)">
+          <IconGlyph name={info.icon} />
+        </g>
         <text
-          x={12}
-          y={17}
+          ref={badgeTextRef}
+          x={34}
+          y={18.5}
           fontSize={12}
           fontWeight="bold"
           fill={effectiveStage === 5 ? '#16A34A' : INK}
@@ -933,13 +899,16 @@ export function CatScene({
         </text>
       </g>
 
-      {/* 8. MOVING-DAY BANNER */}
+      {/* 8. MOVING-DAY BANNER (sized to its text) */}
       {moving && (
         <g pointerEvents="none" transform={`translate(${SCENE_WIDTH / 2}, ${SCENE_HEIGHT - 34})`}>
           <g className="lc-moving-banner">
-            <rect x={-120} y={-18} width={240} height={36} rx={16} fill={INK} />
-            <text x={0} y={6} textAnchor="middle" fontSize={17} fill="#FFFDF8" style={{ fontFamily: 'Gochi Hand, cursive' }}>
-              {`Moving day! → ${stageInfo(moving.to).icon} ${stageInfo(moving.to).label}`}
+            <rect x={-(movingW / 2) - 34} y={-19} width={movingW + 68} height={38} rx={17} fill={INK} />
+            <g transform={`translate(${-(movingW / 2) - 26} -12) scale(1)`}>
+              <IconGlyph name={stageInfo(moving.to).icon} />
+            </g>
+            <text ref={movingTextRef} x={14} y={6} textAnchor="middle" fontSize={17} fill="#FFFDF8" style={{ fontFamily: 'Gochi Hand, cursive' }}>
+              {movingText}
             </text>
           </g>
         </g>

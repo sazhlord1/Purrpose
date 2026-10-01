@@ -14,6 +14,7 @@ import { DevDrawer } from './components/DevDrawer.js';
 import { AdminOnly } from './components/AdminOnly.js';
 import { registerServiceWorker, useNotificationScheduler } from './lib/notifications.js';
 import { useCommitments } from './lib/queries.js';
+import { AppIcon } from '@purrpose/cats';
 
 const Settings = lazy(() => import('./pages/Settings.js').then(m => ({ default: m.Settings })));
 const DesignSystem = lazy(() => import('./pages/DesignSystem.js').then(m => ({ default: m.DesignSystem })));
@@ -71,26 +72,26 @@ function Shell() {
           </MotionConfig>
           <nav className="nav" aria-label="Main">
             <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
-              <span className="nav-icon" aria-hidden>🏠</span>
+              <AppIcon name="home" size={24} className="nav-icon" />
               Home
             </NavLink>
             <NavLink to="/focus" className={({ isActive }) => (isActive ? 'active' : '')}>
-              <span className="nav-icon" aria-hidden>🌙</span>
+              <AppIcon name="focus" size={24} className="nav-icon" />
               Focus
             </NavLink>
             <NavLink to="/shop" className={({ isActive }) => (isActive ? 'active' : '')}>
-              <span className="nav-icon" aria-hidden>🛍️</span>
+              <AppIcon name="shop" size={24} className="nav-icon" />
               Shop
             </NavLink>
             <Link to="/new" className="nav-new" aria-label="New commitment">
               +
             </Link>
             <NavLink to="/pantry" className={({ isActive }) => (isActive ? 'active' : '')}>
-              <span className="nav-icon" aria-hidden>🥫</span>
+              <AppIcon name="pantry" size={24} className="nav-icon" />
               Pantry
             </NavLink>
             <NavLink to="/impact" className={({ isActive }) => (isActive ? 'active' : '')}>
-              <span className="nav-icon" aria-hidden>💛</span>
+              <AppIcon name="impact" size={24} className="nav-icon" />
               Impact
             </NavLink>
           </nav>

@@ -10,16 +10,17 @@ export type LifeStage = 1 | 2 | 3 | 4 | 5;
 export interface LifeStageInfo {
   stage: LifeStage;
   key: 'box' | 'yard' | 'room' | 'tree' | 'feast';
-  icon: string;
+  /** Doodle icon name (see icons.tsx). */
+  icon: 'box' | 'yard' | 'room' | 'tree' | 'crown';
   label: string;
 }
 
 export const LIFE_STAGES: readonly LifeStageInfo[] = [
-  { stage: 1, key: 'box', icon: '📦', label: 'The Box' },
-  { stage: 2, key: 'yard', icon: '🌿', label: 'The Yard' },
-  { stage: 3, key: 'room', icon: '🛋️', label: 'Cozy Room' },
-  { stage: 4, key: 'tree', icon: '🏰', label: 'Cat Tree' },
-  { stage: 5, key: 'feast', icon: '👑', label: 'Grand Feast' },
+  { stage: 1, key: 'box', icon: 'box', label: 'The Box' },
+  { stage: 2, key: 'yard', icon: 'yard', label: 'The Yard' },
+  { stage: 3, key: 'room', icon: 'room', label: 'Cozy Room' },
+  { stage: 4, key: 'tree', icon: 'tree', label: 'Cat Tree' },
+  { stage: 5, key: 'feast', icon: 'crown', label: 'Grand Feast' },
 ];
 
 export const STAGE_SPAN = 0.2;

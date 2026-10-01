@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Cat, CatScene, ItemIcon } from '@purrpose/cats';
+import { AppIcon, Cat, CatScene, ItemIcon, type IconName } from '@purrpose/cats';
 import {
   CATEGORY_FROM_STAGE,
   type CatId,
@@ -28,14 +28,14 @@ interface ShopResponse {
 type Section = 'cats' | ItemCategory | 'purr';
 
 /** Each section has its own colour, taken from its icon; Get PURR is always purple. */
-const SECTION_META: Record<Section, { icon: string; title: string; hint: string; bg: string }> = {
-  cats: { icon: '🐱', title: 'Cats', hint: 'Unlock new companions for your pacts', bg: '#FFF1C2' },
-  toys: { icon: '🧶', title: 'Toys', hint: 'One toy at a time — drag it around the room', bg: '#FFDDC7' },
-  bowls: { icon: '🥣', title: 'Bowls', hint: 'Its food bowl — shows from the yard (stage 2)', bg: '#D8E9FA' },
-  comfort: { icon: '🛏️', title: 'Comfort', hint: 'Bed, blanket, scratcher — once it lives indoors (stage 3)', bg: '#DDEFD6' },
-  wearables: { icon: '🎀', title: 'Wearables', hint: 'Collar or bow tie — once it has a home (stage 3)', bg: '#FADCE7' },
-  decor: { icon: '🪴', title: 'Room decor', hint: 'Plant, fish tank, paintings, clock — drag to rearrange', bg: '#D7EFE8' },
-  purr: { icon: '🪙', title: 'Get PURR', hint: 'Top up your balance', bg: '#7E57C2' },
+const SECTION_META: Record<Section, { icon: IconName; title: string; hint: string; bg: string }> = {
+  cats: { icon: 'cats', title: 'Cats', hint: 'Unlock new companions for your pacts', bg: '#FFF1C2' },
+  toys: { icon: 'toys', title: 'Toys', hint: 'One toy at a time — drag it around the room', bg: '#FFDDC7' },
+  bowls: { icon: 'bowls', title: 'Bowls', hint: 'Its food bowl — shows from the yard (stage 2)', bg: '#D8E9FA' },
+  comfort: { icon: 'comfort', title: 'Comfort', hint: 'Bed, blanket, scratcher — once it lives indoors (stage 3)', bg: '#DDEFD6' },
+  wearables: { icon: 'wearables', title: 'Wearables', hint: 'Collar or bow tie — once it has a home (stage 3)', bg: '#FADCE7' },
+  decor: { icon: 'decor', title: 'Room decor', hint: 'Plant, fish tank, paintings, clock — drag to rearrange', bg: '#D7EFE8' },
+  purr: { icon: 'purr', title: 'Get PURR', hint: 'Top up your balance', bg: '#7E57C2' },
 };
 
 const SECTION_ORDER: Section[] = ['cats', 'toys', 'bowls', 'comfort', 'wearables', 'decor', 'purr'];
@@ -122,7 +122,7 @@ export function Shop() {
 
   const balance = (
     <div className="shop-balance">
-      <span className="purr-balance">🪙 {purr}</span>
+      <span className="purr-balance"><AppIcon name="purr" size={28} /> {purr}</span>
       <span className="muted">PURR</span>
       {section !== 'purr' && (
         <button type="button" className="chip chip-purr" onClick={() => open('purr')}>
@@ -160,7 +160,7 @@ export function Shop() {
               onClick={() => open(s)}
             >
               <span className="shop-menu-icon" aria-hidden>
-                {SECTION_META[s].icon}
+                <AppIcon name={SECTION_META[s].icon} size={30} />
               </span>
               <span className="shop-menu-text">
                 <strong>{SECTION_META[s].title}</strong>
@@ -185,7 +185,7 @@ export function Shop() {
         ← Shop
       </button>
       <h1 className="shop-section-title" style={{ marginTop: 4, background: meta.bg }} data-purr={section === 'purr' || undefined}>
-        {meta.icon} {meta.title}
+        <AppIcon name={meta.icon} size={30} /> {meta.title}
       </h1>
       {balance}
       {status}
@@ -235,7 +235,7 @@ export function Shop() {
         <div className="shop-grid">
           {packs.map(pack => (
             <div key={pack.id} className="shop-cat">
-              <div className="purr-balance" style={{ fontSize: 26 }}>🪙 {pack.purr}</div>
+              <div className="purr-balance" style={{ fontSize: 26 }}><AppIcon name="purr" size={26} /> {pack.purr}</div>
               {pack.bonusLabel && <span className="chip">{pack.bonusLabel}</span>}
               <DoodleButton variant="primary" disabled={paymentsMode === 'disabled' || buyPack.isPending} onClick={() => buyPack.mutate(pack.id)}>
                 {pack.priceLabel}
@@ -301,7 +301,7 @@ export function Shop() {
                   onClick={() => buyItem.mutate(item.id)}
                   ariaLabel={`Buy ${item.name} for ${item.pricePurr} PURR`}
                 >
-                  🪙 {item.pricePurr}
+                  <AppIcon name="purr" size={16} /> {item.pricePurr}
                 </DoodleButton>
               )}
             </li>
