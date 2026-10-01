@@ -6,8 +6,27 @@ const SCENE_WIDTH = 380;
 const SCENE_HEIGHT = 480;
 const SILL_Y = 320;
 const INK = '#26201D';
-/** Blanket outline: a soft dome over the curled-up cat, tucked into the bed. */
-const BLANKET = 'M156 376 C150 330 176 294 240 292 C304 294 330 330 324 376 Z';
+/**
+ * A knitted blanket thrown over the cat's back, seen from the front: it hangs
+ * over both shoulders and down the flanks, leaving the chest and paws free.
+ * Drawn in the cat's own 240×280 coordinates so it moves (and curls) with it.
+ */
+const SHAWL_LEFT =
+  'M72 146 C60 158 50 184 48 214 C47 230 48 244 50 254 L62 250 L72 256 L82 250 L92 254 C88 226 89 192 98 158 C90 152 81 148 72 146 Z';
+const SHAWL_RIGHT =
+  'M168 146 C180 158 190 184 192 214 C193 230 192 244 190 254 L178 250 L168 256 L158 250 L148 254 C152 226 151 192 142 158 C150 152 159 148 168 146 Z';
+const WRAP_TAIL = 'M306 352 C326 366 312 382 272 384 C238 386 214 380 200 370';
+/** Tail colour per cat, for the tail it wraps around itself when it curls up. */
+const TAIL_COLOR: Record<CatId, string> = {
+  orange: '#EEB038',
+  tuxedo: '#26201D',
+  black: '#1E1B18',
+  boba: '#26201D',
+  mochi: '#5B4033',
+  oreo: '#2B2522',
+  pepper: '#D8D2C8',
+  yuki: '#FFFDF9',
+};
 
 interface FocusSceneProps {
   catId: CatId;
@@ -143,11 +162,10 @@ export function FocusScene({ catId, isFocusing, isFinished, reduced = false, wea
         <clipPath id="focusWindowClip">
           <rect x={15} y={10} width={SCENE_WIDTH - 30} height={SILL_Y - 10} rx={4} />
         </clipPath>
-        <clipPath id="focusBlanketShape">
-          <path d={BLANKET} />
-        </clipPath>
-        <clipPath id="focusBlanketClip">
-          <rect x={120} y={200} width={240} height={180} />
+        {/* Knit pattern stays inside the shawl (cat coordinates) */}
+        <clipPath id="focusShawlClip">
+          <path d={SHAWL_LEFT} />
+          <path d={SHAWL_RIGHT} />
         </clipPath>
       </defs>
 
@@ -253,29 +271,23 @@ export function FocusScene({ catId, isFocusing, isFinished, reduced = false, wea
               wear={wear}
             />
           </g>
-        </g>
-      </g>
-
-      {/* 7. Tucked in: a knitted blanket slides up over the sleeping cat */}
-      <g clipPath="url(#focusBlanketClip)" pointerEvents="none">
-        <g className={`focus-blanket ${isFocusing ? 'is-on' : ''}`}>
-          {/* Draped over the shoulders like a little dome, up to the chin */}
-          <path d={BLANKET} fill="#E8A87C" stroke={INK} strokeWidth={2.6} strokeLinejoin="round" />
-          <g clipPath="url(#focusBlanketShape)">
-            <g fill="none" stroke="#C97B4F" strokeWidth={1.6} strokeLinecap="round">
-              {[326, 342, 358].map(y => (
-                <path key={y} d={Array.from({ length: 18 }, (_, i) => `M${152 + i * 10} ${y} l4 4 l4 -4`).join(' ')} />
+          {/* The blanket over its back — always there, curls up with it */}
+          <g transform="translate(-120, -254)" pointerEvents="none">
+            <g fill="#E8A87C" stroke={INK} strokeWidth={2.6} strokeLinejoin="round">
+              <path d={SHAWL_LEFT} />
+              <path d={SHAWL_RIGHT} />
+            </g>
+            <g clipPath="url(#focusShawlClip)" fill="none" stroke="#C97B4F" strokeWidth={1.6} strokeLinecap="round">
+              {[176, 194, 212, 230, 246].map(y => (
+                <path key={y} d={Array.from({ length: 16 }, (_, i) => `M${44 + i * 10} ${y} l4 4 l4 -4`).join(' ')} />
               ))}
             </g>
+            {/* turned-over edge along the inside of each drape */}
+            <g fill="none" stroke="#F6D2B4" strokeWidth={3} strokeLinecap="round">
+              <path d="M93 162 C87 190 86 222 89 248" />
+              <path d="M147 162 C153 190 154 222 151 248" />
+            </g>
           </g>
-          {/* Turned-down hem along the top */}
-          <path
-            d="M166 344 C164 316 190 298 240 296 C290 298 316 316 314 344 C306 324 284 310 240 309 C196 310 174 324 166 344 Z"
-            fill="#F3C9A6"
-            stroke={INK}
-            strokeWidth={2}
-            strokeLinejoin="round"
-          />
         </g>
       </g>
 
@@ -283,6 +295,12 @@ export function FocusScene({ catId, isFocusing, isFinished, reduced = false, wea
       <g transform="translate(240, 372)" pointerEvents="none">
         <path d="M-94 0 C-90 18 -50 26 0 26 C50 26 90 18 94 0 C92 -6 84 -12 70 -16 C58 -10 30 -8 0 -8 C-30 -8 -58 -10 -70 -16 C-84 -10 -92 -6 -94 0 Z" fill="#D9774C" stroke={INK} strokeWidth={2.8} strokeLinejoin="round" />
         <path d="M-66 8 q10 5 20 0 M-10 12 q10 5 20 0 M46 8 q10 5 20 0" fill="none" stroke="#B4572F" strokeWidth={1.8} strokeLinecap="round" />
+      </g>
+
+      {/* Curled up: the tail wraps around the front, over the rim of the bed */}
+      <g className={`focus-wrap-tail ${isFocusing ? 'is-on' : ''}`} pointerEvents="none">
+        <path d={WRAP_TAIL} fill="none" stroke={INK} strokeWidth={14} strokeLinecap="round" pathLength={1} />
+        <path d={WRAP_TAIL} fill="none" stroke={TAIL_COLOR[catId] ?? '#EEB038'} strokeWidth={9} strokeLinecap="round" pathLength={1} />
       </g>
 
       {/* 7b. Purr notes while asleep */}
