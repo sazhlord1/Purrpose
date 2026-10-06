@@ -58,7 +58,7 @@ describe.skipIf(!dbReady)('accounts, admin, PURR shop, focus, push', () => {
     const token = await guest();
     expect((await call('POST', '/api/v1/commitments', token, commitmentBody('orange'))).statusCode).toBe(201);
 
-    const reg = await call('POST', '/api/v1/auth/register', token, { email: ' Me@Example.com ', password: 'hunter2hunter2' });
+    const reg = await call('POST', '/api/v1/auth/register', token, { email: ' Me@Example.com ', password: 'hunter2hunter2', firstName: 'Test', lastName: 'Cat' });
     expect(reg.statusCode).toBe(200);
     const accountToken = reg.json().token;
     expect(reg.json().email).toBe('me@example.com');
@@ -67,6 +67,7 @@ describe.skipIf(!dbReady)('accounts, admin, PURR shop, focus, push', () => {
 
     const me = (await call('GET', '/api/v1/me', accountToken)).json();
     expect(me.user.email).toBe('me@example.com');
+    expect(me.user.firstName).toBe('Test');
     expect(me.user.role).toBe('USER');
     expect((await call('GET', '/api/v1/commitments', accountToken)).json().commitments).toHaveLength(1);
 
@@ -78,7 +79,7 @@ describe.skipIf(!dbReady)('accounts, admin, PURR shop, focus, push', () => {
     expect(login.statusCode).toBe(200);
     expect((await call('GET', '/api/v1/commitments', login.json().token)).json().commitments).toHaveLength(1);
 
-    const dupe = await call('POST', '/api/v1/auth/register', await guest(), { email: 'me@example.com', password: 'another-pass' });
+    const dupe = await call('POST', '/api/v1/auth/register', await guest(), { email: 'me@example.com', password: 'another-pass', firstName: 'Test', lastName: 'Cat' });
     expect(dupe.json().error.code).toBe('EMAIL_TAKEN');
 
     const out = await call('POST', '/api/v1/auth/logout', login.json().token);
@@ -129,7 +130,7 @@ describe.skipIf(!dbReady)('accounts, admin, PURR shop, focus, push', () => {
 
     // A normal user cannot use the admin entrance.
     const userToken = await guest();
-    await call('POST', '/api/v1/auth/register', userToken, { email: 'user@test.dev', password: 'user-pass-123' });
+    await call('POST', '/api/v1/auth/register', userToken, { email: 'user@test.dev', password: 'user-pass-123', firstName: 'Test', lastName: 'Cat' });
     const denied = await call('POST', '/api/v1/auth/admin/login', undefined, { email: 'user@test.dev', password: 'user-pass-123' });
     expect(denied.statusCode).toBe(401);
 
@@ -202,7 +203,7 @@ describe.skipIf(!dbReady)('accounts, admin, PURR shop, focus, push', () => {
   it('moves guest progress into the account on password sign-in (welcome credits not doubled)', async () => {
     // An existing account, made on another device.
     const first = await guest();
-    await call('POST', '/api/v1/auth/register', first, { email: 'owner@test.dev', password: 'owner-pass-123' });
+    await call('POST', '/api/v1/auth/register', first, { email: 'owner@test.dev', password: 'owner-pass-123', firstName: 'Test', lastName: 'Cat' });
     const account = await prisma.user.findUniqueOrThrow({ where: { email: 'owner@test.dev' } });
     const mealsBefore = (await prisma.creditBalance.findUniqueOrThrow({
       where: { userId_creditType: { userId: account.id, creditType: 'MEALS' } },
@@ -232,9 +233,9 @@ describe.skipIf(!dbReady)('accounts, admin, PURR shop, focus, push', () => {
 
   it('never merges one real account into another', async () => {
     const a = await guest();
-    await call('POST', '/api/v1/auth/register', a, { email: 'a@test.dev', password: 'a-pass-1234' });
+    await call('POST', '/api/v1/auth/register', a, { email: 'a@test.dev', password: 'a-pass-1234', firstName: 'Test', lastName: 'Cat' });
     const b = await guest();
-    const bReg = await call('POST', '/api/v1/auth/register', b, { email: 'b@test.dev', password: 'b-pass-1234' });
+    const bReg = await call('POST', '/api/v1/auth/register', b, { email: 'b@test.dev', password: 'b-pass-1234', firstName: 'Test', lastName: 'Cat' });
     const bToken = bReg.json().token;
     expect((await call('POST', '/api/v1/commitments', bToken, commitmentBody('orange'))).statusCode).toBe(201);
 
@@ -248,7 +249,7 @@ describe.skipIf(!dbReady)('accounts, admin, PURR shop, focus, push', () => {
   it('Google sign-in turns this device\'s guest into an account', async () => {
     const g = await guest();
     await call('POST', '/api/v1/commitments', g, commitmentBody('orange'));
-    const res = await googleSignIn(prisma, getEnv(), { sub: 'g-1', email: 'new@gmail.com', name: 'New', emailAuthoritative: true }, hashToken(g));
+    const res = await googleSignIn(prisma, getEnv(), { sub: 'g-1', email: 'new@gmail.com', name: 'New', emailAuthoritative: true, firstName: null, lastName: null }, hashToken(g));
     const me = (await call('GET', '/api/v1/me', res.token)).json();
     expect(me.user.email).toBe('new@gmail.com');
     expect((await call('GET', '/api/v1/commitments', res.token)).json().commitments).toHaveLength(1);
@@ -257,16 +258,16 @@ describe.skipIf(!dbReady)('accounts, admin, PURR shop, focus, push', () => {
     // Same Google account later, from a fresh device with its own guest progress.
     const g2 = await guest();
     await call('POST', '/api/v1/commitments', g2, commitmentBody('orange'));
-    const again = await googleSignIn(prisma, getEnv(), { sub: 'g-1', email: 'new@gmail.com', name: 'New', emailAuthoritative: true }, hashToken(g2));
+    const again = await googleSignIn(prisma, getEnv(), { sub: 'g-1', email: 'new@gmail.com', name: 'New', emailAuthoritative: true, firstName: null, lastName: null }, hashToken(g2));
     expect(again.userId).toBe(res.userId);
     expect((await call('GET', '/api/v1/commitments', again.token)).json().commitments).toHaveLength(2);
   });
 
   it('linking Google to an unverified password account drops that password', async () => {
     const squatter = await guest();
-    await call('POST', '/api/v1/auth/register', squatter, { email: 'victim@gmail.com', password: 'squatter-pw-1' });
+    await call('POST', '/api/v1/auth/register', squatter, { email: 'victim@gmail.com', password: 'squatter-pw-1', firstName: 'Test', lastName: 'Cat' });
 
-    const res = await googleSignIn(prisma, getEnv(), { sub: 'g-victim', email: 'victim@gmail.com', name: 'V', emailAuthoritative: true });
+    const res = await googleSignIn(prisma, getEnv(), { sub: 'g-victim', email: 'victim@gmail.com', name: 'V', emailAuthoritative: true, firstName: null, lastName: null });
     const user = await prisma.user.findUniqueOrThrow({ where: { id: res.userId } });
     expect(user.googleId).toBe('g-victim');
     expect(user.passwordHash).toBeNull();
@@ -279,9 +280,9 @@ describe.skipIf(!dbReady)('accounts, admin, PURR shop, focus, push', () => {
 
   it('a non-Gmail Google account cannot unlock an existing password account', async () => {
     const owner = await guest();
-    await call('POST', '/api/v1/auth/register', owner, { email: 'alice@company.com', password: 'alice-pass-12' });
+    await call('POST', '/api/v1/auth/register', owner, { email: 'alice@company.com', password: 'alice-pass-12', firstName: 'Test', lastName: 'Cat' });
     await expect(
-      googleSignIn(prisma, getEnv(), { sub: 'g-x', email: 'alice@company.com', name: 'X', emailAuthoritative: false }),
+      googleSignIn(prisma, getEnv(), { sub: 'g-x', email: 'alice@company.com', name: 'X', emailAuthoritative: false, firstName: null, lastName: null }),
     ).rejects.toMatchObject({ code: 'EMAIL_TAKEN' });
     const alice = await prisma.user.findUniqueOrThrow({ where: { email: 'alice@company.com' } });
     expect(alice.passwordHash).not.toBeNull();
@@ -291,7 +292,7 @@ describe.skipIf(!dbReady)('accounts, admin, PURR shop, focus, push', () => {
   it('refuses Google sign-in for the admin account', async () => {
     const env = { ...getEnv(), ADMIN_EMAIL: ADMIN.email, ADMIN_PASSWORD: ADMIN.password };
     await ensureAdmin(prisma, env);
-    await expect(googleSignIn(prisma, env, { sub: 'g-admin', email: ADMIN.email, name: 'A', emailAuthoritative: true })).rejects.toMatchObject({
+    await expect(googleSignIn(prisma, env, { sub: 'g-admin', email: ADMIN.email, name: 'A', emailAuthoritative: true, firstName: null, lastName: null })).rejects.toMatchObject({
       code: 'FORBIDDEN',
     });
   });

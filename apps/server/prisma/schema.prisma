@@ -47,6 +47,9 @@ enum NotificationKind {
 model User {
   id            String              @id @default(cuid())
   name          String?
+  /// What we greet the user with ("Good morning, Setareh").
+  firstName     String?
+  lastName      String?
   /// Lower-cased. Null for anonymous (guest) users.
   email         String?             @unique
   /// scrypt hash — never the raw password.

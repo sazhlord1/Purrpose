@@ -13,7 +13,7 @@ export function registerMeRoutes(app: FastifyInstance): void {
     const [user, balances, cats, items, loadout] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
-        select: { id: true, createdAt: true, email: true, role: true, purrBalance: true },
+        select: { id: true, createdAt: true, email: true, role: true, purrBalance: true, firstName: true },
       }),
       walletView(prisma, userId),
       unlockedCatIds(prisma, userId, request.role),
@@ -27,6 +27,7 @@ export function registerMeRoutes(app: FastifyInstance): void {
         createdAtISO: user.createdAt.toISOString(),
         email: user.email,
         role: user.role,
+        firstName: user.firstName,
       },
       balances,
       purr: user.purrBalance,

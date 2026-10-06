@@ -28,8 +28,16 @@ export async function adminSignIn(email: string, password: string): Promise<void
 }
 
 /** Upgrades the current guest (keeps all their cats and history) into an account. */
-export async function createAccount(email: string, password: string): Promise<void> {
-  const res = await api<AuthResponse>('/auth/register', { method: 'POST', body: { email, password } });
+export async function createAccount(
+  email: string,
+  password: string,
+  firstName: string,
+  lastName: string,
+): Promise<void> {
+  const res = await api<AuthResponse>('/auth/register', {
+    method: 'POST',
+    body: { email, password, firstName, lastName },
+  });
   switchTo(res.token, '/settings');
 }
 

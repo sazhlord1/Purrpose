@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { credentialsSchema, googleSignInSchema } from '@purrpose/shared';
+import { credentialsSchema, googleSignInSchema, registerSchema } from '@purrpose/shared';
 import { bearerToken, userIdOf } from '../auth.js';
 import { getPrisma } from '../db.js';
 import { getEnv } from '../env.js';
@@ -50,9 +50,9 @@ export function registerPublicAuthRoutes(app: FastifyInstance): void {
 /** Authenticated: upgrade the current guest to an account, or sign out. */
 export function registerAccountRoutes(app: FastifyInstance): void {
   app.post('/api/v1/auth/register', async request => {
-    const { email, password } = parse(credentialsSchema, request.body);
+    const { email, password, firstName, lastName } = parse(registerSchema, request.body);
     limitCredentials(request, email);
-    return registerAccount(getPrisma(), getEnv(), userIdOf(request), email, password);
+    return registerAccount(getPrisma(), getEnv(), userIdOf(request), email, password, { firstName, lastName });
   });
 
   app.post('/api/v1/auth/logout', async (request, reply) => {

@@ -23,6 +23,7 @@ const good = (over: Record<string, unknown> = {}) => ({
   email: 'Cat.Lover@Gmail.com',
   email_verified: true,
   name: 'Cat Lover',
+  given_name: 'Cat',
   iat: NOW / 1000 - 10,
   exp: NOW / 1000 + 3600,
   ...over,
@@ -38,7 +39,14 @@ describe('Google ID token verification', () => {
 
   it('accepts a valid token and normalises the email', async () => {
     const p = await verify(token(k.privateKey, 'k1', good()), CLIENT);
-    expect(p).toEqual({ sub: '1234567890', email: 'cat.lover@gmail.com', name: 'Cat Lover', emailAuthoritative: true });
+    expect(p).toEqual({
+      sub: '1234567890',
+      email: 'cat.lover@gmail.com',
+      name: 'Cat Lover',
+      firstName: 'Cat',
+      lastName: null,
+      emailAuthoritative: true,
+    });
   });
 
   it('trusts the email only for Gmail and Workspace accounts', async () => {

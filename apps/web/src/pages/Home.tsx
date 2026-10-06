@@ -13,10 +13,10 @@ import { notifyFailure } from '../lib/notifications.js';
 import { useCommitments, useMe } from '../lib/queries.js';
 
 function greeting(hour: number): string {
-  if (hour < 5) return 'Up late.';
-  if (hour < 12) return 'Good morning.';
-  if (hour < 18) return 'Good afternoon.';
-  return 'Good evening.';
+  if (hour < 5) return 'Up late';
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
 }
 
 function isReduced(): boolean {
@@ -30,6 +30,8 @@ function isReduced(): boolean {
 export function Home() {
   const qc = useQueryClient();
   const me = useMe();
+  const isGuest = me.data ? me.data.user.email === null : false;
+  const firstName = me.data?.user.firstName?.trim() || null;
   const commitments = useCommitments(30_000);
   const [, setTick] = useState(0);
   const crossedRef = useRef<Set<string>>(new Set());
@@ -80,10 +82,26 @@ export function Home() {
     <main>
       <header style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <h1>{greeting(hour)}</h1>
-          <Link to="/settings" className="muted" aria-label="Settings">
-            <AppIcon name="settings" size={16} /> settings
-          </Link>
+          <h1>
+            {greeting(hour)}
+            {firstName ? (
+              <>
+                , <span className="greet-name">{firstName}</span>.
+              </>
+            ) : (
+              '.'
+            )}
+          </h1>
+          <div className="home-links">
+            {isGuest && (
+              <Link to="/login" className="muted" aria-label="Sign in or create an account">
+                <AppIcon name="account" size={16} /> sign in
+              </Link>
+            )}
+            <Link to="/settings" className="muted" aria-label="Settings">
+              <AppIcon name="settings" size={16} /> settings
+            </Link>
+          </div>
         </div>
         <div className="chip-row" aria-label="Summary">
           <span className="chip" style={{ background: 'var(--paper-raised)', fontWeight: 600 }}>

@@ -13,6 +13,7 @@ const PAPER = '#FFFDF9';
 
 export type IconName =
   | 'home'
+  | 'account'
   | 'focus'
   | 'shop'
   | 'pantry'
@@ -239,6 +240,14 @@ const GLYPHS: Record<IconName, ReactNode> = {
     <>
       <rect x="4.6" y="9.4" width="14.8" height="11" rx="2.4" fill="#8FC1B5" {...s} />
       <path d="M12 15 L12 3.4 M8.4 6.8 L12 3.2 L15.6 6.8" fill="none" {...s} strokeWidth={2} />
+    </>
+  ),
+  account: (
+    <>
+      {/* a little person with a purple cat-ear hood */}
+      <path d="M5.2 9.6 L6 3.6 L9.4 6.4 Q12 5.4 14.6 6.4 L18 3.6 L18.8 9.6 Q19 14 12 14.4 Q5 14 5.2 9.6 Z" fill="#B79CE6" {...s} />
+      <circle cx="12" cy="10.2" r="3.1" fill="#F6E7D2" {...s} strokeWidth={1.4} />
+      <path d="M4.4 21.2 C4.8 16.8 8 15.4 12 15.4 C16 15.4 19.2 16.8 19.6 21.2 Z" fill="#7E57C2" {...s} />
     </>
   ),
   settings: (

@@ -54,6 +54,7 @@ export async function registerAccount(
   currentUserId: string,
   email: string,
   password: string,
+  names: { firstName: string; lastName: string } = { firstName: '', lastName: '' },
 ): Promise<IssuedSession> {
   if (env.ADMIN_EMAIL && email === env.ADMIN_EMAIL.toLowerCase()) {
     throw new AppError('EMAIL_TAKEN', undefined, 'That email is already registered');
@@ -65,7 +66,16 @@ export async function registerAccount(
   }
   const passwordHash = await hashPassword(password);
   const updated = await prisma.user
-    .update({ where: { id: currentUserId }, data: { email, passwordHash } })
+    .update({
+      where: { id: currentUserId },
+      data: {
+        email,
+        passwordHash,
+        ...(names.firstName
+          ? { firstName: names.firstName, lastName: names.lastName || null, name: `${names.firstName} ${names.lastName}`.trim() }
+          : {}),
+      },
+    })
     .catch((err: { code?: string }) => {
       if (err.code === 'P2002') throw new AppError('EMAIL_TAKEN', undefined, 'That email is already registered');
       throw err;
@@ -162,6 +172,8 @@ export async function googleSignIn(
             googleId: profile.sub,
             emailVerifiedAt: new Date(),
             name: byEmail.name ?? profile.name,
+            firstName: byEmail.firstName ?? profile.firstName,
+            lastName: byEmail.lastName ?? profile.lastName,
             ...(unproven ? { passwordHash: null } : {}),
           },
         });
@@ -183,6 +195,8 @@ export async function googleSignIn(
       googleId: profile.sub,
       emailVerifiedAt: profile.emailAuthoritative ? new Date() : null,
       name: profile.name,
+      firstName: profile.firstName,
+      lastName: profile.lastName,
     };
     user = await prisma.$transaction(async tx => {
       if (guest) return tx.user.update({ where: { id: guest.id }, data: { ...data, name: guest.name ?? profile.name } });
@@ -196,6 +210,12 @@ export async function googleSignIn(
     await prisma.appEvent.create({ data: { userId: user.id, name: 'account_registered', payload: { via: 'google' } } });
     if (guest) await prisma.session.deleteMany({ where: { userId: user.id } }); // rotate the guest token
   } else {
+    if (!user.firstName && profile.firstName) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { firstName: profile.firstName, lastName: user.lastName ?? profile.lastName },
+      });
+    }
     await prisma.appEvent.create({ data: { userId: user.id, name: 'login', payload: { via: 'google' } } });
   }
 

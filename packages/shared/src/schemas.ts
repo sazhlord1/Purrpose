@@ -75,6 +75,8 @@ export const meResponseSchema = z.object({
     /** Null while the user is still a guest (anonymous session). */
     email: z.string().nullable(),
     role: userRoleSchema,
+    /** For the greeting; null for guests and accounts that never gave a name. */
+    firstName: z.string().nullable(),
   }),
   balances: z.array(balanceViewSchema),
   purr: z.number().int(),
@@ -122,6 +124,19 @@ export const credentialsSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters').max(128),
 });
 export type Credentials = z.infer<typeof credentialsSchema>;
+
+const personName = z
+  .string()
+  .trim()
+  .min(1, 'Please enter your name')
+  .max(40, 'That name is a bit long');
+
+/** Sign up with email: also asks for a first and last name (used to greet you). */
+export const registerSchema = credentialsSchema.extend({
+  firstName: personName,
+  lastName: personName,
+});
+export type RegisterInput = z.infer<typeof registerSchema>;
 
 /** Body of POST /auth/google: the ID token from Google's sign-in button. */
 export const googleSignInSchema = z.object({

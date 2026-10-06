@@ -18,6 +18,8 @@ export interface GoogleProfile {
   /** Lower-cased. */
   email: string;
   name: string | null;
+  firstName: string | null;
+  lastName: string | null;
   /**
    * Google only vouches for an email's *current* ownership for @gmail.com and
    * Workspace (hd) accounts. Other addresses were checked once, at sign-up.
@@ -111,7 +113,9 @@ export function createGoogleVerifier(fetchCerts: FetchCerts = fetchGoogleCerts, 
     const name = typeof c.name === 'string' ? c.name.slice(0, 80) : null;
     const email = c.email.trim().toLowerCase();
     const emailAuthoritative = email.endsWith('@gmail.com') || (typeof c.hd === 'string' && c.hd.length > 0);
-    return { sub: c.sub, email, name, emailAuthoritative };
+    const part = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 40) : null);
+    const firstName = part(c.given_name) ?? (name ? part(name.split(/\s+/)[0]) : null);
+    return { sub: c.sub, email, name, firstName, lastName: part(c.family_name), emailAuthoritative };
   };
 }
 

@@ -1,0 +1,4 @@
+-- First and last name (for the greeting). Idempotent: safe to run twice.
+
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "firstName" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "lastName" TEXT;
