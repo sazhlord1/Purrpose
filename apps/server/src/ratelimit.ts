@@ -35,6 +35,11 @@ export const RATE_WINDOW_MS = 60_000;
 const mutationLimiter = createLimiter(RATE_LIMIT, RATE_WINDOW_MS);
 /** Login / register / admin login: 10 attempts per 15 minutes per IP+email. */
 export const credentialLimiter = createLimiter(10, 15 * 60_000);
+/**
+ * Sign in with Google: needs a token signed by Google, so there's nothing to brute-force.
+ * The limit is looser because many phones share one IP (carrier NAT).
+ */
+export const googleLimiter = createLimiter(30, 15 * 60_000);
 /** Anonymous session creation: 30 per hour per IP. */
 export const sessionLimiter = createLimiter(30, 60 * 60_000);
 
@@ -52,5 +57,6 @@ export async function rateLimitMutations(request: FastifyRequest): Promise<void>
 export function resetRateLimits(): void {
   mutationLimiter.reset();
   credentialLimiter.reset();
+  googleLimiter.reset();
   sessionLimiter.reset();
 }

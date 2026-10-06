@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from 'react';
+import { useCallback, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { DoodleButton, SketchCard } from '../components/ui/index.js';
 import { ApiError } from '../lib/api.js';
-import { createAccount, signIn } from '../lib/auth.js';
+import { GoogleButton } from '../components/GoogleButton.js';
+import { createAccount, signIn, signInWithGoogle } from '../lib/auth.js';
 import { useMe } from '../lib/queries.js';
 
 type Mode = 'signin' | 'register';
@@ -16,6 +17,24 @@ export function Login() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const describe = (err: unknown) =>
+    err instanceof ApiError
+      ? err.code === 'INVALID_INPUT'
+        ? 'Check the email, and use a password of at least 8 characters.'
+        : err.message
+      : 'Could not reach the server.';
+
+  const onGoogle = useCallback(async (credential: string) => {
+    setError(null);
+    setBusy(true);
+    try {
+      await signInWithGoogle(credential);
+    } catch (err) {
+      setError(describe(err));
+      setBusy(false);
+    }
+  }, []);
+
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -24,13 +43,7 @@ export function Login() {
       if (mode === 'register') await createAccount(email, password);
       else await signIn(email, password);
     } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.code === 'INVALID_INPUT'
-            ? 'Check the email, and use a password of at least 8 characters.'
-            : err.message
-          : 'Could not reach the server.',
-      );
+      setError(describe(err));
       setBusy(false);
     }
   };
@@ -47,22 +60,25 @@ export function Login() {
 
   return (
     <main>
-      <h1>{mode === 'register' ? 'Keep your cats safe' : 'Welcome back'}</h1>
-      <div className="chip-row" role="tablist">
-        <button role="tab" aria-selected={mode === 'register'} className={`chip ${mode === 'register' ? 'chip-active' : ''}`} onClick={() => setMode('register')}>
-          Create account
-        </button>
-        <button role="tab" aria-selected={mode === 'signin'} className={`chip ${mode === 'signin' ? 'chip-active' : ''}`} onClick={() => setMode('signin')}>
-          Sign in
-        </button>
-      </div>
+      <h1>{isGuest ? 'Keep your cats safe' : 'Welcome back'}</h1>
+      <p className="muted">
+        Sign in to save your progress and pick it up on any device. Everything you did here as a guest — pacts,
+        pantry, PURR, cats and items — comes with you into your account.
+      </p>
 
       <SketchCard variant="a">
-        <p className="muted" style={{ marginTop: 0 }}>
-          {mode === 'register'
-            ? 'Everything on this device — your pacts, pantry and PURR — moves into your new account, so you can sign in anywhere.'
-            : 'Signing in switches this device to your account. Progress made here as a guest stays with the guest.'}
-        </p>
+        <GoogleButton onToken={onGoogle} disabled={busy} />
+        <div className="auth-divider" role="separator">
+          <span>or use email</span>
+        </div>
+        <div className="chip-row" role="tablist">
+          <button role="tab" aria-selected={mode === 'register'} className={`chip ${mode === 'register' ? 'chip-active' : ''}`} onClick={() => setMode('register')}>
+            Create account
+          </button>
+          <button role="tab" aria-selected={mode === 'signin'} className={`chip ${mode === 'signin' ? 'chip-active' : ''}`} onClick={() => setMode('signin')}>
+            Sign in
+          </button>
+        </div>
         <form className="auth-form" onSubmit={submit}>
           <label className="field">
             <span>Email</span>
@@ -86,6 +102,9 @@ export function Login() {
           </DoodleButton>
         </form>
       </SketchCard>
+      <p className="muted legal-note">
+        By continuing you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.
+      </p>
       <p className="muted">
         <Link to="/">← back home</Link>
       </p>

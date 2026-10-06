@@ -1042,3 +1042,65 @@ select {
   font-size: 14px;
   margin: 0;
 }
+
+/* Sign in with Google */
+.google-btn {
+  display: grid;
+  justify-items: center;
+  min-height: 44px;
+}
+.google-btn[data-disabled] {
+  pointer-events: none;
+  opacity: 0.5;
+}
+.google-btn-slot {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  justify-content: center;
+}
+.google-btn-note {
+  margin: 0;
+  font-size: 13px;
+  text-align: center;
+}
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 var(--space-3);
+  color: var(--ink-soft, #6b625c);
+  font-size: 13px;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1.5px dashed currentColor;
+  opacity: 0.5;
+}
+.legal-note {
+  font-size: 13px;
+}
+
+/* Privacy / Terms */
+.legal-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--space-6) 16px 64px;
+  line-height: 1.6;
+}
+.legal-page h1 {
+  margin-bottom: 4px;
+}
+.legal-page h2 {
+  font-size: 19px;
+  margin-top: 28px;
+}
+.legal-page ul {
+  padding-left: 20px;
+}
+.legal-page .legal-back {
+  display: inline-block;
+  margin-bottom: 16px;
+}

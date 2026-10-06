@@ -123,6 +123,11 @@ export const credentialsSchema = z.object({
 });
 export type Credentials = z.infer<typeof credentialsSchema>;
 
+/** Body of POST /auth/google: the ID token from Google's sign-in button. */
+export const googleSignInSchema = z.object({
+  credential: z.string().min(20).max(4096),
+});
+
 export const authResponseSchema = z.object({
   token: z.string(),
   userId: z.string(),

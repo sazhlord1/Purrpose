@@ -59,6 +59,7 @@ const PUBLIC_PATHS = new Set([
   '/healthz',
   '/cats',
   '/auth/login',
+  '/auth/google',
   '/auth/admin/login',
   '/push/public-key',
 ]);

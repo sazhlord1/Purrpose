@@ -33,5 +33,11 @@ export const NOTIF_COPY = {
   failure: 'You failed. Your cat is eating.',
 } as const;
 
+/**
+ * OAuth client id for "Sign in with Google". Public by design (it ships in the
+ * web page); override with GOOGLE_CLIENT_ID / VITE_GOOGLE_CLIENT_ID if needed.
+ */
+export const DEFAULT_GOOGLE_CLIENT_ID = '258964168311-leoev7t50aefv0b0k3i3mcle15pt96p6.apps.googleusercontent.com';
+
 export const SESSION_TTL_MS = 90 * 24 * 3_600_000;
 export const GRACE_WINDOW_MS = 5 * 60_000;

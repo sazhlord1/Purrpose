@@ -15,6 +15,7 @@ import { AdminOnly } from './components/AdminOnly.js';
 import { registerServiceWorker, useNotificationScheduler } from './lib/notifications.js';
 import { useCommitments } from './lib/queries.js';
 import { AppIcon } from '@purrpose/cats';
+import { LegalPage } from './pages/Legal.js';
 
 const Settings = lazy(() => import('./pages/Settings.js').then(m => ({ default: m.Settings })));
 const DesignSystem = lazy(() => import('./pages/DesignSystem.js').then(m => ({ default: m.DesignSystem })));
@@ -105,6 +106,9 @@ function Shell() {
 }
 
 export function App() {
+  // Privacy / Terms are plain public pages: no guest session, no onboarding.
+  const path = typeof window !== 'undefined' ? window.location.pathname.replace(/\/$/, '') : '';
+  if (path === '/privacy' || path === '/terms') return <LegalPage kind={path === '/privacy' ? 'privacy' : 'terms'} />;
   return (
     <QueryClientProvider client={queryClient}>
       <SessionProvider>

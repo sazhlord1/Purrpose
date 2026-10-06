@@ -72,6 +72,8 @@ Toys, comfort items, bowls, wearables and room decor, bought with PURR in the Ca
 
 **Upgrading:** deploy the server, then immediately run `infra/supabase_upgrade_v3.sql` in Supabase (idempotent; adds `User.loadout` and the `ItemUnlock` table with RLS on), then deploy the web app. Locally: `pnpm db:migrate`, then restart `pnpm dev`.
 
+**Upgrading to Google sign-in (v4):** run `infra/supabase_upgrade_v4.sql` in Supabase **before** deploying the server (it only adds two nullable columns, so the old server keeps working). The Google OAuth client id is built in (`DEFAULT_GOOGLE_CLIENT_ID` in `packages/shared`); override it with `GOOGLE_CLIENT_ID` on the server and `VITE_GOOGLE_CLIENT_ID` on the web app if it ever changes. The page origin (e.g. `https://app.purrpose.space`) must be listed under *Authorized JavaScript origins* in the Google Cloud console.
+
 ## Tests
 
 ```powershell

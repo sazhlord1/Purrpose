@@ -1,11 +1,13 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { credentialsSchema } from '@purrpose/shared';
-import { userIdOf } from '../auth.js';
+import { credentialsSchema, googleSignInSchema } from '@purrpose/shared';
+import { bearerToken, userIdOf } from '../auth.js';
 import { getPrisma } from '../db.js';
 import { getEnv } from '../env.js';
 import { AppError } from '../errors.js';
-import { credentialLimiter } from '../ratelimit.js';
-import { login, logout, registerAccount } from '../services/accounts.js';
+import { credentialLimiter, googleLimiter } from '../ratelimit.js';
+import { googleSignIn, login, logout, registerAccount } from '../services/accounts.js';
+import { verifyGoogleIdToken } from '../services/google.js';
+import { hashToken } from '../security.js';
 import { parse } from '../validate.js';
 
 function limitCredentials(request: FastifyRequest, email: string): void {
@@ -14,12 +16,27 @@ function limitCredentials(request: FastifyRequest, email: string): void {
   credentialLimiter.hit(`email:${email}`, msg);
 }
 
+/** The session this device already has (usually a guest), so its progress can follow the sign-in. */
+function deviceSessionHash(request: FastifyRequest): string | undefined {
+  const token = bearerToken(request);
+  return token ? hashToken(token) : undefined;
+}
+
 /** Public: sign in from any device. */
 export function registerPublicAuthRoutes(app: FastifyInstance): void {
   app.post('/api/v1/auth/login', async request => {
     const { email, password } = parse(credentialsSchema, request.body);
     limitCredentials(request, email);
-    return login(getPrisma(), email, password);
+    return login(getPrisma(), email, password, { deviceSessionHash: deviceSessionHash(request) });
+  });
+
+  /** "Sign in with Google": the browser sends the ID token Google gave it. */
+  app.post('/api/v1/auth/google', async request => {
+    const { credential } = parse(googleSignInSchema, request.body);
+    googleLimiter.hit(`ip:${request.ip}`, 'Too many attempts. Take a short cat nap and try again in a few minutes.');
+    const env = getEnv();
+    const profile = await verifyGoogleIdToken(credential, env.GOOGLE_CLIENT_ID);
+    return googleSignIn(getPrisma(), env, profile, deviceSessionHash(request));
   });
 
   /** Separate admin entrance: only succeeds for accounts with the ADMIN role. */

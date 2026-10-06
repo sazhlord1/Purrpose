@@ -5,7 +5,7 @@ import { clock } from '../src/clock.js';
 import { checkDatabase, getPrisma } from '../src/db.js';
 import { getEnv } from '../src/env.js';
 import { hashToken } from '../src/security.js';
-import { ensureAdmin } from '../src/services/accounts.js';
+import { ensureAdmin, googleSignIn } from '../src/services/accounts.js';
 import { wipeDatabase } from './helpers.js';
 
 const prisma = getPrisma();
@@ -197,5 +197,102 @@ describe.skipIf(!dbReady)('accounts, admin, PURR shop, focus, push', () => {
     expect(res.headers['x-content-type-options']).toBe('nosniff');
     expect(res.headers['x-frame-options']).toBe('DENY');
     expect(res.headers['cache-control']).toBe('no-store');
+  });
+
+  it('moves guest progress into the account on password sign-in (welcome credits not doubled)', async () => {
+    // An existing account, made on another device.
+    const first = await guest();
+    await call('POST', '/api/v1/auth/register', first, { email: 'owner@test.dev', password: 'owner-pass-123' });
+    const account = await prisma.user.findUniqueOrThrow({ where: { email: 'owner@test.dev' } });
+    const mealsBefore = (await prisma.creditBalance.findUniqueOrThrow({
+      where: { userId_creditType: { userId: account.id, creditType: 'MEALS' } },
+    })).amount;
+
+    // New device: play as a guest for a while.
+    const g = await guest();
+    expect((await call('POST', '/api/v1/commitments', g, commitmentBody('orange'))).statusCode).toBe(201);
+    await call('POST', '/api/v1/wallet/topup', g, { creditType: 'MEALS', amount: 5 });
+    await call('POST', '/api/v1/shop/checkout', g, { packId: 'purr_150' });
+    expect((await call('POST', '/api/v1/shop/unlock', g, { catId: 'mochi' })).statusCode).toBe(200);
+    const guestId = (await call('GET', '/api/v1/me', g)).json().user.id;
+
+    const login = await call('POST', '/api/v1/auth/login', g, { email: 'owner@test.dev', password: 'owner-pass-123' });
+    expect(login.statusCode).toBe(200);
+    const t = login.json().token;
+
+    expect((await call('GET', '/api/v1/commitments', t)).json().commitments).toHaveLength(1);
+    expect((await call('GET', '/api/v1/me', t)).json().unlockedCatIds).toContain('mochi');
+    const meals = await prisma.creditBalance.findUniqueOrThrow({
+      where: { userId_creditType: { userId: account.id, creditType: 'MEALS' } },
+    });
+    expect(meals.amount).toBe(mealsBefore + 5); // the top-up came along, the guest's welcome gift did not
+    expect(await prisma.user.findUnique({ where: { id: guestId } })).toBeNull();
+    expect((await call('GET', '/api/v1/me', g)).statusCode).toBe(401);
+  });
+
+  it('never merges one real account into another', async () => {
+    const a = await guest();
+    await call('POST', '/api/v1/auth/register', a, { email: 'a@test.dev', password: 'a-pass-1234' });
+    const b = await guest();
+    const bReg = await call('POST', '/api/v1/auth/register', b, { email: 'b@test.dev', password: 'b-pass-1234' });
+    const bToken = bReg.json().token;
+    expect((await call('POST', '/api/v1/commitments', bToken, commitmentBody('orange'))).statusCode).toBe(201);
+
+    const switched = await call('POST', '/api/v1/auth/login', bToken, { email: 'a@test.dev', password: 'a-pass-1234' });
+    expect(switched.statusCode).toBe(200);
+    expect((await call('GET', '/api/v1/commitments', switched.json().token)).json().commitments).toHaveLength(0);
+    const bUser = await prisma.user.findUniqueOrThrow({ where: { email: 'b@test.dev' } });
+    expect(await prisma.commitment.count({ where: { userId: bUser.id } })).toBe(1);
+  });
+
+  it('Google sign-in turns this device\'s guest into an account', async () => {
+    const g = await guest();
+    await call('POST', '/api/v1/commitments', g, commitmentBody('orange'));
+    const res = await googleSignIn(prisma, getEnv(), { sub: 'g-1', email: 'new@gmail.com', name: 'New', emailAuthoritative: true }, hashToken(g));
+    const me = (await call('GET', '/api/v1/me', res.token)).json();
+    expect(me.user.email).toBe('new@gmail.com');
+    expect((await call('GET', '/api/v1/commitments', res.token)).json().commitments).toHaveLength(1);
+    expect((await call('GET', '/api/v1/me', g)).statusCode).toBe(401);
+
+    // Same Google account later, from a fresh device with its own guest progress.
+    const g2 = await guest();
+    await call('POST', '/api/v1/commitments', g2, commitmentBody('orange'));
+    const again = await googleSignIn(prisma, getEnv(), { sub: 'g-1', email: 'new@gmail.com', name: 'New', emailAuthoritative: true }, hashToken(g2));
+    expect(again.userId).toBe(res.userId);
+    expect((await call('GET', '/api/v1/commitments', again.token)).json().commitments).toHaveLength(2);
+  });
+
+  it('linking Google to an unverified password account drops that password', async () => {
+    const squatter = await guest();
+    await call('POST', '/api/v1/auth/register', squatter, { email: 'victim@gmail.com', password: 'squatter-pw-1' });
+
+    const res = await googleSignIn(prisma, getEnv(), { sub: 'g-victim', email: 'victim@gmail.com', name: 'V', emailAuthoritative: true });
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: res.userId } });
+    expect(user.googleId).toBe('g-victim');
+    expect(user.passwordHash).toBeNull();
+    expect(user.emailVerifiedAt).not.toBeNull();
+    // The squatter's sessions and password no longer work.
+    const squat = await call('POST', '/api/v1/auth/login', undefined, { email: 'victim@gmail.com', password: 'squatter-pw-1' });
+    expect(squat.statusCode).toBe(401);
+    expect(await prisma.session.count({ where: { userId: user.id } })).toBe(1);
+  });
+
+  it('a non-Gmail Google account cannot unlock an existing password account', async () => {
+    const owner = await guest();
+    await call('POST', '/api/v1/auth/register', owner, { email: 'alice@company.com', password: 'alice-pass-12' });
+    await expect(
+      googleSignIn(prisma, getEnv(), { sub: 'g-x', email: 'alice@company.com', name: 'X', emailAuthoritative: false }),
+    ).rejects.toMatchObject({ code: 'EMAIL_TAKEN' });
+    const alice = await prisma.user.findUniqueOrThrow({ where: { email: 'alice@company.com' } });
+    expect(alice.passwordHash).not.toBeNull();
+    expect(alice.googleId).toBeNull();
+  });
+
+  it('refuses Google sign-in for the admin account', async () => {
+    const env = { ...getEnv(), ADMIN_EMAIL: ADMIN.email, ADMIN_PASSWORD: ADMIN.password };
+    await ensureAdmin(prisma, env);
+    await expect(googleSignIn(prisma, env, { sub: 'g-admin', email: ADMIN.email, name: 'A', emailAuthoritative: true })).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    });
   });
 });

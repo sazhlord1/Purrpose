@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DEFAULT_GOOGLE_CLIENT_ID } from '@purrpose/shared';
 
 const bool = z
   .enum(['true', 'false', '1', '0'])
@@ -23,6 +24,9 @@ const envSchema = z.object({
   /** Admin account bootstrap. The password is hashed on startup, never stored raw. */
   ADMIN_EMAIL: opt(z.string().email()),
   ADMIN_PASSWORD: opt(z.string().min(8)),
+
+  /** OAuth client id for "Sign in with Google" (public; the web app uses the same one). */
+  GOOGLE_CLIENT_ID: opt(z.string()).transform(v => v ?? DEFAULT_GOOGLE_CLIENT_ID),
 
   /** PURR purchases: 'disabled' (default), 'sandbox' (free test credits), 'live' (provider). */
   PAYMENTS_MODE: z.enum(['disabled', 'sandbox', 'live']).default('disabled'),

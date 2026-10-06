@@ -16,6 +16,12 @@ export async function signIn(email: string, password: string): Promise<void> {
   switchTo(res.token);
 }
 
+/** Google's ID token → our session. Guest progress on this device moves into the account. */
+export async function signInWithGoogle(credential: string): Promise<void> {
+  const res = await api<AuthResponse>('/auth/google', { method: 'POST', body: { credential } });
+  switchTo(res.token);
+}
+
 export async function adminSignIn(email: string, password: string): Promise<void> {
   const res = await api<AuthResponse>('/auth/admin/login', { method: 'POST', body: { email, password } });
   switchTo(res.token, '/admin');

@@ -51,6 +51,10 @@ model User {
   email         String?             @unique
   /// scrypt hash — never the raw password.
   passwordHash  String?
+  /// Google account id (`sub` of the ID token). Null until the user signs in with Google.
+  googleId      String?             @unique
+  /// Set when we know the user controls the email (e.g. Google said it's verified).
+  emailVerifiedAt DateTime?
   role          UserRole            @default(USER)
   purrBalance   Int                 @default(0)
   /// Equipped shop items, one per slot, e.g. {"toy":"ball"}. Validated on read.
