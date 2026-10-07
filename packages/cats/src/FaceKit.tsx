@@ -473,6 +473,53 @@ export function PawOverlay({ action, spec, noYarn = false }: { action?: CatActio
 export interface CatWear {
   collar?: boolean;
   bow?: boolean;
+  /** Detective Cheat: fedora + round glasses (drawn on the head, moves with it). */
+  detective?: boolean;
+}
+
+/** Where the fedora's brim sits per cat (the heads are drawn at different heights). */
+const HAT_BRIM_Y: Partial<Record<string, number>> = {};
+
+/** Fedora and round glasses for the interrogation room. Drawn inside the head group. */
+export function DetectiveGear({ spec, catId }: { spec: FaceSpec; catId: string }) {
+  const eyeY = (spec.left[1] + spec.right[1]) / 2;
+  const brim = HAT_BRIM_Y[catId] ?? eyeY - 32;
+  const lensR = Math.max(spec.sclera ?? 0, spec.r * 1.6) + 5.5;
+  const frame = '#C9A45C';
+  return (
+    <g data-part="detective" pointerEvents="none">
+      {/* round glasses */}
+      <g fill="rgba(220,235,255,0.18)" stroke={frame} strokeWidth={2.6}>
+        <circle cx={spec.left[0]} cy={spec.left[1]} r={lensR} />
+        <circle cx={spec.right[0]} cy={spec.right[1]} r={lensR} />
+      </g>
+      <path
+        d={`M${spec.left[0] + lensR} ${spec.left[1] - 1} Q120 ${eyeY - 7} ${spec.right[0] - lensR} ${spec.right[1] - 1}`}
+        fill="none"
+        stroke={frame}
+        strokeWidth={2.4}
+        strokeLinecap="round"
+      />
+      <path
+        d={`M${spec.left[0] - lensR} ${spec.left[1] - 2} L${spec.left[0] - lensR - 12} ${spec.left[1] - 6} M${spec.right[0] + lensR} ${spec.right[1] - 2} L${spec.right[0] + lensR + 12} ${spec.right[1] - 6}`}
+        stroke={frame}
+        strokeWidth={2.2}
+        strokeLinecap="round"
+      />
+      <path d={`M${spec.left[0] - lensR * 0.5} ${spec.left[1] - lensR * 0.45} q4 -3 8 -2`} stroke="#FFFFFF" strokeWidth={1.6} strokeLinecap="round" fill="none" opacity={0.8} />
+      {/* fedora */}
+      <ellipse cx={120} cy={brim} rx={56} ry={8.5} fill="#5B4636" stroke={INK} strokeWidth={2.6} />
+      <path
+        d={`M86 ${brim - 2} C84 ${brim - 18} 90 ${brim - 32} 104 ${brim - 34} Q120 ${brim - 26} 136 ${brim - 34} C150 ${brim - 32} 156 ${brim - 18} 154 ${brim - 2} Z`}
+        fill="#6E5642"
+        stroke={INK}
+        strokeWidth={2.6}
+        strokeLinejoin="round"
+      />
+      <path d={`M86.6 ${brim - 9} Q120 ${brim - 4} 153.4 ${brim - 9} L154 ${brim - 2} Q120 ${brim + 3} 86 ${brim - 2} Z`} fill="#2B2522" />
+      <path d={`M112 ${brim - 30} Q120 ${brim - 22} 128 ${brim - 30}`} fill="none" stroke="#4A382B" strokeWidth={1.6} strokeLinecap="round" />
+    </g>
+  );
 }
 
 /** Drawn as the last thing in the body group, so the head overlaps its top edge like a real chin. */

@@ -94,6 +94,8 @@ export const historyEntrySchema = z.object({
   creditType: consequenceTypeSchema,
   amount: z.number().int(),
   commitmentId: z.string().nullable(),
+  /** Set when the entry belongs to a habit (Detective Cheat). */
+  habitId: z.string().nullable().optional(),
   title: z.string().nullable(),
   atISO: z.string(),
 });

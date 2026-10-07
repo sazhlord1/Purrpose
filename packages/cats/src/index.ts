@@ -38,7 +38,7 @@ export {
 export type { LifeStage, LifeStageInfo, DayPeriod } from './stages.js';
 export { LIVING_CSS, injectLivingStyle } from './livingCss.js';
 export type { CatSeedConfig, CatId } from '@purrpose/shared';
-export { FACE_SPECS, ExprEyes, FaceOverlays, PawOverlay, Wearables } from './FaceKit.js';
+export { DetectiveGear, FACE_SPECS, ExprEyes, FaceOverlays, PawOverlay, Wearables } from './FaceKit.js';
 export type { CatAction, CatWear, FaceSpec } from './FaceKit.js';
 export { ItemArt, ItemIcon, ITEM_FOOTPRINT, ITEM_CSS } from './items.js';
 export { AppIcon, IconGlyph, STAGE_ICON } from './icons.js';

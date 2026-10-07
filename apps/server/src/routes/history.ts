@@ -20,7 +20,7 @@ export function registerHistoryRoutes(app: FastifyInstance): void {
         where: { userId },
         orderBy: { createdAt: 'desc' },
         take: 100,
-        include: { commitment: { select: { title: true } } },
+        include: { commitment: { select: { title: true } }, habit: { select: { title: true } } },
       }),
     ]);
 
@@ -39,7 +39,8 @@ export function registerHistoryRoutes(app: FastifyInstance): void {
         creditType: txn.creditType,
         amount: txn.amount,
         commitmentId: txn.commitmentId,
-        title: txn.commitment?.title ?? null,
+        habitId: txn.habitId,
+        title: txn.commitment?.title ?? txn.habit?.title ?? null,
         atISO: txn.createdAt.toISOString(),
       })),
     });

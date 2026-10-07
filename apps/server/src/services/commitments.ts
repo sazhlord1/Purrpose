@@ -10,6 +10,7 @@ import { Prisma, type PrismaClient, type Commitment } from '@prisma/client';
 import { AppError } from '../errors.js';
 import type { ClockApi } from '../clock.js';
 import type { Role } from '../auth.js';
+import { stakedActive } from './habits.js';
 import { assertCatUsable } from './shop.js';
 
 type Tx = Prisma.TransactionClient;
@@ -67,11 +68,7 @@ export function makeCommitmentEngine(prisma: PrismaClient, clock: ClockApi) {
         WHERE "userId" = ${userId} AND "creditType" = ${input.consequenceType}::"ConsequenceType"
         FOR UPDATE`;
       const balanceAmount = rows[0]?.amount ?? 0;
-      const agg = await tx.commitment.aggregate({
-        where: { userId, status: 'ACTIVE', consequenceType: input.consequenceType },
-        _sum: { consequenceAmount: true },
-      });
-      const staked = agg._sum.consequenceAmount ?? 0;
+      const staked = await stakedActive(tx, userId, input.consequenceType);
       const check = canStake(balanceAmount, staked, input.consequenceAmount);
       if (!check.ok) {
         throw new AppError(

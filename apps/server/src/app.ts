@@ -12,6 +12,7 @@ import { registerCatsRoutes } from './routes/cats.js';
 import { registerCommitmentRoutes } from './routes/commitments.js';
 import { registerDevRoutes } from './routes/dev.js';
 import { registerFocusRoutes } from './routes/focus.js';
+import { registerHabitRoutes } from './routes/habits.js';
 import { registerHistoryRoutes } from './routes/history.js';
 import { registerMeRoutes } from './routes/me.js';
 import { registerPublicPushRoutes, registerPushRoutes } from './routes/push.js';
@@ -100,6 +101,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     registerCommitmentRoutes(scope, engine);
     registerWalletRoutes(scope);
     registerHistoryRoutes(scope);
+    registerHabitRoutes(scope);
     registerShopRoutes(scope);
     registerFocusRoutes(scope);
     registerPushRoutes(scope);

@@ -10,6 +10,8 @@ export async function wipeDatabase(prisma: PrismaClient): Promise<void> {
   await prisma.itemUnlock.deleteMany({});
   await prisma.purrTransaction.deleteMany({});
   await prisma.creditTransaction.deleteMany({});
+  await prisma.habitSlip.deleteMany({});
+  await prisma.habit.deleteMany({});
   await prisma.commitment.deleteMany({});
   await prisma.creditBalance.deleteMany({});
   await prisma.appEvent.deleteMany({});

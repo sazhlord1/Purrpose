@@ -22,6 +22,9 @@ const DesignSystem = lazy(() => import('./pages/DesignSystem.js').then(m => ({ d
 const CatsGallery = lazy(() => import('./pages/CatsGallery.js').then(m => ({ default: m.CatsGallery })));
 const CatLab = lazy(() => import('./pages/CatLab.js').then(m => ({ default: m.CatLab })));
 const Shop = lazy(() => import('./pages/Shop.js').then(m => ({ default: m.Shop })));
+const Detective = lazy(() => import('./pages/Detective.js').then(m => ({ default: m.Detective })));
+const Pacts = lazy(() => import('./pages/Pacts.js').then(m => ({ default: m.Pacts })));
+const AdminUser = lazy(() => import('./pages/AdminUser.js').then(m => ({ default: m.AdminUser })));
 const Login = lazy(() => import('./pages/Login.js').then(m => ({ default: m.Login })));
 const AdminLogin = lazy(() => import('./pages/AdminLogin.js').then(m => ({ default: m.AdminLogin })));
 const Admin = lazy(() => import('./pages/Admin.js').then(m => ({ default: m.Admin })));
@@ -55,6 +58,8 @@ function Shell() {
             <Suspense fallback={<p className="muted">fetching the doodles…</p>}>
               <Routes>
                 <Route path="/" element={<Home />} />
+                <Route path="/pacts" element={<Pacts />} />
+                <Route path="/detective" element={<Detective />} />
                 <Route path="/focus" element={<Focus />} />
                 <Route path="/new" element={<NewCommitment />} />
                 <Route path="/commitment/:id" element={<CommitmentDetail />} />
@@ -65,6 +70,7 @@ function Shell() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/admin/users/:id" element={<AdminUser />} />
                 <Route path="/design" element={<AdminOnly><DesignSystem /></AdminOnly>} />
                 <Route path="/cats" element={<AdminOnly><CatsGallery /></AdminOnly>} />
                 <Route path="/lab" element={<AdminOnly><CatLab /></AdminOnly>} />

@@ -8,7 +8,7 @@ type Tx = Prisma.TransactionClient;
  * in to, then deletes the guest. Only real guests (no email, no Google id, plain
  * USER) are ever merged — a signed-in account is never folded into another one.
  *
- * What moves: pacts, focus sessions, credit history and balances, PURR and its
+ * What moves: pacts, habits, focus sessions, credit history and balances, PURR and its
  * history, owned cats and items, push subscriptions, events. The guest's free
  * welcome credits are not counted twice: only what the guest has beyond them
  * (top-ups minus credits it already lost) is added to the account — except
@@ -37,6 +37,14 @@ export async function mergeGuestInto(tx: Tx, guestId: string, targetId: string):
     _sum: { consequenceAmount: true },
   });
   const stakedByType = new Map(stakes.map(st => [st.consequenceType, st._sum.consequenceAmount ?? 0]));
+  const habitStakes = await tx.habit.groupBy({
+    by: ['consequenceType'],
+    where: { userId: guestId, status: 'ACTIVE' },
+    _sum: { stakeAmount: true },
+  });
+  for (const h of habitStakes) {
+    stakedByType.set(h.consequenceType, (stakedByType.get(h.consequenceType) ?? 0) + (h._sum.stakeAmount ?? 0));
+  }
   let creditsMoved = 0;
   for (const b of guest.balances) {
     const beyondGift = Math.max(0, b.amount - (giftByType.get(b.creditType) ?? 0));
@@ -58,6 +66,7 @@ export async function mergeGuestInto(tx: Tx, guestId: string, targetId: string):
   await tx.creditTransaction.updateMany(move);
   const pacts = await tx.commitment.updateMany(move);
   const focus = await tx.focusSession.updateMany(move);
+  const habits = await tx.habit.updateMany(move);
   await tx.purrTransaction.updateMany(move);
   await tx.pushSubscription.updateMany(move);
   await tx.appEvent.updateMany(move);
@@ -105,6 +114,7 @@ export async function mergeGuestInto(tx: Tx, guestId: string, targetId: string):
       payload: {
         pacts: pacts.count,
         focusSessions: focus.count,
+        habits: habits.count,
         credits: creditsMoved,
         purr: guest.purrBalance,
         cats: cats.length,

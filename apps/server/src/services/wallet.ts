@@ -56,18 +56,27 @@ export async function topUp(
 }
 
 export async function walletView(prisma: PrismaClient, userId: string) {
-  const [balances, staked] = await Promise.all([
+  const [balances, staked, habitStakes] = await Promise.all([
     prisma.creditBalance.findMany({ where: { userId } }),
     prisma.commitment.groupBy({
       by: ['consequenceType'],
       where: { userId, status: 'ACTIVE' },
       _sum: { consequenceAmount: true },
     }),
+    prisma.habit.groupBy({
+      by: ['consequenceType'],
+      where: { userId, status: 'ACTIVE' },
+      _sum: { stakeAmount: true },
+    }),
   ]);
   const amountByType = new Map(balances.map(b => [b.creditType as ConsequenceType, b.amount]));
   const stakedByType = new Map(
     staked.map(s => [s.consequenceType as ConsequenceType, s._sum.consequenceAmount ?? 0]),
   );
+  for (const h of habitStakes) {
+    const t = h.consequenceType as ConsequenceType;
+    stakedByType.set(t, (stakedByType.get(t) ?? 0) + (h._sum.stakeAmount ?? 0));
+  }
   return ALL_TYPES.map(creditType => {
     const amount = amountByType.get(creditType) ?? 0;
     const stakedActive = stakedByType.get(creditType) ?? 0;

@@ -121,7 +121,7 @@ export function CommitmentDetail() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['commitments'] });
       void qc.invalidateQueries({ queryKey: ['me'] });
-      navigate('/');
+      navigate('/pacts');
     },
   });
 
@@ -205,7 +205,7 @@ export function CommitmentDetail() {
           <DoodleButton onClick={() => void onShare()} disabled={shareState === 'busy'}>
             {shareState === 'busy' ? 'Drawing…' : shareState === 'done' ? '✓ Shared' : <><AppIcon name="share" size={18} /> Share</>}
           </DoodleButton>
-          <DoodleButton href="/">Home</DoodleButton>
+          <DoodleButton href="/pacts">All commitments</DoodleButton>
         </div>
       )}
 

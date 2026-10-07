@@ -5,6 +5,7 @@ import { CAT_SEED, FREE_CAT_IDS, type CatId } from '@purrpose/shared';
 import { api } from '../lib/api.js';
 import { useCommitments, useMe } from '../lib/queries.js';
 import { ambient } from '../lib/ambient.js';
+import { BackLink } from '../components/BackLink.js';
 import { FocusScene } from '../components/FocusScene.js';
 import { AppIcon } from '@purrpose/cats';
 import { DoodleButton, Chip, SketchCard, Field, Select } from '../components/ui/index.js';
@@ -217,6 +218,7 @@ export function Focus() {
       {/* Header (Hidden in Zen Mode) */}
       {!zenMode && (
         <header style={{ marginBottom: 12 }}>
+          <BackLink />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h1 style={{ margin: 0 }}>Focus Room</h1>
             <div style={{ display: 'flex', gap: 6 }}>

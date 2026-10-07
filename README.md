@@ -76,6 +76,8 @@ Toys, comfort items, bowls, wearables and room decor, bought with PURR in the Ca
 
 **Upgrading to names (v5):** run `infra/supabase_upgrade_v5.sql` in Supabase **before** deploying the server (adds `User.firstName` / `User.lastName`, used for the home greeting).
 
+**Upgrading to Detective Cheat (v6):** run `infra/supabase_upgrade_v6.sql` in Supabase **before** deploying the server (adds the `Habit` and `HabitSlip` tables and `CreditTransaction.habitId`).
+
 ## Tests
 
 ```powershell

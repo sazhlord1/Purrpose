@@ -17,6 +17,7 @@ import { api, ApiError } from '../lib/api.js';
 import { requestNotificationPermission } from '../lib/notifications.js';
 import { AmountPicker, Chip, DoodleButton, Field, Input, SketchCard } from '../components/ui/index.js';
 import { CanTin, KibbleBag, VetCare } from '../components/doodles/index.js';
+import { BackLink } from '../components/BackLink.js';
 import { PawShake } from '../components/PawShake.js';
 import { useMe } from '../lib/queries.js';
 
@@ -169,6 +170,7 @@ export function NewCommitment() {
         }}
       />
 
+      <BackLink to="/pacts" label="Commitments" />
       <div style={{ textAlign: 'center', marginBottom: 14 }}>
         <h1 style={{ margin: '0 0 4px', fontSize: 32 }}>The Feline Pact</h1>
         <p className="muted" style={{ margin: 0, fontSize: 14 }}>

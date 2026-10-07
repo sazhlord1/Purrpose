@@ -38,6 +38,13 @@ enum PurrTxnType {
   SPEND // spent in the shop, e.g. unlocking a cat (-)
 }
 
+/// Detective Cheat habit pacts.
+enum HabitStatus {
+  ACTIVE
+  KEPT // survived the period (the locked share still went to the cats)
+  BROKEN // hit the slip limit: the whole stake went to the cats
+}
+
 enum NotificationKind {
   T24H
   T1H
@@ -73,6 +80,7 @@ model User {
   itemUnlocks   ItemUnlock[]
   focusSessions FocusSession[]
   pushSubs      PushSubscription[]
+  habits        Habit[]
 }
 
 model Session {
@@ -127,6 +135,8 @@ model CreditTransaction {
   amount       Int
   commitmentId String?
   commitment   Commitment?     @relation(fields: [commitmentId], references: [id])
+  habitId      String?
+  habit        Habit?          @relation(fields: [habitId], references: [id])
   createdAt    DateTime        @default(now())
 
   @@index([userId, createdAt])
@@ -209,4 +219,38 @@ model AppEvent {
   name      String
   payload   Json?
   createdAt DateTime @default(now())
+}
+
+/// A habit pact (Detective Cheat): stake food, confess slips, each slip locks stake ÷ maxSlips.
+model Habit {
+  id              String              @id @default(cuid())
+  userId          String
+  user            User                @relation(fields: [userId], references: [id])
+  title           String
+  catId           String
+  consequenceType ConsequenceType
+  stakeAmount     Int
+  maxSlips        Int
+  slipCount       Int                 @default(0)
+  status          HabitStatus         @default(ACTIVE)
+  startedAt       DateTime            @default(now())
+  endsAt          DateTime
+  settledAt       DateTime?
+  /// Credits the cats got when it settled.
+  lostAmount      Int?
+  createdAt       DateTime            @default(now())
+  slips           HabitSlip[]
+  transactions    CreditTransaction[]
+
+  @@index([userId, status])
+  @@index([status, endsAt])
+}
+
+model HabitSlip {
+  id        String   @id @default(cuid())
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([habitId])
 }

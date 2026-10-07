@@ -6,3 +6,4 @@ export * from './cats.js';
 export * from './schemas.js';
 export * from './store.js';
 export * from './items.js';
+export * from './habits.js';

@@ -1120,3 +1120,284 @@ select {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--space-3);
 }
+
+/* ── Section back link ─────────────────────────────── */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+.back-link:hover { color: var(--ink); }
+
+/* ── Home hub: three animated doors ───────────────── */
+.hub {
+  display: grid;
+  gap: 14px;
+}
+.hub-banner {
+  position: relative;
+  display: block;
+  aspect-ratio: 18 / 7;
+  border: 2.5px solid var(--ink);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 4px 4px 0 var(--ink);
+  color: #fff;
+  text-decoration: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.hub-banner:hover,
+.hub-banner:focus-visible {
+  transform: translate(-1px, -2px);
+  box-shadow: 5px 6px 0 var(--ink);
+}
+.hub-banner:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
+.hub-banner-scene,
+.hub-banner-scene > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.hub-banner-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(14, 10, 8, 0.72) 0%, rgba(14, 10, 8, 0.38) 45%, rgba(14, 10, 8, 0.05) 75%);
+}
+.hub-banner-text {
+  position: absolute;
+  left: 16px;
+  bottom: 12px;
+  right: 40%;
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+}
+.hub-banner-title {
+  font-family: 'Gochi Hand', cursive;
+  font-size: clamp(22px, 6.4vw, 30px);
+  line-height: 1.05;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.55);
+}
+.hub-banner-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 253, 249, 0.92);
+  color: var(--ink);
+}
+.hub-banner-info {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  background: rgba(20, 15, 12, 0.92);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+.hub-banner-info p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.45;
+  color: #fff;
+}
+@media (hover: hover) {
+  .hub-banner:hover .hub-banner-info,
+  .hub-banner:focus-visible .hub-banner-info { opacity: 1; transform: none; }
+  .hub-banner:hover .hub-banner-text,
+  .hub-banner:focus-visible .hub-banner-text { opacity: 0; }
+}
+.hub-banner.show-info .hub-banner-info { opacity: 1; transform: none; }
+.hub-banner.show-info .hub-banner-text { opacity: 0; }
+.hub-banner-text { transition: opacity 0.2s ease; }
+
+/* banner loops */
+.hb-clock-hand { animation: hb-tick 6s steps(12) infinite; transform-origin: 0 0; }
+@keyframes hb-tick { to { transform: rotate(360deg); } }
+.hb-float { animation: hb-float 3.4s ease-in-out infinite; }
+@keyframes hb-float { 50% { transform: translateY(-6px); } }
+.hb-rain { animation: hb-rain 0.9s linear infinite; }
+@keyframes hb-rain { from { transform: translate(0, -24px); } to { transform: translate(-4px, 0); } }
+.hb-breathe { animation: hb-breathe 4.5s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes hb-breathe { 50% { opacity: 0.55; transform: scale(0.92); } }
+.hb-zzz { animation: hb-float 3s ease-in-out infinite; }
+
+/* ── Interrogation room ───────────────────────────── */
+.ir-swing {
+  transform-box: view-box;
+  animation: ir-swing 9s ease-in-out infinite alternate;
+}
+@keyframes ir-swing {
+  from { transform: rotate(-24deg); }
+  to { transform: rotate(24deg); }
+}
+.ir-bulb { animation: ir-flicker 7s steps(1) infinite; }
+@keyframes ir-flicker {
+  0%, 100% { opacity: 1; }
+  61% { opacity: 0.55; }
+  62% { opacity: 1; }
+  64% { opacity: 0.7; }
+  65% { opacity: 1; }
+}
+.is-reduced .ir-swing,
+.is-reduced .ir-bulb,
+.is-reduced .hb-clock-hand,
+.is-reduced .hb-float,
+.is-reduced .hb-rain,
+.is-reduced .hb-breathe,
+.is-reduced .hb-zzz { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .ir-swing { animation-duration: 30s; }
+  .hb-rain, .hb-float, .hb-zzz, .hb-breathe, .ir-bulb { animation: none; }
+}
+
+.room-stage {
+  position: relative;
+  border: 2.5px solid var(--ink);
+  border-radius: 18px;
+  overflow: hidden;
+  background: #1c1815;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.interrogation-room { display: block; width: 100%; height: auto; }
+.room-bubble {
+  position: absolute;
+  top: 3%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 74%;
+  padding: 8px 14px;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  background: #fffdf9;
+  color: var(--ink);
+  font-family: 'Gochi Hand', cursive;
+  font-size: 17px;
+  line-height: 1.12;
+  text-align: center;
+  box-shadow: 2px 2px 0 var(--ink);
+  animation: room-bubble-in 0.35s ease-out;
+}
+@keyframes room-bubble-in { from { opacity: 0; transform: translate(-50%, 6px) scale(0.96); } }
+.room-cta {
+  position: absolute;
+  left: 50%;
+  bottom: 5%;
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+.btn-cheat {
+  font: inherit;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 0.5px;
+  padding: 12px 26px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: #c0392b;
+  color: #fff;
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+}
+.btn-cheat:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+.btn-cheat.is-confirming { background: #8e1f14; animation: cheat-pulse 0.8s ease-in-out infinite; }
+@keyframes cheat-pulse { 50% { transform: scale(1.04); } }
+.btn-cheat:disabled { opacity: 0.6; cursor: default; }
+.room-cta-hint {
+  font-size: 12px;
+  color: #f3e7d6;
+  text-shadow: 0 1px 0 #000;
+}
+
+/* evidence locker: the food at stake and how much is locked */
+.locker {
+  display: grid;
+  gap: 10px;
+}
+.locker-food {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.locker-unit {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--paper-raised, #fffaf1);
+  overflow: hidden;
+}
+.locker-unit-lock {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: repeating-linear-gradient(135deg, rgba(43, 35, 31, 0.78) 0 6px, rgba(43, 35, 31, 0.62) 6px 12px);
+  transition: width 0.6s cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+.locker-unit-pad {
+  position: absolute;
+  right: 2px;
+  top: 2px;
+}
+.locker-slips {
+  display: grid;
+  gap: 4px;
+}
+.locker-slip {
+  height: 12px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: #fffaf1;
+}
+.locker-slip.is-used { background: #c0392b; }
+.case-chip-closed { opacity: 0.75; }
+.stamp-kept { color: #2e6930; border-color: #2e6930; }
+
+/* ── Admin: users ─────────────────────────────────── */
+.admin-search {
+  display: flex;
+  gap: 8px;
+}
+.admin-search input {
+  flex: 1;
+  min-width: 0;
+}
+.admin-list {
+  display: grid;
+  gap: 2px;
+}
+.admin-list-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px;
+  border-bottom: 1.5px dashed rgba(43, 35, 31, 0.2);
+  color: var(--ink);
+  text-decoration: none;
+}
+.admin-list-row:last-child { border-bottom: 0; }
+.admin-user-row:hover { background: rgba(43, 35, 31, 0.04); }
+.admin-ellipsis {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
