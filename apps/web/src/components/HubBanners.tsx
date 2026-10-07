@@ -1,6 +1,7 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Cat } from '@purrpose/cats';
+import { FAR_RAIN, NEAR_RAIN, RainLayer } from './FocusScene.js';
 import { LampHole, LampSwing, RoomDefs, WaterGlass } from './InterrogationRoom.js';
 
 const INK = '#26201D';
@@ -149,10 +150,14 @@ export function FocusBanner({ reduced }: { reduced: boolean }) {
       </defs>
       <rect width={BW} height={BH} fill="#3B2C2A" />
       <rect x={150} y={8} width={196} height={84} fill="url(#hb-night)" />
-      <g clipPath="url(#hb-window)" className="hb-rain" stroke="#9CC3F0" strokeWidth={1.4} strokeLinecap="round" opacity={0.7}>
-        {Array.from({ length: 28 }, (_, i) => (
-          <line key={i} x1={150 + ((i * 37) % 200)} y1={((i * 23) % 90) - 10} x2={146 + ((i * 37) % 200)} y2={((i * 23) % 90) + 4} />
-        ))}
+      {/* Same seamless rain as the Focus Room itself (two layers, looping exactly) */}
+      <g clipPath="url(#hb-window)">
+        <g className="lc-rain-far">
+          <RainLayer spec={FAR_RAIN} width={BW} height={100} />
+        </g>
+        <g className="lc-rain-near">
+          <RainLayer spec={NEAR_RAIN} width={BW} height={100} />
+        </g>
       </g>
       <rect x={150} y={8} width={196} height={84} fill="none" stroke={INK} strokeWidth={3} />
       <line x1={248} y1={8} x2={248} y2={92} stroke={INK} strokeWidth={3} />

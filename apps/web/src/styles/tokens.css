@@ -1228,8 +1228,6 @@ select {
 @keyframes hb-tick { to { transform: rotate(360deg); } }
 .hb-float { animation: hb-float 3.4s ease-in-out infinite; }
 @keyframes hb-float { 50% { transform: translateY(-6px); } }
-.hb-rain { animation: hb-rain 0.9s linear infinite; }
-@keyframes hb-rain { from { transform: translate(0, -24px); } to { transform: translate(-4px, 0); } }
 .hb-breathe { animation: hb-breathe 4.5s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes hb-breathe { 50% { opacity: 0.55; transform: scale(0.92); } }
 .hb-zzz { animation: hb-float 3s ease-in-out infinite; }
@@ -1255,12 +1253,13 @@ select {
 .is-reduced .ir-bulb,
 .is-reduced .hb-clock-hand,
 .is-reduced .hb-float,
-.is-reduced .hb-rain,
+.is-reduced .lc-rain-far,
+.is-reduced .lc-rain-near,
 .is-reduced .hb-breathe,
 .is-reduced .hb-zzz { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   .ir-swing { animation-duration: 15s; }
-  .hb-rain, .hb-float, .hb-zzz, .hb-breathe, .ir-bulb { animation: none; }
+  .hb-float, .hb-zzz, .hb-breathe, .ir-bulb { animation: none; }
 }
 
 .room-stage {

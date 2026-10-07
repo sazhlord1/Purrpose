@@ -49,18 +49,26 @@ interface RainLayerSpec {
   opacity: number;
 }
 
-const NEAR_RAIN: RainLayerSpec = { colGap: 26, rowGap: 64, drift: 6, length: 22, width: 1.6, opacity: 0.7 };
-const FAR_RAIN: RainLayerSpec = { colGap: 19, rowGap: 46, drift: 4, length: 12, width: 1, opacity: 0.35 };
+export const NEAR_RAIN: RainLayerSpec = { colGap: 26, rowGap: 64, drift: 6, length: 22, width: 1.6, opacity: 0.7 };
+export const FAR_RAIN: RainLayerSpec = { colGap: 19, rowGap: 46, drift: 4, length: 12, width: 1, opacity: 0.35 };
 
 /**
  * Evenly spaced rain on one slant. Each column gets a fixed stagger so it doesn't
  * look like a grid, and each row is shifted by `drift` so that sliding the whole
  * layer by (-drift, rowGap) lands every drop exactly on the next one — a seamless loop.
  */
-function RainLayer({ spec }: { spec: RainLayerSpec }) {
+export function RainLayer({
+  spec,
+  width = SCENE_WIDTH,
+  height = SILL_Y,
+}: {
+  spec: RainLayerSpec;
+  width?: number;
+  height?: number;
+}) {
   const lines: JSX.Element[] = [];
-  const cols = Math.ceil((SCENE_WIDTH + 60) / spec.colGap);
-  const rows = Math.ceil((SILL_Y + spec.rowGap * 2) / spec.rowGap) + 1;
+  const cols = Math.ceil((width + 60) / spec.colGap);
+  const rows = Math.ceil((height + spec.rowGap * 2) / spec.rowGap) + 1;
   const dx = (spec.drift * spec.length) / spec.rowGap;
   for (let c = 0; c < cols; c++) {
     const stagger = ((c * 37) % 11) / 11; // deterministic 0..1 pattern, never random
