@@ -11,15 +11,20 @@ function switchTo(token: string | null, to = '/'): void {
   window.location.assign(to);
 }
 
+/** Admins land straight in their panel; everyone else on the home screen. */
+function landingFor(res: AuthResponse): string {
+  return res.role === 'ADMIN' ? '/admin' : '/';
+}
+
 export async function signIn(email: string, password: string): Promise<void> {
   const res = await api<AuthResponse>('/auth/login', { method: 'POST', body: { email, password } });
-  switchTo(res.token);
+  switchTo(res.token, landingFor(res));
 }
 
 /** Google's ID token → our session. Guest progress on this device moves into the account. */
 export async function signInWithGoogle(credential: string): Promise<void> {
   const res = await api<AuthResponse>('/auth/google', { method: 'POST', body: { credential } });
-  switchTo(res.token);
+  switchTo(res.token, landingFor(res));
 }
 
 export async function adminSignIn(email: string, password: string): Promise<void> {

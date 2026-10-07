@@ -55,6 +55,11 @@ export function Login() {
       <main>
         <h1>You're signed in</h1>
         <p className="muted">as {me.data.user.email}</p>
+        {me.data.user.role === 'ADMIN' && (
+          <DoodleButton href="/admin" variant="primary">
+            Open the admin panel
+          </DoodleButton>
+        )}
         <DoodleButton href="/settings">Go to settings</DoodleButton>
       </main>
     );

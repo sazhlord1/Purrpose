@@ -289,11 +289,18 @@ describe.skipIf(!dbReady)('accounts, admin, PURR shop, focus, push', () => {
     expect(alice.googleId).toBeNull();
   });
 
-  it('refuses Google sign-in for the admin account', async () => {
+  it('the admin can sign in with their real Gmail and stays admin (password kept)', async () => {
     const env = { ...getEnv(), ADMIN_EMAIL: ADMIN.email, ADMIN_PASSWORD: ADMIN.password };
     await ensureAdmin(prisma, env);
-    await expect(googleSignIn(prisma, env, { sub: 'g-admin', email: ADMIN.email, name: 'A', emailAuthoritative: true, firstName: null, lastName: null })).rejects.toMatchObject({
-      code: 'FORBIDDEN',
-    });
+    const profile = { sub: 'g-admin', email: ADMIN.email, name: 'A', emailAuthoritative: true, firstName: null, lastName: null };
+    const res = await googleSignIn(prisma, env, profile);
+    expect(res.role).toBe('ADMIN');
+    const admin = await prisma.user.findUniqueOrThrow({ where: { email: ADMIN.email } });
+    expect(admin.googleId).toBe('g-admin');
+    expect(admin.passwordHash).not.toBeNull();
+    // A Google account that can't prove it owns the admin address is turned away.
+    await expect(
+      googleSignIn(prisma, env, { ...profile, sub: 'g-other', emailAuthoritative: false }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
 });

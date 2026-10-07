@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate } from 'react-router-dom';
+import { BackLink } from '../components/BackLink.js';
 import { DoodleButton, SketchCard } from '../components/ui/index.js';
 import { api, ApiError } from '../lib/api.js';
 import { useMe } from '../lib/queries.js';
@@ -122,6 +123,7 @@ export function Admin() {
   const s = stats.data;
   return (
     <main>
+      <BackLink />
       <h1>Admin</h1>
       <p className="muted">Signed in as {me.data?.user.email}. Every cat and tool is unlocked for you.</p>
 

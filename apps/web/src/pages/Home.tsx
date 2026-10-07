@@ -54,6 +54,11 @@ export function Home() {
                 <AppIcon name="account" size={16} /> sign in
               </Link>
             )}
+            {me.data?.user.role === 'ADMIN' && (
+              <Link to="/admin" className="muted" aria-label="Admin panel">
+                <AppIcon name="crown" size={16} /> admin
+              </Link>
+            )}
             <Link to="/settings" className="muted" aria-label="Settings">
               <AppIcon name="settings" size={16} /> settings
             </Link>

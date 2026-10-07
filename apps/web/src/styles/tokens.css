@@ -1237,7 +1237,7 @@ select {
 /* ── Interrogation room ───────────────────────────── */
 .ir-swing {
   transform-box: view-box;
-  animation: ir-swing 9s ease-in-out infinite alternate;
+  animation: ir-swing 4.5s ease-in-out infinite alternate;
 }
 @keyframes ir-swing {
   from { transform: rotate(-24deg); }
@@ -1259,7 +1259,7 @@ select {
 .is-reduced .hb-breathe,
 .is-reduced .hb-zzz { animation: none; }
 @media (prefers-reduced-motion: reduce) {
-  .ir-swing { animation-duration: 30s; }
+  .ir-swing { animation-duration: 15s; }
   .hb-rain, .hb-float, .hb-zzz, .hb-breathe, .ir-bulb { animation: none; }
 }
 

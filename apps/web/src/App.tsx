@@ -82,10 +82,6 @@ function Shell() {
               <AppIcon name="home" size={24} className="nav-icon" />
               Home
             </NavLink>
-            <NavLink to="/focus" className={({ isActive }) => (isActive ? 'active' : '')}>
-              <AppIcon name="focus" size={24} className="nav-icon" />
-              Focus
-            </NavLink>
             <NavLink to="/shop" className={({ isActive }) => (isActive ? 'active' : '')}>
               <AppIcon name="shop" size={24} className="nav-icon" />
               Shop

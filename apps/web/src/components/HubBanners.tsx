@@ -165,7 +165,7 @@ export function FocusBanner({ reduced }: { reduced: boolean }) {
       </g>
       <ellipse cx={186} cy={126} rx={66} ry={14} fill="#C9673F" stroke={INK} strokeWidth={2.4} />
       <BannerCat x={186} y={128} s={0.4}>
-        <Cat catId="black" state="SLEEPING" size={240} showGround={false} />
+        <Cat catId="mochi" state="SLEEPING" size={240} showGround={false} />
       </BannerCat>
       <path d="M120 124 Q186 142 252 124 L252 130 Q186 148 120 130 Z" fill="#D9774C" stroke={INK} strokeWidth={2} />
       <g className="hb-zzz" fill="#F5C08B" fontWeight={700} style={{ fontFamily: 'Gochi Hand, cursive' }}>

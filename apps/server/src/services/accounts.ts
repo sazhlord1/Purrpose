@@ -134,17 +134,18 @@ export async function googleSignIn(
   deviceSessionHash?: string,
 ): Promise<IssuedSession> {
   const adminEmail = env.ADMIN_EMAIL?.trim().toLowerCase();
-  const refuseAdmin = () =>
-    new AppError('FORBIDDEN', undefined, 'This account signs in with its password on the admin page.');
-  if (adminEmail && profile.email === adminEmail) throw refuseAdmin();
+  const refuseAdmin = () => new AppError('FORBIDDEN', undefined, 'Sign in to this account with its password.');
+  // The admin may use Google only with the real Gmail/Workspace account behind ADMIN_EMAIL.
+  const isAdminEmail = !!adminEmail && profile.email === adminEmail;
+  if (isAdminEmail && !profile.emailAuthoritative) throw refuseAdmin();
 
   let user = await prisma.user.findUnique({ where: { googleId: profile.sub } });
-  if (user?.role === 'ADMIN') throw refuseAdmin();
+  if (user?.role === 'ADMIN' && !isAdminEmail) throw refuseAdmin();
 
   if (!user) {
     const byEmail = await prisma.user.findUnique({ where: { email: profile.email } });
     if (byEmail) {
-      if (byEmail.role === 'ADMIN') throw refuseAdmin();
+      if (byEmail.role === 'ADMIN' && !isAdminEmail) throw refuseAdmin();
       if (byEmail.googleId && byEmail.googleId !== profile.sub) {
         throw new AppError('EMAIL_TAKEN', undefined, 'That email belongs to a different Google account.');
       }
@@ -160,7 +161,8 @@ export async function googleSignIn(
       // Google has proven this person owns the email. If nobody had proven it before,
       // whoever registered it with a password might not be them: drop that password
       // and sign out its other devices before linking.
-      const unproven = byEmail.emailVerifiedAt === null && byEmail.passwordHash !== null;
+      // (The admin's password comes from the server's env, so it is never "unproven".)
+      const unproven = byEmail.role !== 'ADMIN' && byEmail.emailVerifiedAt === null && byEmail.passwordHash !== null;
       user = await prisma.$transaction(async tx => {
         if (unproven) {
           await tx.session.deleteMany({ where: { userId: byEmail.id } });
