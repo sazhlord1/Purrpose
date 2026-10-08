@@ -1,10 +1,4 @@
-/* ── Persian fonts (only downloaded when Persian text is on screen) ── */
-@font-face {
-  font-family: 'Digi Darya';
-  src: url('/fonts/DigiDarya-Bold.ttf') format('truetype');
-  font-weight: 100 900;
-  font-display: swap;
-}
+/* ── Persian font: Anjoman (only downloaded when Persian text is on screen) ── */
 @font-face {
   font-family: 'Anjoman';
   src: url('/fonts/Anjoman-Light.woff2') format('woff2');
@@ -1447,12 +1441,30 @@ select {
 
 
 /* ── Persian (RTL) ─────────────────────────────────────
-   Digi Darya for everything written in the hand-drawn font, Anjoman for the rest.
+   Anjoman for everything. What English writes in the hand-drawn font (titles,
+   bubbles, stamps, banners) uses Anjoman at its heaviest weight (Black, 900).
    Letter-spacing breaks Persian joining, so it is switched off everywhere. */
 html[lang='fa'] {
-  --font-hand: 'Digi Darya', 'Gochi Hand', cursive;
+  --font-hand: 'Anjoman', 'Inter', system-ui, sans-serif;
   --font-body: 'Anjoman', 'Inter', system-ui, sans-serif;
 }
+html[lang='fa'] h1,
+html[lang='fa'] h2,
+html[lang='fa'] h3,
+html[lang='fa'] .hand,
+html[lang='fa'] .stamp,
+html[lang='fa'] .purr-balance,
+html[lang='fa'] .hub-banner-title,
+html[lang='fa'] .room-bubble,
+html[lang='fa'] [style*='font-hand'],
+html[lang='fa'] [font-family*='font-hand'] {
+  font-weight: 900 !important;
+}
+/* Persian letters reach higher and lower than Latin ones: give tight lines room. */
+html[lang='fa'] .room-bubble { line-height: 1.6; padding: 8px 16px 9px; }
+html[lang='fa'] .hub-banner-title { line-height: 1.45; }
+html[lang='fa'] .cat-card-title { line-height: 1.6; }
+html[lang='fa'] .shop-menu-row .shop-menu-text .muted { line-height: 1.6; }
 html[lang='fa'] body { line-height: 1.7; }
 html[lang='fa'] *,
 html[lang='fa'] *::before,

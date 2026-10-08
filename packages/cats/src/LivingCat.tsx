@@ -2,7 +2,7 @@ import {
   motion,
   useAnimationControls,
 } from 'framer-motion';
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import type { CatId } from '@purrpose/shared';
 import { CAT_SEED, getLocale } from '@purrpose/shared';
 import { Cat } from './Cat.js';
@@ -21,7 +21,7 @@ import {
   type MacroName,
 } from './engine.js';
 import { injectLivingStyle } from './livingCss.js';
-import { useTextWidth } from './textFit.js';
+import { cssFontFamily, layoutText, useFontsVersion } from './textFit.js';
 import { catName, resolveCatConfig } from './config.js';
 import type { CatAction, CatWear } from './FaceKit.js';
 
@@ -164,8 +164,43 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
     injectLivingStyle();
   }, []);
 
+  // Who said what, and when the cat may talk again. A cat never says two
+  // things back to back: after a line it stays quiet for a while, and it never
+  // repeats the line it just said.
+  const talkRef = useRef({ quietUntil: 0, last: '' });
+  const bubbleTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(bubbleTimer.current), []);
+
+  const showBubble = (text: string, durationMs: number) => {
+    const sp = speedRef.current;
+    talkRef.current = { quietUntil: performance.now() + (durationMs + QUIET_AFTER_SPEECH_MS) / sp, last: text };
+    setBubble(text);
+    onEvent?.(`speech:"${text}"`);
+    window.clearTimeout(bubbleTimer.current);
+    bubbleTimer.current = window.setTimeout(() => setBubble(b => (b === text ? null : b)), durationMs / sp);
+  };
+
+  /** Small talk: skipped while the cat is talking or still in its quiet spell. */
+  const chatter = (lines: readonly string[], rng: () => number, ms: number) => {
+    const now = performance.now();
+    const { quietUntil, last } = talkRef.current;
+    if (now < quietUntil) return;
+    // The same line again only after a long silence; otherwise something else, or nothing.
+    const longQuiet = now > quietUntil + (2 * QUIET_AFTER_SPEECH_MS) / speedRef.current;
+    const fresh = lines.filter(l => l && (longQuiet || l !== last));
+    if (fresh.length === 0) return;
+    showBubble(fresh[Math.floor(rng() * fresh.length) % fresh.length], ms);
+  };
+
   useEffect(() => {
-    setBubble(typeof speech === 'string' && speech.length > 0 ? speech : null);
+    if (typeof speech === 'string' && speech.length > 0) {
+      showBubble(speech, 60_000);
+    } else {
+      setBubble(null);
+      // An outside line just ended: the usual quiet spell starts now.
+      const t = talkRef.current;
+      t.quietUntil = Math.min(t.quietUntil, performance.now() + QUIET_AFTER_SPEECH_MS / speedRef.current);
+    }
   }, [speech]);
 
   useEffect(() => {
@@ -199,11 +234,10 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
 
   const setFlag = (k: keyof typeof flags, on: boolean) => setFlags(f => ({ ...f, [k]: on }));
 
+  /** A line the moment calls for (the handshake, winning, losing): said even mid-quiet. */
   const bubbleFor = (text: string, ms?: number) => {
-    const duration = ms ?? Math.max(4800, text.length * 90);
-    setBubble(text);
-    onEvent?.(`speech:"${text}"`);
-    setTimeout(() => setBubble(b => (b === text ? null : b)), duration / speedRef.current);
+    if (!text || text === talkRef.current.last) return;
+    showBubble(text, ms ?? Math.max(4800, text.length * 90));
   };
 
   async function hop(): Promise<void> {
@@ -511,6 +545,7 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
   async function runTerminalScript(script: 'SUCCESS' | 'FAILURE'): Promise<void> {
     const sp = speedRef.current;
     setFacing(1);
+    setBubble(null); // whatever it was mumbling stops; the ending gets its own line
     onEvent?.(`script:${script}`);
     if (script === 'SUCCESS') {
       // Freeze in disbelief → sad sigh → give up and go to sleep.
@@ -602,11 +637,9 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
             firstBeatRef.current = false;
             bubbleFor(config.quirks.chosenLine, 5200);
           } else if (phase === 'WAITING') {
-            const lines = config.quirks.waitingLines;
-            bubbleFor(lines[Math.floor(rng() * lines.length) % lines.length], 5000);
+            chatter(config.quirks.waitingLines, rng, 5000);
           } else {
-            const lines = config.quirks.closeLines;
-            bubbleFor(lines[Math.floor(rng() * lines.length) % lines.length], 4800);
+            chatter(config.quirks.closeLines, rng, 4800);
           }
         }
         await runMacro(picked.name);
@@ -788,39 +821,47 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
 
 LivingCat.displayName = 'LivingCat';
 
-/** Splits a line into at most 3 rows of ~26 characters for the speech bubble. */
-function wrapBubble(text: string, max = 26): string[] {
-  const words = text.split(/\s+/);
-  const lines: string[] = [];
-  let line = '';
-  for (const w of words) {
-    const next = line ? `${line} ${w}` : w;
-    if (next.length > max && line) {
-      lines.push(line);
-      line = w;
-    } else {
-      line = next;
-    }
-  }
-  if (line) lines.push(line);
-  return lines.slice(0, 3);
-}
+/** Silence after every line before the cat makes small talk again. */
+const QUIET_AFTER_SPEECH_MS = 12_000;
+
+/** Where the bubble's tail points (just above the cat's head), in cat coordinates. */
+const BUBBLE_TAIL_Y = -177;
 
 function SpeechBubble({ text }: { text: string }) {
   const rtl = getLocale() === 'fa';
-  // Persian handwriting runs a little wider per letter, so lines wrap a bit sooner.
-  const lines = wrapBubble(text, rtl ? 24 : 26);
-  const longest = Math.max(...lines.map(l => l.length));
-  const textRef = useRef<SVGTextElement | null>(null);
-  // Measured once the handwriting font is in, so the bubble hugs the words.
-  const textW = useTextWidth(textRef, text, longest * 7.6);
-  const w = Math.max(90, Math.min(320, textW + 32));
-  const h = 20 * lines.length + 18;
+  const fontsV = useFontsVersion();
+  // Persian bubbles are Anjoman Black; the English ones keep the hand-drawn font.
+  const size = 15;
+  const weight = rtl ? 900 : 500;
+  const lineH = rtl ? 25 : 20;
+  const family = cssFontFamily('--font-hand', rtl ? 'Anjoman, sans-serif' : "'Gochi Hand', cursive");
+  const block = useMemo(() => {
+    const font = `${weight} ${size}px ${family}`;
+    // Prefer short, balanced lines; widen only when a line would run past three rows.
+    let b = layoutText(text, font, 200, lineH, rtl);
+    if (b.lines.length > 3) b = layoutText(text, font, 250, lineH, rtl);
+    if (b.lines.length > 3) b = layoutText(text, font, 290, lineH, rtl);
+    // Balance the rows: the narrowest width that still needs the same number of lines.
+    for (let maxW = b.width - 6; b.lines.length > 1 && maxW > 60; maxW -= 6) {
+      const tighter = layoutText(text, font, maxW, lineH, rtl);
+      if (tighter.lines.length !== b.lines.length) break;
+      b = tighter;
+    }
+    return b;
+  }, [text, family, fontsV, rtl]);
+
+  const padX = 16;
+  const padY = rtl ? 10 : 9;
+  const w = Math.max(90, Math.ceil(block.width) + padX * 2);
+  // Persian marks (tanvin, kasra…) can sit a hair above the measured ink: a little extra headroom.
+  const padTop = padY + (rtl ? 3 : 0);
+  const h = Math.ceil(block.ascent + block.bottom) + padTop + padY;
   const mid = w / 2;
+  const baseline = padTop + block.ascent;
   // Outer <g> positions the bubble; the inner <g> carries the pop-in CSS animation.
   // (A CSS transform on the same element would override the SVG position attribute.)
   return (
-    <g transform={`translate(${-mid} ${-215 - (lines.length - 1) * 20})`}>
+    <g transform={`translate(${-mid} ${BUBBLE_TAIL_Y - h})`}>
       <g className="lc-bubble">
         <rect x={0} y={0} rx={14} ry={16} width={w} height={h} fill="#FFFDF8" stroke="#2B231F" strokeWidth={2.4} />
         <path
@@ -832,18 +873,17 @@ function SpeechBubble({ text }: { text: string }) {
         />
         <path d={`M${mid - 8} ${h - 3} h18 v3 h-18 z`} fill="#FFFDF8" stroke="none" />
         <text
-          ref={textRef}
           x={mid}
-          y={24}
+          y={baseline}
           textAnchor="middle"
-          fontSize={15}
-          fontWeight={500}
+          fontSize={size}
+          fontWeight={weight}
           fill="#2B231F"
           direction={rtl ? 'rtl' : undefined}
           style={{ fontFamily: 'var(--font-hand)', letterSpacing: rtl ? 0 : '0.2px' }}
         >
-          {lines.map((l, i) => (
-            <tspan key={i} x={mid} dy={i === 0 ? 0 : 20}>
+          {block.lines.map((l, i) => (
+            <tspan key={i} x={mid} dy={i === 0 ? 0 : lineH}>
               {l}
             </tspan>
           ))}

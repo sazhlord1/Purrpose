@@ -68,18 +68,20 @@ export async function renderShareCard(input: ShareCardInput, includeScene = true
 
   const fa = getLocale() === 'fa';
   if (fa) ctx.direction = 'rtl';
-  const hand = fa ? '"Digi Darya", "Gochi Hand", "Comic Sans MS", cursive' : '"Gochi Hand", "Comic Sans MS", cursive';
+  // Persian is all Anjoman; what English writes by hand uses its heaviest weight.
+  const hand = fa ? 'Anjoman, Inter, system-ui, sans-serif' : '"Gochi Hand", "Comic Sans MS", cursive';
+  const heavy = fa ? '900 ' : '';
   const body = fa ? 'Anjoman, Inter, system-ui, sans-serif' : 'Inter, system-ui, sans-serif';
   // Canvas only draws fonts that are already loaded; make sure the Persian ones are.
   if (fa) {
-    await Promise.all([document.fonts?.load('76px "Digi Darya"'), document.fonts?.load('600 38px Anjoman')]).catch(() => undefined);
+    await Promise.all([document.fonts?.load('900 76px Anjoman'), document.fonts?.load('600 38px Anjoman')]).catch(() => undefined);
   }
 
   // Headline
   const won = input.outcome === 'success';
   ctx.fillStyle = INK;
   ctx.textAlign = 'center';
-  ctx.font = `76px ${hand}`;
+  ctx.font = `${heavy}76px ${hand}`;
   ctx.fillText(won ? t('I did it.') : t('{name} won.', { name: input.catName }), W / 2, 110);
 
   ctx.font = `600 38px ${body}`;
@@ -125,15 +127,15 @@ export async function renderShareCard(input: ShareCardInput, includeScene = true
   const stamp = won ? t('KEPT') : t('FED');
   // Shrink the stamp word until it fits its box (Persian words run longer).
   let stampSize = 64;
-  ctx.font = `${stampSize}px ${hand}`;
+  ctx.font = `${heavy}${stampSize}px ${hand}`;
   while (ctx.measureText(stamp).width > 196 && stampSize > 32) {
     stampSize -= 4;
-    ctx.font = `${stampSize}px ${hand}`;
+    ctx.font = `${heavy}${stampSize}px ${hand}`;
   }
   ctx.fillText(stamp, 0, 22);
   ctx.restore();
 
-  ctx.font = `34px ${hand}`;
+  ctx.font = `${heavy}34px ${hand}`;
   ctx.fillStyle = '#6B5F57';
   ctx.fillText(window.location.host ? `${t('purrpose')} · ${window.location.host}` : t('purrpose'), W / 2, H - 70);
 
