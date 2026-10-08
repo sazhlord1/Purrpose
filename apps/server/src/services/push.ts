@@ -1,5 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
-import { NOTIF_COPY, catById } from '@purrpose/shared';
+import { catNameIn, notifCopy, type Locale } from '@purrpose/shared';
 import type { Env } from '../env.js';
 import { sendWebPush, type VapidKeys } from './webpush.js';
 
@@ -12,23 +12,30 @@ export function vapidKeys(env: Env): VapidKeys | null {
   return { publicKey: env.VAPID_PUBLIC_KEY, privateKey: env.VAPID_PRIVATE_KEY, subject: env.VAPID_SUBJECT };
 }
 
-function messageFor(kind: Kind, c: { id: string; title: string; catId: string }) {
-  const cat = catById(c.catId)?.name ?? 'Your cat';
-  const body =
-    kind === 'T24H' ? NOTIF_COPY.t24h : kind === 'T1H' ? NOTIF_COPY.t1h : NOTIF_COPY.failure;
+function messageFor(kind: Kind, c: { id: string; title: string; catId: string }, locale: Locale) {
+  const cat = catNameIn(c.catId, locale);
+  const copy = notifCopy(locale);
+  const body = kind === 'T24H' ? copy.t24h : kind === 'T1H' ? copy.t1h : copy.failure;
   return {
-    title: kind === 'FAILED' ? `${cat} won.` : `“${c.title}”`,
+    title: kind === 'FAILED' ? (locale === 'fa' ? `${cat} برد.` : `${cat} won.`) : `“${c.title}”`,
     body,
     url: `/commitment/${c.id}`,
     tag: `${c.id}:${kind}`,
   };
 }
 
-async function sendToUser(prisma: PrismaClient, keys: VapidKeys, userId: string, payload: object, topic: string) {
+async function sendToUser(
+  prisma: PrismaClient,
+  keys: VapidKeys,
+  userId: string,
+  payloadFor: (locale: Locale) => object,
+  topic: string,
+) {
   const subs = await prisma.pushSubscription.findMany({ where: { userId } });
   for (const sub of subs) {
     try {
-      const result = await sendWebPush(sub, payload, keys, { ttlSec: 6 * 3600, urgency: 'high', topic });
+      const locale: Locale = sub.locale === 'fa' ? 'fa' : 'en';
+      const result = await sendWebPush(sub, payloadFor(locale), keys, { ttlSec: 6 * 3600, urgency: 'high', topic });
       if (result === 'gone') await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => undefined);
     } catch (err) {
       console.error('[push] send failed', err);
@@ -51,7 +58,7 @@ async function claimAndSend(
     skipDuplicates: true,
   });
   if (claimed.count === 0) return;
-  await sendToUser(prisma, keys, c.userId, messageFor(kind, c), `${c.id.slice(-20)}${kind}`);
+  await sendToUser(prisma, keys, c.userId, locale => messageFor(kind, c, locale), `${c.id.slice(-20)}${kind}`);
 }
 
 /** Runs from the 1-minute sweep. `failedIds` = commitments the sweep just settled. */

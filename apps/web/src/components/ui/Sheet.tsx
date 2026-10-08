@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { sheetSpring } from '../../lib/motion.js';
+import { t } from '../../i18n/index.js';
 
 interface SheetProps {
   open: boolean;
@@ -55,7 +56,7 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
             className="sheet-panel card card-c"
             role="dialog"
             aria-modal="true"
-            aria-label={title ?? 'dialog'}
+            aria-label={title ?? t('dialog')}
             tabIndex={-1}
             onClick={e => e.stopPropagation()}
             initial={{ y: '100%' }}

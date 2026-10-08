@@ -9,6 +9,7 @@ import { BackLink } from '../components/BackLink.js';
 import { FocusScene } from '../components/FocusScene.js';
 import { AppIcon } from '@purrpose/cats';
 import { DoodleButton, Chip, SketchCard, Field, Select } from '../components/ui/index.js';
+import { getLocale, t } from '../i18n/index.js';
 
 type FocusStatus = 'idle' | 'focusing' | 'paused' | 'finished';
 
@@ -175,7 +176,7 @@ export function Focus() {
         },
       })
         .then(() => qc.invalidateQueries({ queryKey: ['focus-summary'] }))
-        .catch(() => setSaveError('Could not save this session. Check your connection.'));
+        .catch(() => setSaveError(t('Could not save this session. Check your connection.')));
     }
   };
 
@@ -201,6 +202,9 @@ export function Focus() {
 
   const isFocusing = status === 'focusing';
   const isFinished = status === 'finished';
+  const [flowBefore, flowAfter = ''] = t(
+    'You stayed in deep flow for {time}. The rain has stopped and fireflies are dancing outside the window.',
+  ).split('{time}');
 
   return (
     <main style={{ maxWidth: 440, margin: '0 auto', paddingBottom: zenMode ? 20 : undefined }}>
@@ -209,9 +213,9 @@ export function Focus() {
         <button
           className="btn btn-primary zen-floating-toggle"
           onClick={() => setZenMode(false)}
-          aria-label="Exit Zen Mode"
+          aria-label={t('Exit Zen Mode')}
         >
-          ✕ Exit Zen
+          ✕ {t('Exit Zen')}
         </button>
       )}
 
@@ -220,27 +224,27 @@ export function Focus() {
         <header style={{ marginBottom: 12 }}>
           <BackLink />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h1 style={{ margin: 0 }}>Focus Room</h1>
+            <h1 style={{ margin: 0 }}>{t('Focus Room')}</h1>
             <div style={{ display: 'flex', gap: 6 }}>
               <button
                 className="chip"
                 onClick={toggleSound}
-                aria-label={soundEnabled ? 'Mute ambient sound' : 'Enable ambient sound'}
+                aria-label={soundEnabled ? t('Mute ambient sound') : t('Enable ambient sound')}
                 style={{ fontWeight: 600 }}
               >
-                {soundEnabled ? <><AppIcon name="sound" size={16} /> Sound on</> : <><AppIcon name="mute" size={16} /> Muted</>}
+                {soundEnabled ? <><AppIcon name="sound" size={16} /> {t('Sound on')}</> : <><AppIcon name="mute" size={16} /> {t('Muted')}</>}
               </button>
               <button
                 className="chip"
                 onClick={() => setZenMode(z => !z)}
-                aria-label="Toggle Zen mode"
+                aria-label={t('Toggle Zen mode')}
               >
-                <AppIcon name="expand" size={16} /> Zen
+                <AppIcon name="expand" size={16} /> {t('Zen')}
               </button>
             </div>
           </div>
           <p className="muted" style={{ margin: '4px 0 10px', fontSize: 13.5 }}>
-            Open-ended cozy focus. Rainy window, warm lamp, and soothing purrs.
+            {t('Open-ended cozy focus. Rainy window, warm lamp, and soothing purrs.')}
           </p>
         </header>
       )}
@@ -269,10 +273,12 @@ export function Focus() {
       >
         <div
           style={{
-            fontFamily: 'var(--font-hand)',
+            // Persian zero and colon are both dots in the hand font — use the body font for the clock.
+            fontFamily: getLocale() === 'fa' ? 'var(--font-body)' : 'var(--font-hand)',
             fontSize: 48,
-            fontWeight: 'bold',
+            fontWeight: getLocale() === 'fa' ? 800 : 'bold',
             letterSpacing: '2px',
+            direction: 'ltr',
             color: isFocusing ? 'var(--accent-coral)' : isFinished ? 'var(--accent-green)' : 'var(--ink)',
             lineHeight: 1,
             margin: '4px 0 8px',
@@ -285,17 +291,17 @@ export function Focus() {
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
           {status === 'idle' && (
             <DoodleButton variant="primary" size="big" onClick={startFocus}>
-              ▶ Start Focus
+              ▶ {t('Start Focus')}
             </DoodleButton>
           )}
 
           {status === 'focusing' && (
             <>
               <DoodleButton onClick={pauseFocus}>
-                ⏸ Pause
+                ⏸ {t('Pause')}
               </DoodleButton>
               <DoodleButton variant="primary" size="big" onClick={finishFocus}>
-                ✓ Finish
+                ✓ {t('Finish')}
               </DoodleButton>
             </>
           )}
@@ -303,17 +309,17 @@ export function Focus() {
           {status === 'paused' && (
             <>
               <DoodleButton variant="primary" onClick={resumeFocus}>
-                ▶ Resume
+                ▶ {t('Resume')}
               </DoodleButton>
               <DoodleButton onClick={finishFocus}>
-                ✓ Finish
+                ✓ {t('Finish')}
               </DoodleButton>
             </>
           )}
 
           {status === 'finished' && (
             <DoodleButton variant="primary" onClick={resetSession}>
-              + New Session
+              + {t('New Session')}
             </DoodleButton>
           )}
         </div>
@@ -323,15 +329,17 @@ export function Focus() {
       {isFinished && sessionSavedTime !== null && (
         <SketchCard variant="a" style={{ marginBottom: 16 }}>
           <h2 style={{ fontSize: 22, color: 'var(--accent-green)', margin: '0 0 4px' }}>
-            <AppIcon name="sparkle" size={22} /> Focus complete!
+            <AppIcon name="sparkle" size={22} /> {t('Focus complete!')}
           </h2>
           <p style={{ margin: '0 0 8px', fontSize: 14.5 }}>
-            You stayed in deep flow for <strong>{fmtDuration(sessionSavedTime)}</strong>. The rain has stopped and fireflies are dancing outside the window.
+            {flowBefore}
+            <strong>{fmtDuration(sessionSavedTime)}</strong>
+            {flowAfter}
           </p>
           {saveError && <p className="form-error">{saveError}</p>}
           {selectedCommitmentId && (
             <p className="chip" style={{ display: 'inline-block', background: 'var(--paper-warm)', fontSize: 12 }}>
-              ⏱ Time added to: {activeCommitments.find(c => c.id === selectedCommitmentId)?.title}
+              ⏱ {t('Time added to: {title}', { title: activeCommitments.find(c => c.id === selectedCommitmentId)?.title ?? '' })}
             </p>
           )}
         </SketchCard>
@@ -343,13 +351,13 @@ export function Focus() {
           {/* 1. Companion Cat Selector */}
           <div style={{ marginBottom: 14 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-soft)', display: 'block', marginBottom: 6 }}>
-              Choose your focus companion:
+              {t('Choose your focus companion:')}
             </span>
             <div className="chip-row" style={{ margin: 0 }}>
               {CAT_SEED.map(c =>
                 unlocked.includes(c.id) ? (
                   <Chip key={c.id} active={selectedCat === c.id} onClick={() => setSelectedCat(c.id)}>
-                    {c.name} ({c.type.toLowerCase()})
+                    {c.name} ({t(c.type.toLowerCase())})
                   </Chip>
                 ) : (
                   <Chip key={c.id} onClick={() => navigate(`/shop?cat=${c.id}`)}>
@@ -362,15 +370,15 @@ export function Focus() {
 
           {/* 2. Link to Active Commitment */}
           {activeCommitments.length > 0 && (
-            <Field label="Link this focus session to a task (optional):">
+            <Field label={t('Link this focus session to a task (optional):')}>
               <Select
                 value={selectedCommitmentId}
                 onChange={e => setSelectedCommitmentId(e.target.value)}
               >
-                <option value="">-- No specific task (Pure Focus) --</option>
+                <option value="">{t('-- No specific task (Pure Focus) --')}</option>
                 {activeCommitments.map(c => (
                   <option key={c.id} value={c.id}>
-                    {c.title} ({c.consequenceAmount} meals at stake)
+                    {t('{title} ({n} meals at stake)', { title: c.title, n: c.consequenceAmount })}
                   </option>
                 ))}
               </Select>

@@ -3,6 +3,8 @@
  * and hands it to the native share sheet, or downloads it where sharing files
  * isn't supported.
  */
+import { getLocale, t } from '../i18n/index.js';
+
 const W = 1080;
 const H = 1350;
 const INK = '#26201D';
@@ -64,18 +66,24 @@ export async function renderShareCard(input: ShareCardInput, includeScene = true
   ctx.fillStyle = PAPER;
   ctx.fillRect(0, 0, W, H);
 
-  const hand = '"Gochi Hand", "Comic Sans MS", cursive';
-  const body = 'Inter, system-ui, sans-serif';
+  const fa = getLocale() === 'fa';
+  if (fa) ctx.direction = 'rtl';
+  const hand = fa ? '"Digi Darya", "Gochi Hand", "Comic Sans MS", cursive' : '"Gochi Hand", "Comic Sans MS", cursive';
+  const body = fa ? 'Anjoman, Inter, system-ui, sans-serif' : 'Inter, system-ui, sans-serif';
+  // Canvas only draws fonts that are already loaded; make sure the Persian ones are.
+  if (fa) {
+    await Promise.all([document.fonts?.load('76px "Digi Darya"'), document.fonts?.load('600 38px Anjoman')]).catch(() => undefined);
+  }
 
   // Headline
   const won = input.outcome === 'success';
   ctx.fillStyle = INK;
   ctx.textAlign = 'center';
   ctx.font = `76px ${hand}`;
-  ctx.fillText(won ? 'I did it.' : `${input.catName} won.`, W / 2, 110);
+  ctx.fillText(won ? t('I did it.') : t('{name} won.', { name: input.catName }), W / 2, 110);
 
   ctx.font = `600 38px ${body}`;
-  wrap(ctx, `“${input.title}”`, W - 160).forEach((l, i) => ctx.fillText(l, W / 2, 175 + i * 46));
+  wrap(ctx, t('“{title}”', { title: input.title }), W - 160).forEach((l, i) => ctx.fillText(l, W / 2, 175 + i * 46));
 
   // Scene
   if (input.sceneSvg && includeScene) {
@@ -102,7 +110,7 @@ export async function renderShareCard(input: ShareCardInput, includeScene = true
   ctx.fillStyle = INK;
   ctx.font = `600 36px ${body}`;
   ctx.fillText(
-    won ? `My ${input.amountLabel} are safe.` : `My ${input.amountLabel} will feed a cat.`,
+    won ? t('My {amount} are safe.', { amount: input.amountLabel }) : t('My {amount} will feed a cat.', { amount: input.amountLabel }),
     W / 2,
     H - 150,
   );
@@ -114,13 +122,20 @@ export async function renderShareCard(input: ShareCardInput, includeScene = true
   ctx.fillStyle = won ? INK : '#B4443C';
   ctx.lineWidth = 7;
   ctx.strokeRect(-110, -44, 220, 88);
-  ctx.font = `64px ${hand}`;
-  ctx.fillText(won ? 'KEPT' : 'FED', 0, 22);
+  const stamp = won ? t('KEPT') : t('FED');
+  // Shrink the stamp word until it fits its box (Persian words run longer).
+  let stampSize = 64;
+  ctx.font = `${stampSize}px ${hand}`;
+  while (ctx.measureText(stamp).width > 196 && stampSize > 32) {
+    stampSize -= 4;
+    ctx.font = `${stampSize}px ${hand}`;
+  }
+  ctx.fillText(stamp, 0, 22);
   ctx.restore();
 
   ctx.font = `34px ${hand}`;
   ctx.fillStyle = '#6B5F57';
-  ctx.fillText(window.location.host ? `purrpose · ${window.location.host}` : 'purrpose', W / 2, H - 70);
+  ctx.fillText(window.location.host ? `${t('purrpose')} · ${window.location.host}` : t('purrpose'), W / 2, H - 70);
 
   // toBlob throws synchronously if some browser considers the SVG snapshot "tainted".
   return new Promise((resolve, reject) => {
@@ -137,8 +152,8 @@ export async function shareResult(input: ShareCardInput): Promise<'shared' | 'do
   const file = new File([blob], 'purrpose.png', { type: 'image/png' });
   const text =
     input.outcome === 'success'
-      ? `I beat ${input.catName} and finished “${input.title}” 🐾`
-      : `${input.catName} won this round — my stake feeds a cat 🐾`;
+      ? t('I beat {name} and finished “{title}” 🐾', { name: input.catName, title: input.title })
+      : t('{name} won this round — my stake feeds a cat 🐾', { name: input.catName });
   if (navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({ files: [file], text });

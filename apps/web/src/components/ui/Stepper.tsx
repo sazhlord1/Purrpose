@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { Chip } from './Chip.js';
 
 interface StepperProps {
@@ -11,12 +12,12 @@ interface StepperProps {
 export function Stepper({ value, onChange, min = 1, max = 9999, ariaLabel }: StepperProps) {
   const clamp = (n: number) => Math.min(max, Math.max(min, n));
   return (
-    <span className="stepper" role="group" aria-label={ariaLabel ?? 'amount'}>
+    <span className="stepper" role="group" aria-label={ariaLabel ?? t('amount')}>
       <button
         type="button"
         onClick={() => onChange(clamp(value - 1))}
         disabled={value <= min}
-        aria-label="decrease"
+        aria-label={t('decrease')}
       >
         −
       </button>
@@ -25,7 +26,7 @@ export function Stepper({ value, onChange, min = 1, max = 9999, ariaLabel }: Ste
         type="button"
         onClick={() => onChange(clamp(value + 1))}
         disabled={value >= max}
-        aria-label="increase"
+        aria-label={t('increase')}
       >
         +
       </button>

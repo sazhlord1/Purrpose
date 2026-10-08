@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { t } from '../../i18n/index.js';
 
 type StampKind = 'fed' | 'kept' | 'stake';
 
@@ -22,9 +23,9 @@ export function Stamp({
       className={`stamp ${kind === 'fed' ? 'stamp-fed' : ''}`.trim()}
       style={style}
       role="status"
-      aria-label={`status: ${LABELS[kind]}`}
+      aria-label={t('status: {label}', { label: t(LABELS[kind]) })}
     >
-      {children ?? LABELS[kind]}
+      {children ?? t(LABELS[kind])}
     </span>
   );
 }

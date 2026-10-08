@@ -12,9 +12,12 @@ import {
   type PaymentsMode,
   type PurrPack,
   type ShopItem,
+  catSubtitle,
 } from '@purrpose/shared';
 import { DoodleButton, SketchCard } from '../components/ui/index.js';
+import { backArrow, getLocale, t } from '../i18n/index.js';
 import { api, ApiError } from '../lib/api.js';
+import { catNameOf } from '../lib/labels.js';
 
 interface ShopResponse {
   purr: number;
@@ -71,13 +74,13 @@ export function Shop() {
     void qc.invalidateQueries({ queryKey: ['shop'] });
     void qc.invalidateQueries({ queryKey: ['me'] });
   };
-  const fail = (e: unknown) => setMessage({ kind: 'err', text: e instanceof ApiError ? e.message : 'Something went wrong.' });
+  const fail = (e: unknown) => setMessage({ kind: 'err', text: e instanceof ApiError ? e.message : t('Something went wrong.') });
 
   const unlock = useMutation({
     mutationFn: (catId: CatId) => api<{ catId: CatId; purr: number }>('/shop/unlock', { method: 'POST', body: { catId } }),
     onSuccess: res => {
-      const name = shop.data?.cats.find(c => c.id === res.catId)?.name ?? 'Your new cat';
-      setMessage({ kind: 'ok', text: `${name} moved in! Pick them for your next pact.` });
+      const name = shop.data?.cats.some(c => c.id === res.catId) ? catNameOf(res.catId) : t('Your new cat');
+      setMessage({ kind: 'ok', text: t('{name} moved in! Pick them for your next pact.', { name }) });
       refresh();
     },
     onError: fail,
@@ -87,8 +90,9 @@ export function Shop() {
     mutationFn: (itemId: ItemId) =>
       api<{ itemId: ItemId; purr: number; loadout: Loadout }>('/shop/items/buy', { method: 'POST', body: { itemId } }),
     onSuccess: res => {
-      const name = shop.data?.items.find(i => i.id === res.itemId)?.name ?? 'Your item';
-      setMessage({ kind: 'ok', text: `${name} is yours and in use.` });
+      const found = shop.data?.items.find(i => i.id === res.itemId);
+      const name = found ? t(found.name) : t('Your item');
+      setMessage({ kind: 'ok', text: t('{name} is yours and in use.', { name }) });
       setTrying(null);
       refresh();
     },
@@ -105,28 +109,28 @@ export function Shop() {
   const buyPack = useMutation({
     mutationFn: (packId: string) => api<{ status: string; purr: number }>('/shop/checkout', { method: 'POST', body: { packId } }),
     onSuccess: res => {
-      setMessage({ kind: 'ok', text: `Done! You now have ${res.purr} PURR.` });
+      setMessage({ kind: 'ok', text: t('Done! You now have {n} PURR.', { n: res.purr }) });
       refresh();
     },
     onError: e =>
       setMessage({
         kind: 'err',
-        text: e instanceof ApiError && e.code === 'PAYMENTS_UNAVAILABLE' ? 'Buying PURR is coming soon.' : 'Purchase failed.',
+        text: e instanceof ApiError && e.code === 'PAYMENTS_UNAVAILABLE' ? t('Buying PURR is coming soon.') : t('Purchase failed.'),
       }),
   });
 
-  if (shop.isLoading) return <main><p className="muted">opening the shop…</p></main>;
-  if (shop.isError || !shop.data) return <main><p className="muted">The shop is closed for a nap. Try again soon.</p></main>;
+  if (shop.isLoading) return <main><p className="muted">{t('opening the shop…')}</p></main>;
+  if (shop.isError || !shop.data) return <main><p className="muted">{t('The shop is closed for a nap. Try again soon.')}</p></main>;
 
   const { purr, cats, packs, paymentsMode, items, loadout } = shop.data;
 
   const balance = (
     <div className="shop-balance">
       <span className="purr-balance"><AppIcon name="purr" size={28} /> {purr}</span>
-      <span className="muted">PURR</span>
+      <span className="muted">{t('PURR')}</span>
       {section !== 'purr' && (
         <button type="button" className="chip chip-purr" onClick={() => open('purr')}>
-          + Get PURR
+          + {t('Get PURR')}
         </button>
       )}
     </div>
@@ -148,9 +152,9 @@ export function Shop() {
     };
     return (
       <main>
-        <h1>Cat Shop</h1>
+        <h1>{t('Cat Shop')}</h1>
         {balance}
-        <nav className="shop-menu" aria-label="Shop sections">
+        <nav className="shop-menu" aria-label={t('Shop sections')}>
           {SECTION_ORDER.map(s => (
             <button
               key={s}
@@ -163,16 +167,16 @@ export function Shop() {
                 <AppIcon name={SECTION_META[s].icon} size={30} />
               </span>
               <span className="shop-menu-text">
-                <strong>{SECTION_META[s].title}</strong>
-                <span className="muted">{SECTION_META[s].hint}</span>
+                <strong>{t(SECTION_META[s].title)}</strong>
+                <span className="muted">{t(SECTION_META[s].hint)}</span>
               </span>
               {countFor(s) && <span className="chip">{countFor(s)}</span>}
-              <span aria-hidden>›</span>
+              <span aria-hidden>{getLocale() === 'fa' ? '‹' : '›'}</span>
             </button>
           ))}
         </nav>
         <p className="muted" style={{ fontSize: 13 }}>
-          Items are just for fun — they never change your stakes or deadlines.
+          {t('Items are just for fun — they never change your stakes or deadlines.')}
         </p>
       </main>
     );
@@ -182,10 +186,10 @@ export function Shop() {
   const header = (
     <>
       <button type="button" className="linklike shop-back" onClick={() => open(null)}>
-        ← Shop
+        {backArrow()} {t('Shop')}
       </button>
       <h1 className="shop-section-title" style={{ marginTop: 4, background: meta.bg }} data-purr={section === 'purr' || undefined}>
-        <AppIcon name={meta.icon} size={30} /> {meta.title}
+        <AppIcon name={meta.icon} size={30} /> {t(meta.title)}
       </h1>
       {balance}
       {status}
@@ -203,16 +207,16 @@ export function Shop() {
             return (
               <div key={cat.id} id={`shop-cat-${cat.id}`} className={`shop-cat ${cat.owned ? '' : 'locked'} ${focusCat === cat.id ? 'equipped' : ''}`}>
                 <Cat catId={cat.id} state="WAITING" size={100} />
-                <strong>{cat.name}</strong>
-                <span className="muted" style={{ fontSize: 12 }}>{cat.personality}</span>
+                <strong>{catNameOf(cat.id)}</strong>
+                <span className="muted" style={{ fontSize: 12 }}>{getLocale() === 'fa' ? catSubtitle(cat.id) : cat.personality}</span>
                 {cat.owned ? (
-                  <span className="stamp" style={{ fontSize: 13 }}>{cat.pricePurr === 0 ? 'FREE' : 'OWNED'}</span>
+                  <span className="stamp" style={{ fontSize: 13 }}>{cat.pricePurr === 0 ? t('FREE') : t('OWNED')}</span>
                 ) : (
                   <DoodleButton
                     variant={affordable ? 'primary' : 'ghost'}
                     disabled={!affordable || unlock.isPending}
                     onClick={() => unlock.mutate(cat.id)}
-                    ariaLabel={`Unlock ${cat.name} for ${cat.pricePurr} PURR`}
+                    ariaLabel={t('Unlock {name} for {n} PURR', { name: catNameOf(cat.id), n: cat.pricePurr })}
                   >
                     🔓 {cat.pricePurr}
                   </DoodleButton>
@@ -230,15 +234,15 @@ export function Shop() {
     return (
       <main>
         {header}
-        {paymentsMode === 'disabled' && <p className="muted">Buying PURR is coming soon.</p>}
-        {paymentsMode === 'sandbox' && <p className="muted">Test mode: purchases are free and nothing is charged.</p>}
+        {paymentsMode === 'disabled' && <p className="muted">{t('Buying PURR is coming soon.')}</p>}
+        {paymentsMode === 'sandbox' && <p className="muted">{t('Test mode: purchases are free and nothing is charged.')}</p>}
         <div className="shop-grid">
           {packs.map(pack => (
             <div key={pack.id} className="shop-cat">
               <div className="purr-balance" style={{ fontSize: 26 }}><AppIcon name="purr" size={26} /> {pack.purr}</div>
-              {pack.bonusLabel && <span className="chip">{pack.bonusLabel}</span>}
+              {pack.bonusLabel && <span className="chip">{t(pack.bonusLabel)}</span>}
               <DoodleButton variant="primary" disabled={paymentsMode === 'disabled' || buyPack.isPending} onClick={() => buyPack.mutate(pack.id)}>
-                {pack.priceLabel}
+                <span className="ltr">{pack.priceLabel}</span>
               </DoodleButton>
             </div>
           ))}
@@ -251,17 +255,20 @@ export function Shop() {
   const list = items.filter(i => i.category === section);
   const previewCat = cats.find(c => c.owned)?.id ?? 'orange';
   const previewLoadout: Loadout = trying ? { ...loadout, [trying.slot]: trying.id } : loadout;
+  const [tryingBefore = '', tryingAfter = ''] = t('Trying on {name}').split('{name}');
   return (
     <main>
       {header}
-      <p className="muted" style={{ marginTop: -4 }}>{meta.hint}.</p>
+      <p className="muted" style={{ marginTop: -4 }}>{t(meta.hint)}.</p>
       <SketchCard variant="b" className="shop-preview">
         <CatScene catId={previewCat} state="WAITING" phaseRatio={previewRatio(section)} seed={4242} animateStages={false} items={previewLoadout} interactive />
         {trying && (
           <p className="muted" role="status" style={{ textAlign: 'center', margin: '6px 0 0' }}>
-            Trying on <strong>{trying.name}</strong> ·{' '}
+            {tryingBefore}
+            <strong>{t(trying.name)}</strong>
+            {tryingAfter} ·{' '}
             <button type="button" className="linklike" onClick={() => setTrying(null)}>
-              stop
+              {t('stop')}
             </button>
           </p>
         )}
@@ -276,14 +283,14 @@ export function Shop() {
                 type="button"
                 className="shop-row-main"
                 onClick={() => setTrying(trying?.id === item.id ? null : item)}
-                aria-label={`Preview ${item.name}`}
+                aria-label={t('Preview {name}', { name: t(item.name) })}
               >
                 <span className="shop-icon-tile" style={{ background: meta.bg }}>
                   <ItemIcon id={item.id} size={48} />
                 </span>
                 <span className="shop-menu-text">
-                  <strong>{item.name}</strong>
-                  <span className="muted">{item.blurb}</span>
+                  <strong>{t(item.name)}</strong>
+                  <span className="muted">{t(item.blurb)}</span>
                 </span>
               </button>
               {item.owned ? (
@@ -292,14 +299,14 @@ export function Shop() {
                   disabled={equip.isPending}
                   onClick={() => equip.mutate({ slot: item.slot, itemId: equipped ? null : item.id })}
                 >
-                  {equipped ? 'Remove' : 'Use'}
+                  {equipped ? t('Remove') : t('Use')}
                 </DoodleButton>
               ) : (
                 <DoodleButton
                   variant={affordable ? 'primary' : 'ghost'}
                   disabled={!affordable || buyItem.isPending}
                   onClick={() => buyItem.mutate(item.id)}
-                  ariaLabel={`Buy ${item.name} for ${item.pricePurr} PURR`}
+                  ariaLabel={t('Buy {name} for {n} PURR', { name: t(item.name), n: item.pricePurr })}
                 >
                   <AppIcon name="purr" size={16} /> {item.pricePurr}
                 </DoodleButton>
@@ -309,7 +316,7 @@ export function Shop() {
         })}
       </ul>
       <p className="muted" style={{ fontSize: 13 }}>
-        Tap an item to see it in the room before buying. <Link to="/">Back home</Link>
+        {t('Tap an item to see it in the room before buying.')} <Link to="/">{t('Back home')}</Link>
       </p>
     </main>
   );

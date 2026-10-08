@@ -33,6 +33,19 @@ export const NOTIF_COPY = {
   failure: 'You failed. Your cat is eating.',
 } as const;
 
+export const NOTIF_COPY_FA: Record<keyof typeof NOTIF_COPY, string> = {
+  reminder: 'گربه‌ت هنوز منتظره.',
+  t24h: '۲۴ ساعت مونده. گربه‌ت داره به کابینت غذا سر می‌زنه.',
+  t1h: 'گربه‌ت می‌دونه ساعت چنده.',
+  success: 'انجامش دادی. گربه‌ت حسابی پکره.',
+  failure: 'نشد. گربه‌ت داره غذا می‌خوره.',
+};
+
+/** Notification copy in a locale (push is sent in the language of the device). */
+export function notifCopy(locale: 'en' | 'fa'): Record<keyof typeof NOTIF_COPY, string> {
+  return locale === 'fa' ? NOTIF_COPY_FA : NOTIF_COPY;
+}
+
 /**
  * OAuth client id for "Sign in with Google". Public by design (it ships in the
  * web page); override with GOOGLE_CLIENT_ID / VITE_GOOGLE_CLIENT_ID if needed.

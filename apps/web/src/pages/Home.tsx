@@ -2,14 +2,31 @@ import { Link } from 'react-router-dom';
 import { AppIcon } from '@purrpose/cats';
 import { now } from '@purrpose/shared';
 import { DetectiveBanner, FocusBanner, HubBanner, PactsBanner } from '../components/HubBanners.js';
+import { t } from '../i18n/index.js';
 import { localHour } from '../lib/commitmentView.js';
 import { useCommitments, useHabits, useMe } from '../lib/queries.js';
 
-function greeting(hour: number): string {
+type Greeting = 'Up late' | 'Good morning' | 'Good afternoon' | 'Good evening';
+
+function greeting(hour: number): Greeting {
   if (hour < 5) return 'Up late';
   if (hour < 12) return 'Good morning';
   if (hour < 18) return 'Good afternoon';
   return 'Good evening';
+}
+
+/** The whole greeting line as one sentence, with "{name}" where the name goes. */
+function greetingLine(g: Greeting, named: boolean): string {
+  switch (g) {
+    case 'Up late':
+      return named ? t('Up late, {name}.') : t('Up late.');
+    case 'Good morning':
+      return named ? t('Good morning, {name}.') : t('Good morning.');
+    case 'Good afternoon':
+      return named ? t('Good afternoon, {name}.') : t('Good afternoon.');
+    default:
+      return named ? t('Good evening, {name}.') : t('Good evening.');
+  }
 }
 
 function isReduced(): boolean {
@@ -33,68 +50,74 @@ export function Home() {
   const activePacts = (commitments.data?.commitments ?? []).filter(c => c.status === 'ACTIVE').length;
   const openCases = (habits.data?.habits ?? []).filter(h => h.status === 'ACTIVE').length;
   const meals = me.data?.balances.find(b => b.creditType === 'MEALS');
+  const [beforeName, afterName = ''] = greetingLine(greeting(hour), Boolean(firstName)).split('{name}');
 
   return (
     <main>
       <header style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
           <h1>
-            {greeting(hour)}
-            {firstName ? (
+            {beforeName}
+            {firstName && (
               <>
-                , <span className="greet-name">{firstName}</span>.
+                <span className="greet-name">{firstName}</span>
+                {afterName}
               </>
-            ) : (
-              '.'
             )}
           </h1>
           <div className="home-links">
             {isGuest && (
-              <Link to="/login" className="muted" aria-label="Sign in or create an account">
-                <AppIcon name="account" size={16} /> sign in
+              <Link to="/login" className="muted" aria-label={t('Sign in or create an account')}>
+                <AppIcon name="account" size={16} /> {t('sign in')}
               </Link>
             )}
             {me.data?.user.role === 'ADMIN' && (
-              <Link to="/admin" className="muted" aria-label="Admin panel">
-                <AppIcon name="crown" size={16} /> admin
+              <Link to="/admin" className="muted" aria-label={t('Admin panel')}>
+                <AppIcon name="crown" size={16} /> {t('admin')}
               </Link>
             )}
-            <Link to="/settings" className="muted" aria-label="Settings">
-              <AppIcon name="settings" size={16} /> settings
+            <Link to="/settings" className="muted" aria-label={t('Settings')}>
+              <AppIcon name="settings" size={16} /> {t('settings')}
             </Link>
           </div>
         </div>
-        <div className="chip-row" aria-label="Summary">
+        <div className="chip-row" aria-label={t('Summary')}>
           <span className="chip" style={{ color: '#2E6930', fontWeight: 600 }}>
-            pantry: {meals?.available ?? 0} meals
+            {t('pantry: {n} meals', { n: meals?.available ?? 0 })}
           </span>
           <Link to="/shop" className="chip" style={{ textDecoration: 'none', fontWeight: 600 }}>
-            <AppIcon name="purr" size={16} /> {me.data?.purr ?? 0} PURR
+            <AppIcon name="purr" size={16} /> {t('{n} PURR', { n: me.data?.purr ?? 0 })}
           </Link>
         </div>
       </header>
 
-      <nav className="hub" aria-label="Rooms">
+      <nav className="hub" aria-label={t('Rooms')}>
         <HubBanner
           to="/pacts"
-          title="Make a commitment"
-          badge={activePacts > 0 ? `${activePacts} active` : undefined}
-          blurb="Pick a task and a deadline, and stake some cat food. Finish in time and your stray moves up in the world. Miss it, and the cats eat."
+          title={t('Make a commitment')}
+          badge={activePacts > 0 ? t('{n} active', { n: activePacts }) : undefined}
+          blurb={t('Pick a task and a deadline, and stake some cat food. Finish in time and your stray moves up in the world. Miss it, and the cats eat.')}
         >
           <PactsBanner reduced={reduced} />
         </HubBanner>
         <HubBanner
           to="/focus"
-          title="Focus Room"
-          blurb="A quiet room for deep work. Start the timer, your cat curls up on its cushion, and you both stay put until it rings."
+          title={t('Focus Room')}
+          blurb={t('A quiet room for deep work. Start the timer, your cat curls up on its cushion, and you both stay put until it rings.')}
         >
           <FocusBanner reduced={reduced} />
         </HubBanner>
         <HubBanner
           to="/detective"
-          title="Detective Cheat"
-          badge={openCases > 0 ? `${openCases} open case${openCases > 1 ? 's' : ''}` : undefined}
-          blurb="Quitting something? Stake food and confess every slip to the detective. Each slip locks a share of it — hit your limit and the case is closed."
+          title={t('Detective Cheat')}
+          badge={
+            openCases > 0
+              ? openCases > 1
+                ? t('{n} open cases', { n: openCases })
+                : t('{n} open case', { n: openCases })
+              : undefined
+          }
+          blurb={t('Quitting something? Stake food and confess every slip to the detective. Each slip locks a share of it — hit your limit and the case is closed.')}
         >
           <DetectiveBanner reduced={reduced} />
         </HubBanner>

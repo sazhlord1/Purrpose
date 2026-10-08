@@ -173,7 +173,7 @@ export function FocusBanner({ reduced }: { reduced: boolean }) {
         <Cat catId="mochi" state="SLEEPING" size={240} showGround={false} />
       </BannerCat>
       <path d="M120 124 Q186 142 252 124 L252 130 Q186 148 120 130 Z" fill="#D9774C" stroke={INK} strokeWidth={2} />
-      <g className="hb-zzz" fill="#F5C08B" fontWeight={700} style={{ fontFamily: 'Gochi Hand, cursive' }}>
+      <g className="hb-zzz" fill="#F5C08B" fontWeight={700} style={{ fontFamily: 'var(--font-hand)' }}>
         <text x={214} y={66} fontSize={16}>z</text>
         <text x={226} y={54} fontSize={12}>z</text>
       </g>

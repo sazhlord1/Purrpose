@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import type { CatId } from '@purrpose/shared';
+import { getLocale, t } from '../i18n/index.js';
 import { ambient } from '../lib/ambient.js';
 import { PACT_FIGURES } from './pact/figures.js';
 
@@ -22,8 +23,9 @@ function CatHighFiveFigure({ catId }: { catId: CatId }) {
   );
 }
 
-export function PawShake({ open, catId, catName = 'Your Cat', onComplete }: PawShakeProps) {
+export function PawShake({ open, catId, catName = t('Your Cat'), onComplete }: PawShakeProps) {
   const [clasped, setClasped] = useState(false);
+  const fa = getLocale() === 'fa';
 
   useEffect(() => {
     if (!open) {
@@ -54,7 +56,7 @@ export function PawShake({ open, catId, catName = 'Your Cat', onComplete }: PawS
         className="pawshake-overlay"
         role="dialog"
         aria-modal="true"
-        aria-label="Commitment sealed"
+        aria-label={t('Commitment sealed')}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -94,7 +96,7 @@ export function PawShake({ open, catId, catName = 'Your Cat', onComplete }: PawS
             width="100%"
             height="230"
             role="img"
-            aria-label={`Pact high-five between you and ${catName}`}
+            aria-label={t('Pact high-five between you and {name}', { name: catName })}
             style={{ overflow: 'visible' }}
           >
             {/* 1. Impact Star Sparkles */}
@@ -124,9 +126,10 @@ export function PawShake({ open, catId, catName = 'Your Cat', onComplete }: PawS
                 fontFamily="var(--font-hand), 'Gochi Hand', -apple-system, sans-serif"
                 fontWeight="800"
                 fill={INK}
+                direction={fa ? 'rtl' : undefined}
               >
-                <text x="176" y="26" fontSize="20" letterSpacing="0.5px">Pact</text>
-                <text x="176" y="45" fontSize="20" letterSpacing="0.5px">Sealed</text>
+                <text x="176" y="26" fontSize="20" letterSpacing={fa ? undefined : '0.5px'}>{t('Pact')}</text>
+                <text x="176" y="45" fontSize="20" letterSpacing={fa ? undefined : '0.5px'}>{t('Sealed')}</text>
               </motion.g>
             )}
 
@@ -188,10 +191,10 @@ export function PawShake({ open, catId, catName = 'Your Cat', onComplete }: PawS
                 color: 'var(--ink)',
               }}
             >
-              {catName} accepts your promise.
+              {t('{name} accepts your promise.', { name: catName })}
             </p>
             <p style={{ margin: 0, fontSize: 13, color: '#6C5E53' }}>
-              Don't let your cat down!
+              {t("Don't let your cat down!")}
             </p>
           </div>
         </div>

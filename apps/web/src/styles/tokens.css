@@ -1,3 +1,47 @@
+/* ── Persian fonts (only downloaded when Persian text is on screen) ── */
+@font-face {
+  font-family: 'Digi Darya';
+  src: url('/fonts/DigiDarya-Bold.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Anjoman';
+  src: url('/fonts/Anjoman-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Anjoman';
+  src: url('/fonts/Anjoman-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Anjoman';
+  src: url('/fonts/Anjoman-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Anjoman';
+  src: url('/fonts/Anjoman-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Anjoman';
+  src: url('/fonts/Anjoman-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Anjoman';
+  src: url('/fonts/Anjoman-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-display: swap;
+}
+
 :root {
   --paper: #fbf8f1;
   --paper-raised: #ffffff;
@@ -1182,7 +1226,7 @@ select {
   justify-items: start;
 }
 .hub-banner-title {
-  font-family: 'Gochi Hand', cursive;
+  font-family: var(--font-hand);
   font-size: clamp(22px, 6.4vw, 30px);
   line-height: 1.05;
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.55);
@@ -1283,7 +1327,7 @@ select {
   border-radius: 16px;
   background: #fffdf9;
   color: var(--ink);
-  font-family: 'Gochi Hand', cursive;
+  font-family: var(--font-hand);
   font-size: 17px;
   line-height: 1.12;
   text-align: center;
@@ -1400,3 +1444,32 @@ select {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+
+/* ── Persian (RTL) ─────────────────────────────────────
+   Digi Darya for everything written in the hand-drawn font, Anjoman for the rest.
+   Letter-spacing breaks Persian joining, so it is switched off everywhere. */
+html[lang='fa'] {
+  --font-hand: 'Digi Darya', 'Gochi Hand', cursive;
+  --font-body: 'Anjoman', 'Inter', system-ui, sans-serif;
+}
+html[lang='fa'] body { line-height: 1.7; }
+html[lang='fa'] *,
+html[lang='fa'] *::before,
+html[lang='fa'] *::after {
+  letter-spacing: 0 !important;
+}
+html[lang='fa'] h1,
+html[lang='fa'] h2,
+html[lang='fa'] h3 { line-height: 1.35; }
+html[lang='fa'] input,
+html[lang='fa'] textarea,
+html[lang='fa'] select,
+html[lang='fa'] button { font-family: inherit; }
+/* Drawings stay left-to-right (their labels are positioned for it); Persian
+   labels inside them opt into RTL with direction="rtl". */
+html[dir='rtl'] svg { direction: ltr; }
+/* Things that must stay left-to-right inside Persian pages (emails, codes). */
+.ltr { direction: ltr; unicode-bidi: isolate; }
+/* Banners keep their art (title on the dark left side); in RTL the title block hugs that side too. */
+html[dir='rtl'] .hub-banner-text { justify-items: end; }

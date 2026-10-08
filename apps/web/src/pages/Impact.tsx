@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import {
-  CREDIT_TYPE_LABELS,
   type ConsequenceType,
   type HistoryEntry,
   type HistoryResponse,
 } from '@purrpose/shared';
 import { api } from '../lib/api.js';
 import { fmtDate } from '../lib/format.js';
+import { foodName, t } from '../i18n/index.js';
 import { Chip, SketchCard, Stamp, Skeleton } from '../components/ui/index.js';
 import { CanTin, CatFace, KibbleBag, VetCare } from '../components/doodles/index.js';
 
@@ -59,7 +59,7 @@ export function Impact() {
   if (history.isLoading)
     return (
       <main>
-        <h1>Your Impact</h1>
+        <h1>{t('Your Impact')}</h1>
         <Skeleton h={110} />
         <div style={{ display: 'grid', gap: 14, marginTop: 16 }}>
           {[0, 1, 2].map(i => (
@@ -67,7 +67,7 @@ export function Impact() {
           ))}
         </div>
         <p className="muted" style={{ marginTop: 12 }}>
-          counting kibble…
+          {t('counting kibble…')}
         </p>
       </main>
     );
@@ -75,8 +75,8 @@ export function Impact() {
   if (!data)
     return (
       <main>
-        <h1>Your Impact</h1>
-        <p className="muted">The ledger wandered off.</p>
+        <h1>{t('Your Impact')}</h1>
+        <p className="muted">{t('The ledger wandered off.')}</p>
       </main>
     );
 
@@ -88,20 +88,20 @@ export function Impact() {
 
   return (
     <main>
-      <h1>Your Impact</h1>
+      <h1>{t('Your Impact')}</h1>
 
       <SketchCard variant="a">
         <div className="row">
           <strong style={{ fontSize: 20 }}>{totals.completed}</strong>
-          <span>commitments kept</span>
+          <span>{t('commitments kept')}</span>
         </div>
         <div className="row">
           <strong style={{ fontSize: 20, color: 'var(--stamp-red)' }}>{totals.failed}</strong>
-          <span>times the cat won</span>
+          <span>{t('times the cat won')}</span>
         </div>
         {donatedLines.length === 0 ? (
           <p className="muted" style={{ marginTop: 8 }}>
-            No cats fed yet. Keep procrastinating — this section fills up when you don't.
+            {t("No cats fed yet. Keep procrastinating — this section fills up when you don't.")}
           </p>
         ) : (
           donatedLines.map(([type, amount]) => {
@@ -110,7 +110,7 @@ export function Impact() {
               <div className="row" key={type}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                   <Icon size={20} strokeWidth={2.2} />
-                  {amount} {CREDIT_TYPE_LABELS[type as keyof typeof CREDIT_TYPE_LABELS]}
+                  {amount} {foodName(type as ConsequenceType)}
                 </span>
                 <Stamp kind="fed" />
               </div>
@@ -119,7 +119,7 @@ export function Impact() {
         )}
       </SketchCard>
 
-      <div className="chip-row" role="group" aria-label="Filter history" style={{ marginTop: 16 }}>
+      <div className="chip-row" role="group" aria-label={t('Filter history')} style={{ marginTop: 16 }}>
         {FILTERS.map(f => (
           <Chip
             key={f.id}
@@ -129,7 +129,7 @@ export function Impact() {
               setPage(0);
             }}
           >
-            {f.label}
+            {t(f.label)}
           </Chip>
         ))}
       </div>
@@ -139,7 +139,7 @@ export function Impact() {
           <SketchCard variant="b" style={{ textAlign: 'center', padding: 32 }}>
             <CatFace size={48} />
             <p className="muted" style={{ marginTop: 12 }}>
-              {EMPTY_COPY[filter]}
+              {t(EMPTY_COPY[filter])}
             </p>
           </SketchCard>
         ) : (
@@ -177,17 +177,17 @@ export function Impact() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
                       <strong style={{ fontSize: 16 }}>
-                        {e.amount} {CREDIT_TYPE_LABELS[e.creditType]}
+                        {e.amount} {foodName(e.creditType)}
                       </strong>
                       {stamp && (
                         <Stamp kind={stamp.kind} style={{ fontSize: 11, padding: '2px 8px' }}>
-                          {stamp.label}
+                          {t(stamp.label)}
                         </Stamp>
                       )}
                     </div>
                     {e.title && (
                       <p style={{ margin: '4px 0 0', color: 'var(--ink-soft)', fontSize: 14 }}>
-                        "{e.title}"
+                        {t('"{title}"', { title: e.title })}
                       </p>
                     )}
                     <p className="muted" style={{ marginTop: 4, fontSize: 13 }}>
@@ -201,7 +201,7 @@ export function Impact() {
             {hasMore && (
               <div style={{ textAlign: 'center', marginTop: 16 }}>
                 <button className="btn" onClick={() => setPage(p => p + 1)}>
-                  Load more ({filtered.length - paged.length} left)
+                  {t('Load more ({n} left)', { n: filtered.length - paged.length })}
                 </button>
               </div>
             )}

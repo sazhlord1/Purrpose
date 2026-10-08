@@ -185,5 +185,7 @@ export const pushSubscribeSchema = z.object({
     p256dh: z.string().min(16).max(256),
     auth: z.string().min(8).max(64),
   }),
+  /** Language of this device, so its notifications arrive in it. */
+  locale: z.enum(['en', 'fa']).optional(),
 });
 export const pushUnsubscribeSchema = z.object({ endpoint: z.string().max(2048) });

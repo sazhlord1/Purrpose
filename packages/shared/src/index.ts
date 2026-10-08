@@ -7,3 +7,6 @@ export * from './schemas.js';
 export * from './store.js';
 export * from './items.js';
 export * from './habits.js';
+export * from './i18n.js';
+export * from './catsFa.js';
+export * from './catText.js';

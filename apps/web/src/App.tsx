@@ -16,6 +16,7 @@ import { registerServiceWorker, useNotificationScheduler } from './lib/notificat
 import { useCommitments } from './lib/queries.js';
 import { AppIcon } from '@purrpose/cats';
 import { LegalPage } from './pages/Legal.js';
+import { t } from './i18n/index.js';
 
 const Settings = lazy(() => import('./pages/Settings.js').then(m => ({ default: m.Settings })));
 const DesignSystem = lazy(() => import('./pages/DesignSystem.js').then(m => ({ default: m.DesignSystem })));
@@ -55,7 +56,7 @@ function Shell() {
       {ready ? (
         <>
           <MotionConfig reducedMotion="user">
-            <Suspense fallback={<p className="muted">fetching the doodles…</p>}>
+            <Suspense fallback={<p className="muted">{t('fetching the doodles…')}</p>}>
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/pacts" element={<Pacts />} />
@@ -77,31 +78,31 @@ function Shell() {
               </Routes>
             </Suspense>
           </MotionConfig>
-          <nav className="nav" aria-label="Main">
+          <nav className="nav" aria-label={t('Main')}>
             <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
               <AppIcon name="home" size={24} className="nav-icon" />
-              Home
+              {t('Home')}
             </NavLink>
             <NavLink to="/shop" className={({ isActive }) => (isActive ? 'active' : '')}>
               <AppIcon name="shop" size={24} className="nav-icon" />
-              Shop
+              {t('Shop')}
             </NavLink>
-            <Link to="/new" className="nav-new" aria-label="New commitment">
+            <Link to="/new" className="nav-new" aria-label={t('New commitment')}>
               +
             </Link>
             <NavLink to="/pantry" className={({ isActive }) => (isActive ? 'active' : '')}>
               <AppIcon name="pantry" size={24} className="nav-icon" />
-              Pantry
+              {t('Pantry')}
             </NavLink>
             <NavLink to="/impact" className={({ isActive }) => (isActive ? 'active' : '')}>
               <AppIcon name="impact" size={24} className="nav-icon" />
-              Impact
+              {t('Impact')}
             </NavLink>
           </nav>
           <DevDrawer />
         </>
       ) : (
-        <p className="muted">waking the cats…</p>
+        <p className="muted">{t('waking the cats…')}</p>
       )}
     </>
   );

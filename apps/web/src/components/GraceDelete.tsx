@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { GRACE_WINDOW_MS } from '@purrpose/shared';
+import { t } from '../i18n/index.js';
 
 interface GraceDeleteProps {
   createdMs: number;
@@ -19,20 +20,28 @@ export function GraceDelete({ createdMs, nowMs, busy, onDelete }: GraceDeletePro
   const left = createdMs + GRACE_WINDOW_MS - nowMs;
   if (left <= 0) return null;
 
+  // "{time}" in the sentence becomes the bold live countdown.
+  const offer = t('Changed your mind? Cancel free for {time}').split('{time}');
+
   return (
     <div className="grace-delete">
       {!confirming ? (
         <button className="chip" onClick={() => setConfirming(true)}>
-          Changed your mind? Cancel free for <strong className="tabular">{mmss(left)}</strong>
+          {offer.map((part, i) => (
+            <Fragment key={i}>
+              {i > 0 && <strong className="tabular">{mmss(left)}</strong>}
+              {part}
+            </Fragment>
+          ))}
         </button>
       ) : (
-        <div className="chip-row" role="group" aria-label="Confirm cancel">
-          <span className="muted">Cancel this pact? No stake is lost.</span>
+        <div className="chip-row" role="group" aria-label={t('Confirm cancel')}>
+          <span className="muted">{t('Cancel this pact? No stake is lost.')}</span>
           <button className="chip chip-active" disabled={busy} onClick={onDelete}>
-            Yes, cancel it
+            {t('Yes, cancel it')}
           </button>
           <button className="chip" onClick={() => setConfirming(false)}>
-            Keep it
+            {t('Keep it')}
           </button>
         </div>
       )}

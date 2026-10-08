@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { CAT_IDS, CONSEQUENCE_TYPES } from './enums.js';
+import { DETECTIVE_LINES_FA } from './catsFa.js';
+import { getLocale, num } from './i18n.js';
 
 /**
  * Detective Cheat — habit pacts.
@@ -34,7 +36,7 @@ export function habitLoss(stake: number, slips: number, maxSlips: number): numbe
 
 /** "1.5", "2", "0.25" — locked food for display. */
 export function fmtFood(amount: number): string {
-  return Number.isInteger(amount) ? String(amount) : String(Math.round(amount * 100) / 100);
+  return num(amount);
 }
 
 export const createHabitSchema = z.object({
@@ -106,12 +108,13 @@ export const DETECTIVE_LINES = {
 } as const;
 
 export function detectiveLine(slips: number, maxSlips: number, status: HabitStatus, seed = 0): string {
-  const pick = <T extends readonly string[]>(list: T) => list[Math.abs(seed) % list.length] as string;
-  if (status === 'BROKEN') return pick(DETECTIVE_LINES.closed);
-  if (status === 'KEPT') return pick(DETECTIVE_LINES.kept);
-  if (slips === 0) return pick(DETECTIVE_LINES.idle);
+  const lines = getLocale() === 'fa' ? DETECTIVE_LINES_FA : DETECTIVE_LINES;
+  const pick = (list: readonly string[]) => list[Math.abs(seed) % list.length] as string;
+  if (status === 'BROKEN') return pick(lines.closed);
+  if (status === 'KEPT') return pick(lines.kept);
+  if (slips === 0) return pick(lines.idle);
   const left = maxSlips - slips;
-  if (left <= 1) return pick(DETECTIVE_LINES.late);
-  if (slips / maxSlips <= 0.34) return pick(DETECTIVE_LINES.early);
-  return pick(DETECTIVE_LINES.middle);
+  if (left <= 1) return pick(lines.late);
+  if (slips / maxSlips <= 0.34) return pick(lines.early);
+  return pick(lines.middle);
 }

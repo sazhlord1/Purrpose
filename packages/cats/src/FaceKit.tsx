@@ -195,7 +195,7 @@ function Mark({ kind }: { kind: '!' | '?' | '…' }) {
   return (
     <g className="fk-pop" transform="translate(178 58)">
       <circle r={13} fill={PAPER} stroke={INK} strokeWidth={2.2} />
-      <text y={6} textAnchor="middle" fontSize={kind === '…' ? 16 : 18} fontWeight={700} fill={INK} style={{ fontFamily: 'Gochi Hand, cursive' }}>
+      <text y={6} textAnchor="middle" fontSize={kind === '…' ? 16 : 18} fontWeight={700} fill={INK} style={{ fontFamily: 'var(--font-hand)' }}>
         {kind}
       </text>
     </g>

@@ -1,5 +1,6 @@
 import type { CatId } from '@purrpose/shared';
 import { Cat, type Expression } from '@purrpose/cats';
+import { getLocale, t } from '../i18n/index.js';
 
 const INK = '#26201D';
 
@@ -107,12 +108,13 @@ export function InterrogationRoom({
   headTilt?: -1 | 0 | 1;
   reduced?: boolean;
 }) {
+  const fa = getLocale() === 'fa';
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
       className={`interrogation-room ${reduced ? 'is-reduced' : ''}`}
       role="img"
-      aria-label="An interrogation room. The detective cat sits behind the table, watching you."
+      aria-label={t('An interrogation room. The detective cat sits behind the table, watching you.')}
     >
       <defs>
         <RoomDefs id="ir" />
@@ -175,8 +177,18 @@ export function InterrogationRoom({
       <g transform={`translate(58 ${TABLE + 2}) rotate(-4)`} stroke={INK} strokeWidth={1.8} strokeLinejoin="round">
         <path d="M0 0 L74 0 L80 14 L-6 14 Z" fill="#D9B26F" />
         <path d="M8 -4 L28 -4 L30 0 L6 0 Z" fill="#C99E57" />
-        <text x={37} y={10.5} textAnchor="middle" fontSize={8} fontWeight={700} fill={INK} stroke="none" style={{ letterSpacing: 1 }}>
-          CASE
+        <text
+          x={37}
+          y={10.5}
+          textAnchor="middle"
+          direction={fa ? 'rtl' : undefined}
+          fontSize={fa ? 9 : 8}
+          fontWeight={700}
+          fill={INK}
+          stroke="none"
+          style={{ letterSpacing: fa ? undefined : 1 }}
+        >
+          {t('CASE')}
         </text>
       </g>
       <WaterGlass x={300} y={TABLE + 8} />

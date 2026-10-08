@@ -1,4 +1,5 @@
-import { setSkewOffset } from '@purrpose/shared';
+import { catNameIn, hasTranslation, itemById, setSkewOffset } from '@purrpose/shared';
+import { getLocale, t } from '../i18n/index.js';
 
 export class ApiError extends Error {
   constructor(
@@ -10,6 +11,47 @@ export class ApiError extends Error {
     super(message);
     this.name = 'ApiError';
   }
+}
+
+/** What to say for each error code when the server's own message has no translation. */
+const ERROR_FALLBACK: Record<string, string> = {
+  INVALID_INPUT: 'Something in there doesn’t look right. Check it and try again.',
+  UNAUTHORIZED: 'Your session ran out. Reload the page and try again.',
+  FORBIDDEN: 'You can’t do that from this account.',
+  NOT_FOUND: 'We couldn’t find that.',
+  INSUFFICIENT_AVAILABLE: 'Not enough free food in your pantry for that.',
+  ALREADY_SETTLED: 'This one is already settled.',
+  FAILED_AT_DEADLINE: 'Too late — the deadline passed and the cat already ate.',
+  GRACE_EXPIRED: 'Too late to take this one back.',
+  RATE_LIMITED: 'Too many tries. Take a short break and try again.',
+  CONFLICT: 'Something changed in the meantime. Try again.',
+  INVALID_CREDENTIALS: 'Email or password is incorrect',
+  EMAIL_TAKEN: 'That email is already registered',
+  ALREADY_REGISTERED: 'This device is already signed in to an account',
+  CAT_LOCKED: 'That cat isn’t yours yet.',
+  ITEM_LOCKED: 'That item isn’t yours yet.',
+  ALREADY_OWNED: 'You already have that.',
+  INSUFFICIENT_PURR: 'Not enough PURR for that.',
+  PAYMENTS_UNAVAILABLE: 'Purchases are not available yet',
+  PUSH_UNAVAILABLE: 'Push is not configured',
+  INTERNAL: 'Something went wrong on our side. Try again in a bit.',
+};
+
+/**
+ * Server errors are written in English. In Persian, show the translation of the
+ * exact message when we have one, otherwise a Persian line chosen by error code.
+ */
+function localizeError(code: string, message: string, details: unknown): string {
+  if (getLocale() === 'en') return message;
+  const d = details && typeof details === 'object' ? (details as Record<string, unknown>) : {};
+  const catId = typeof d.catId === 'string' ? d.catId : undefined;
+  const item = typeof d.itemId === 'string' ? itemById(d.itemId) : undefined;
+  const name = catId ? catNameIn(catId, getLocale()) : item ? t(item.name) : undefined;
+  if (name && (code === 'CAT_LOCKED' || code === 'ITEM_LOCKED')) return t('{name} is not yours yet', { name });
+  if (name && code === 'ALREADY_OWNED') return t('{name} is already yours', { name });
+  if (code === 'INSUFFICIENT_PURR' && typeof d.needed === 'number') return t('You need {n} PURR', { n: d.needed });
+  if (message && hasTranslation(message)) return t(message);
+  return t(ERROR_FALLBACK[code] ?? ERROR_FALLBACK.INTERNAL ?? message);
 }
 
 const TOKEN_KEY = 'purrpose.session';
@@ -105,7 +147,8 @@ export async function api<T>(
   if (!res.ok) {
     const err = (json as { error?: { code?: string; message?: string; details?: unknown } })
       ?.error;
-    throw new ApiError(res.status, err?.code ?? 'INTERNAL', err?.message ?? res.statusText, err?.details);
+    const code = err?.code ?? 'INTERNAL';
+    throw new ApiError(res.status, code, localizeError(code, err?.message ?? res.statusText, err?.details), err?.details);
   }
   return json as T;
 }

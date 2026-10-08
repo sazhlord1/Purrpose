@@ -78,6 +78,8 @@ Toys, comfort items, bowls, wearables and room decor, bought with PURR in the Ca
 
 **Upgrading to Detective Cheat (v6):** run `infra/supabase_upgrade_v6.sql` in Supabase **before** deploying the server (adds the `Habit` and `HabitSlip` tables and `CreditTransaction.habitId`).
 
+**Upgrading to Persian (v7):** run `infra/supabase_upgrade_v7.sql` in Supabase **before** deploying the server (adds `PushSubscription.locale`, so reminders arrive in the device's language). The language is picked in Settings and stored per device; Persian switches the app to RTL with the Digi Darya (hand-drawn) and Anjoman (body) fonts in `apps/web/public/fonts`.
+
 ## Tests
 
 ```powershell

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { DEFAULT_GOOGLE_CLIENT_ID } from '@purrpose/shared';
+import { getLocale, t } from '../i18n/index.js';
 
 /** The parts of Google Identity Services (accounts.google.com/gsi/client) we use. */
 interface GsiId {
@@ -21,6 +22,8 @@ interface GsiId {
       shape?: 'rectangular' | 'pill' | 'circle' | 'square';
       logo_alignment?: 'left' | 'center';
       width?: number;
+      /** Language of Google's button text (e.g. 'fa'). */
+      locale?: string;
     },
   ): void;
 }
@@ -99,6 +102,7 @@ export function GoogleButton({ onToken, disabled = false }: { onToken: (credenti
           shape: 'pill',
           logo_alignment: 'left',
           width: Math.max(200, Math.min(400, Math.round(el.getBoundingClientRect().width))),
+          locale: getLocale() === 'fa' ? 'fa' : undefined,
         });
         setState('ready');
       })
@@ -111,10 +115,10 @@ export function GoogleButton({ onToken, disabled = false }: { onToken: (credenti
   return (
     <div className="google-btn" aria-busy={state === 'loading'} data-disabled={disabled || undefined}>
       <div ref={slot} className="google-btn-slot" />
-      {state === 'loading' && <p className="muted google-btn-note">Loading Google sign-in…</p>}
+      {state === 'loading' && <p className="muted google-btn-note">{t('Loading Google sign-in…')}</p>}
       {state === 'failed' && (
         <p className="muted google-btn-note">
-          Google sign-in couldn't load here. Check your connection, or use email below.
+          {t("Google sign-in couldn't load here. Check your connection, or use email below.")}
         </p>
       )}
     </div>

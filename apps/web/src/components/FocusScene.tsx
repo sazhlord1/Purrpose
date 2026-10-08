@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CatId } from '@purrpose/shared';
 import { Cat, useGazeFollow, useTextWidth, type CatState, type CatWear } from '@purrpose/cats';
+import { getLocale, t } from '../i18n/index.js';
+import { catNameOf } from '../lib/labels.js';
 
 const SCENE_WIDTH = 380;
 const SCENE_HEIGHT = 480;
@@ -118,7 +120,9 @@ export function FocusScene({ catId, isFocusing, isFinished, reduced = false, wea
   }, [isFinished, isFocusing]);
 
   const catState: CatState = isFocusing ? 'SLEEPING' : isFinished ? 'SATISFIED' : 'WAITING';
-  const badge = isFocusing ? 'FOCUSING…' : isFinished ? 'SESSION DONE' : 'READY TO FOCUS';
+  const fa = getLocale() === 'fa';
+  const textDir = fa ? 'rtl' : undefined;
+  const badge = t(isFocusing ? 'FOCUSING…' : isFinished ? 'SESSION DONE' : 'READY TO FOCUS');
   const badgeRef = useRef<SVGTextElement | null>(null);
   const badgeW = useTextWidth(badgeRef, badge, badge.length * 6.6);
 
@@ -129,7 +133,10 @@ export function FocusScene({ catId, isFocusing, isFinished, reduced = false, wea
       width="100%"
       className={`purrpose-focus-scene ${isFocusing ? 'is-focusing' : ''} ${reduced ? 'is-reduced' : ''}`}
       role="img"
-      aria-label={`Focus room at night with ${catId} cat ${isFocusing ? 'asleep under a blanket' : 'watching you'}`}
+      aria-label={t(
+        isFocusing ? 'Focus room at night with {name} asleep under a blanket' : 'Focus room at night with {name} watching you',
+        { name: catNameOf(catId) },
+      )}
       style={{
         borderRadius: 'var(--radius-sketch-a)',
         overflow: 'hidden',
@@ -314,11 +321,11 @@ export function FocusScene({ catId, isFocusing, isFinished, reduced = false, wea
       {/* 7b. Purr notes while asleep */}
       {isFocusing && !reduced && (
         <g opacity={0.95} pointerEvents="none">
-          <text x={150} y={230} fontSize={20} fill="#F59E0B" style={{ fontFamily: 'Gochi Hand, cursive', fontWeight: 'bold' }} className="lc-zzz">
-            z
+          <text x={150} y={230} fontSize={20} fill="#F59E0B" direction={textDir} textAnchor={fa ? 'end' : undefined} style={{ fontFamily: 'var(--font-hand)', fontWeight: 'bold' }} className="lc-zzz">
+            {t('z')}
           </text>
-          <text x={286} y={214} fontSize={18} fill="#F5C08B" style={{ fontFamily: 'Gochi Hand, cursive', fontWeight: 'bold' }} className="lc-zzz">
-            purr…
+          <text x={286} y={214} fontSize={18} fill="#F5C08B" direction={textDir} textAnchor={fa ? 'end' : undefined} style={{ fontFamily: 'var(--font-hand)', fontWeight: 'bold' }} className="lc-zzz">
+            {t('purr…')}
           </text>
         </g>
       )}
@@ -329,11 +336,13 @@ export function FocusScene({ catId, isFocusing, isFinished, reduced = false, wea
         <text
           ref={badgeRef}
           x={12}
-          y={17}
-          fontSize={12}
+          y={fa ? 17.5 : 17}
+          fontSize={fa ? 13 : 12}
           fontWeight="bold"
           fill={isFocusing ? '#D97706' : isFinished ? '#16A34A' : INK}
-          style={{ fontFamily: 'Gochi Hand, cursive', letterSpacing: '0.3px' }}
+          direction={textDir}
+          textAnchor={fa ? 'end' : undefined}
+          style={{ fontFamily: 'var(--font-hand)', letterSpacing: fa ? undefined : '0.3px' }}
         >
           {badge}
         </text>

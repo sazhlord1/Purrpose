@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { CatId, ItemId, Loadout } from '@purrpose/shared';
+import { getLocale, t } from '@purrpose/shared';
 import { LivingCat, quirkFor, type LivingCatHandle, type LivingItems } from './LivingCat.js';
 import { IconGlyph } from './icons.js';
 import { useTextWidth } from './textFit.js';
@@ -645,9 +646,12 @@ export function CatScene({
 
   const badgeTextRef = useRef<SVGTextElement | null>(null);
   const movingTextRef = useRef<SVGTextElement | null>(null);
-  const movingText = moving ? `Moving day! ${stageInfo(moving.to).label}` : '';
+  const movingText = moving ? t('Moving day! {room}', { room: t(stageInfo(moving.to).label) }) : '';
   const movingW = useTextWidth(movingTextRef, movingText, movingText.length * 8.2);
-  const badgeText = `STAGE ${info.stage} · ${info.label.toUpperCase()}`;
+  const rtl = getLocale() === 'fa';
+  const badgeText = rtl
+    ? t('STAGE {n} · {label}', { n: info.stage, label: t(info.label) })
+    : `STAGE ${info.stage} · ${info.label.toUpperCase()}`;
   const badgeW = useTextWidth(badgeTextRef, badgeText, badgeText.length * 6.6);
   const canMove = interactive && !reduced;
 
@@ -857,13 +861,13 @@ export function CatScene({
       {/* 6. EMOTIONAL STATUS OVERLAYS */}
       {!reduced && state === 'SLEEPING' && (
         <g transform="translate(240, 190)">
-          <text x={0} y={0} fontSize={20} fill="#5C93C4" style={{ fontFamily: 'Gochi Hand, cursive', fontWeight: 'bold' }} className="lc-zzz">
+          <text x={0} y={0} fontSize={20} fill="#5C93C4" style={{ fontFamily: 'var(--font-hand)', fontWeight: 'bold' }} className="lc-zzz">
             z
           </text>
-          <text x={12} y={-10} fontSize={24} fill="#5C93C4" style={{ fontFamily: 'Gochi Hand, cursive', fontWeight: 'bold' }} className="lc-zzz">
+          <text x={12} y={-10} fontSize={24} fill="#5C93C4" style={{ fontFamily: 'var(--font-hand)', fontWeight: 'bold' }} className="lc-zzz">
             z
           </text>
-          <text x={24} y={-22} fontSize={28} fill="#5C93C4" style={{ fontFamily: 'Gochi Hand, cursive', fontWeight: 'bold' }} className="lc-zzz">
+          <text x={24} y={-22} fontSize={28} fill="#5C93C4" style={{ fontFamily: 'var(--font-hand)', fontWeight: 'bold' }} className="lc-zzz">
             z
           </text>
         </g>
@@ -871,10 +875,10 @@ export function CatScene({
 
       {!reduced && (state === 'SATISFIED' || isFinished) && (
         <g opacity={0.95}>
-          <text x={80} y={200} fontSize={26} fill="#E76F51" style={{ fontFamily: 'Gochi Hand, cursive' }} className="lc-zzz">
+          <text x={80} y={200} fontSize={26} fill="#E76F51" style={{ fontFamily: 'var(--font-hand)' }} className="lc-zzz">
             ♪
           </text>
-          <text x={290} y={190} fontSize={24} fill="#F4A261" style={{ fontFamily: 'Gochi Hand, cursive' }} className="lc-zzz">
+          <text x={290} y={190} fontSize={24} fill="#F4A261" style={{ fontFamily: 'var(--font-hand)' }} className="lc-zzz">
             ♫
           </text>
         </g>
@@ -889,11 +893,13 @@ export function CatScene({
         <text
           ref={badgeTextRef}
           x={34}
-          y={18.5}
-          fontSize={12}
+          y={rtl ? 19 : 18.5}
+          fontSize={rtl ? 13 : 12}
           fontWeight="bold"
           fill={effectiveStage === 5 ? '#16A34A' : INK}
-          style={{ fontFamily: 'Gochi Hand, cursive', letterSpacing: '0.3px' }}
+          direction={rtl ? 'rtl' : undefined}
+          textAnchor={rtl ? 'end' : undefined}
+          style={{ fontFamily: 'var(--font-hand)', letterSpacing: rtl ? 0 : '0.3px' }}
         >
           {badgeText}
         </text>
@@ -907,7 +913,7 @@ export function CatScene({
             <g transform={`translate(${-(movingW / 2) - 26} -12) scale(1)`}>
               <IconGlyph name={stageInfo(moving.to).icon} />
             </g>
-            <text ref={movingTextRef} x={14} y={6} textAnchor="middle" fontSize={17} fill="#FFFDF8" style={{ fontFamily: 'Gochi Hand, cursive' }}>
+            <text ref={movingTextRef} x={14} y={6} textAnchor="middle" direction={rtl ? 'rtl' : undefined} fontSize={17} fill="#FFFDF8" style={{ fontFamily: 'var(--font-hand)' }}>
               {movingText}
             </text>
           </g>

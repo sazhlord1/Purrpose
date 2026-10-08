@@ -1,12 +1,13 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   CAT_IDS,
   CAT_SEED,
   CONSEQUENCE_TYPES,
-  CREDIT_TYPE_LABELS,
   FREE_CAT_IDS,
+  catOverstake,
+  catSubtitle,
   now,
   type CatId,
   type CommitmentDto,
@@ -20,32 +21,19 @@ import { CanTin, KibbleBag, VetCare } from '../components/doodles/index.js';
 import { BackLink } from '../components/BackLink.js';
 import { PawShake } from '../components/PawShake.js';
 import { useMe } from '../lib/queries.js';
+import { foodName, getLocale, t } from '../i18n/index.js';
 
-const CAT_QUIPS: Record<string, string> = Object.fromEntries(
-  CAT_SEED.map(c => [c.id, c.config.quirks.chosenLine]),
-);
+/** The cat's "you picked me" line, read at render time (CAT_SEED is localized at startup). */
+function catQuip(id: string): string | undefined {
+  return CAT_SEED.find(c => c.id === id)?.config.quirks.chosenLine;
+}
 
-const CAT_ARCHETYPES: Record<string, string> = {
-  orange: 'Golden Tabby · Joyful Sunbather',
-  tuxedo: 'The Aristocrat · Striped Cap Tuxedo',
-  black: 'Midnight Velvet · Luminous Eyes',
-  boba: 'Sweet Calico · Cheeky Side-Glance',
-  mochi: 'Snow White · Soft Marshmallow',
-  oreo: 'Masked Tuxedo · Mustache Gentleman',
-  pepper: 'Polka-Dot · Bubbly Sweetheart',
-  yuki: 'Expressive Sketch · Playful Spirit',
-};
-
-const OVERSTAKE_QUIPS: Record<string, string> = {
-  orange: 'Bold of you. You don’t have that many!',
-  tuxedo: 'One cannot stake what one does not have.',
-  black: 'you don’t have that many. i counted.',
-  boba: 'even in my sleep, i know you lack the snacks for that.',
-  mochi: 'i checked the pantry... not enough snacks, friend.',
-  oreo: 'my mustache senses an overdraft! check your balance.',
-  pepper: 'more snacks needed for that! check your pantry!',
-  yuki: 'energy overload! you need more snacks to stake that!',
-};
+/** Fills "{key}" slots in a translated sentence with React nodes (e.g. bold parts). */
+function richText(template: string, parts: Record<string, ReactNode>): ReactNode[] {
+  return template.split(/\{(\w+)\}/g).map((seg, i) =>
+    i % 2 === 1 ? <Fragment key={i}>{parts[seg] ?? `{${seg}}`}</Fragment> : seg,
+  );
+}
 
 const DOODLE_BY_TYPE = {
   MEALS: CanTin,
@@ -66,8 +54,8 @@ function firstFieldError(details: unknown): string | null {
   for (const [field, messages] of Object.entries(fields)) {
     const msg = messages?.[0];
     if (!msg) continue;
-    if (field === 'deadlineISO') return `Deadline: ${msg}.`;
-    if (field === 'title') return 'Give your pact a title (up to 80 characters).';
+    if (field === 'deadlineISO') return t('Deadline: {msg}.', { msg });
+    if (field === 'title') return t('Give your pact a title (up to 80 characters).');
     return msg;
   }
   return null;
@@ -144,13 +132,13 @@ export function NewCommitment() {
       setError(
         e instanceof ApiError
           ? e.code === 'INSUFFICIENT_AVAILABLE'
-            ? OVERSTAKE_QUIPS[catId] ?? 'Not enough available credits.'
+            ? catOverstake(catId) ?? t('Not enough available credits.')
             : e.code === 'CAT_LOCKED'
-              ? `${currentCat.name} is locked. Unlock them in the Cat Shop first.`
+              ? t('{name} is locked. Unlock them in the Cat Shop first.', { name: currentCat.name })
               : e.code === 'INVALID_INPUT'
                 ? firstFieldError(e.details) ?? e.message
                 : e.message
-          : 'Something went wrong.',
+          : t('Something went wrong.'),
       );
       setBusy(false);
     }
@@ -172,9 +160,9 @@ export function NewCommitment() {
 
       <BackLink to="/pacts" label="Commitments" />
       <div style={{ textAlign: 'center', marginBottom: 14 }}>
-        <h1 style={{ margin: '0 0 4px', fontSize: 32 }}>The Feline Pact</h1>
+        <h1 style={{ margin: '0 0 4px', fontSize: 32 }}>{t('The Feline Pact')}</h1>
         <p className="muted" style={{ margin: 0, fontSize: 14 }}>
-          Make a promise your cat can hold you to.
+          {t('Make a promise your cat can hold you to.')}
         </p>
       </div>
 
@@ -186,7 +174,7 @@ export function NewCommitment() {
             style={{
               fontFamily: 'var(--font-hand)',
               fontSize: 13.5,
-              letterSpacing: '1.8px',
+              letterSpacing: getLocale() === 'fa' ? undefined : '1.8px',
               color: 'var(--stamp-red)',
               fontWeight: 'bold',
               border: '1.5px dashed var(--stamp-red)',
@@ -195,7 +183,7 @@ export function NewCommitment() {
               background: 'var(--paper)',
             }}
           >
-            FELINE COMMITMENT PACT
+            {t('FELINE COMMITMENT PACT')}
           </span>
         </div>
 
@@ -231,11 +219,11 @@ export function NewCommitment() {
                   fontWeight: 600,
                 }}
               >
-                CHOSEN OPPONENT
+                {t('CHOSEN OPPONENT')}
               </span>
             </div>
             <p style={{ fontSize: 12, color: 'var(--stamp-red)', margin: '2px 0 6px', fontWeight: 600 }}>
-              {CAT_ARCHETYPES[catId] ?? currentCat.personality}
+              {catSubtitle(catId) || currentCat.personality}
             </p>
 
             {/* Reactive Cat Quip Speech */}
@@ -252,19 +240,19 @@ export function NewCommitment() {
                 maxWidth: '90%',
               }}
             >
-              "{overstaked ? (OVERSTAKE_QUIPS[catId] ?? 'Not enough treats!') : (CAT_QUIPS[catId] ?? 'Deal!!')}"
+              {t('"{line}"', { line: overstaked ? (catOverstake(catId) ?? t('Not enough treats!')) : (catQuip(catId) ?? t('Deal!!')) })}
             </div>
           </div>
 
           {/* Quick Cat Switcher Avatars */}
           <div style={{ width: '100%', marginTop: 12, borderTop: '1px dashed rgba(43,35,31,0.25)', paddingTop: 10 }}>
             <span style={{ fontSize: 11.5, color: 'var(--ink-soft)', fontWeight: 600, display: 'block', marginBottom: 6, textAlign: 'center' }}>
-              Choose your feline opponent:
+              {t('Choose your feline opponent:')}
             </span>
             <div
               style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}
               role="radiogroup"
-              aria-label="Choose your opponent"
+              aria-label={t('Choose your opponent')}
             >
               {CAT_SEED.map(cat => {
                 const isSelected = catId === cat.id;
@@ -275,7 +263,7 @@ export function NewCommitment() {
                     type="button"
                     role="radio"
                     aria-checked={isSelected}
-                    aria-label={locked ? `${cat.name} — locked, ${cat.pricePurr} PURR in the shop` : cat.name}
+                    aria-label={locked ? t('{name} — locked, {n} PURR in the shop', { name: cat.name, n: cat.pricePurr }) : cat.name}
                     onClick={() => (locked ? navigate(`/shop?cat=${cat.id}`) : setCatId(cat.id))}
                     className={`chip ${isSelected ? 'chip-active' : ''} ${locked ? 'lock-chip' : ''}`}
                     style={{
@@ -295,13 +283,13 @@ export function NewCommitment() {
 
         {/* 2. THE TASK INPUT */}
         <div style={{ marginBottom: 16 }}>
-          <Field label="I promise to get done:" hint="Clear, actionable goal">
+          <Field label={t('I promise to get done:')} hint={t('Clear, actionable goal')}>
             <Input
               autoFocus
               maxLength={80}
               value={title}
               onChange={e => setTitle(e.target.value)}
-              placeholder="Finish YouTube video"
+              placeholder={t('Finish YouTube video')}
               style={{ fontSize: 16, fontWeight: 500 }}
             />
           </Field>
@@ -310,7 +298,7 @@ export function NewCommitment() {
         {/* 3. DEADLINE SECTION */}
         <div style={{ marginBottom: 16 }}>
           <span style={{ display: 'block', fontSize: 13.5, fontWeight: 600, color: 'var(--ink-soft)', marginBottom: 6 }}>
-            Deadline:
+            {t('Deadline:')}
           </span>
           <div className="chip-row" style={{ marginBottom: 8 }}>
             {[
@@ -323,7 +311,7 @@ export function NewCommitment() {
                 active={selectedQuick === label}
                 onClick={() => handleQuickDeadline(label as 'Tonight' | 'Tomorrow' | 'Next week', ms as number)}
               >
-                {label as string}
+                {t(label as string)}
               </Chip>
             ))}
           </div>
@@ -331,7 +319,7 @@ export function NewCommitment() {
             type="datetime-local"
             min={minWhen}
             value={when}
-            aria-label="Deadline date and time"
+            aria-label={t('Deadline date and time')}
             onChange={e => {
               setSelectedQuick(null);
               setWhen(e.target.value);
@@ -344,24 +332,24 @@ export function NewCommitment() {
         <div style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
             <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink-soft)' }}>
-              What's at stake if you procrastinate?
+              {t("What's at stake if you procrastinate?")}
             </span>
             <span style={{ fontSize: 12, color: '#2E6930', fontWeight: 600 }}>
-              {available} {CREDIT_TYPE_LABELS[creditType]} available
+              {t('{n} {food} available', { n: available, food: foodName(creditType) })}
             </span>
           </div>
 
           <div className="chip-row" style={{ marginBottom: 10 }}>
-            {CONSEQUENCE_TYPES.map(t => {
-              const Icon = DOODLE_BY_TYPE[t];
+            {CONSEQUENCE_TYPES.map(type => {
+              const Icon = DOODLE_BY_TYPE[type];
               return (
                 <Chip
-                  key={t}
-                  active={creditType === t}
-                  onClick={() => setCreditType(t)}
+                  key={type}
+                  active={creditType === type}
+                  onClick={() => setCreditType(type)}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <Icon size={18} strokeWidth={2.2} /> {CREDIT_TYPE_LABELS[t]}
+                    <Icon size={18} strokeWidth={2.2} /> {foodName(type)}
                   </span>
                 </Chip>
               );
@@ -369,8 +357,8 @@ export function NewCommitment() {
           </div>
 
           <Field
-            label="Stake Amount:"
-            error={overstaked ? (OVERSTAKE_QUIPS[catId] ?? 'Not enough available credits.') : undefined}
+            label={t('Stake Amount:')}
+            error={overstaked ? (catOverstake(catId) ?? t('Not enough available credits.')) : undefined}
           >
             <AmountPicker value={amount} onChange={setAmount} max={9999} />
           </Field>
@@ -393,7 +381,7 @@ export function NewCommitment() {
               onClick={() => setConfirming(true)}
               style={{ width: '100%', textAlign: 'center', justifyContent: 'center' }}
             >
-              <AppIcon name="paw" size={18} /> Seal the Pact
+              <AppIcon name="paw" size={18} /> {t('Seal the Pact')}
             </DoodleButton>
           </div>
         ) : (
@@ -408,11 +396,21 @@ export function NewCommitment() {
               textAlign: 'center',
             }}
           >
-            <h3 style={{ margin: '0 0 6px', fontSize: 19 }}>Are you sure about this commitment?</h3>
+            <h3 style={{ margin: '0 0 6px', fontSize: 19 }}>{t('Are you sure about this commitment?')}</h3>
             <p className="muted" style={{ margin: '0 0 14px', fontSize: 13.5 }}>
-              You are staking <strong>{amount} {CREDIT_TYPE_LABELS[creditType]}</strong> with{' '}
-              <strong>{currentCat.name}</strong>. If you finish in time, your food stays yours. If you fail,{' '}
-              {currentCat.name} feasts!
+              {richText(
+                t('You are staking {stake} with {cat}. If you finish in time, your food stays yours. If you fail, {name} feasts!', {
+                  name: currentCat.name,
+                }),
+                {
+                  stake: (
+                    <strong>
+                      {amount} {foodName(creditType)}
+                    </strong>
+                  ),
+                  cat: <strong>{currentCat.name}</strong>,
+                },
+              )}
             </p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <DoodleButton
@@ -421,10 +419,10 @@ export function NewCommitment() {
                 disabled={busy}
                 onClick={handleConfirmSubmit}
               >
-                Yes, I promise!
+                {t('Yes, I promise!')}
               </DoodleButton>
               <DoodleButton onClick={() => setConfirming(false)}>
-                Wait, not yet
+                {t('Wait, not yet')}
               </DoodleButton>
             </div>
           </div>

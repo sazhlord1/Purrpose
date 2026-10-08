@@ -198,6 +198,8 @@ model PushSubscription {
   endpoint  String   @unique
   p256dh    String
   auth      String
+  /// Language of the device ('en' | 'fa'); notifications are written in it.
+  locale    String   @default("en")
   createdAt DateTime @default(now())
 
   @@index([userId])

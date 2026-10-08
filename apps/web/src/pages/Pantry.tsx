@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type FC } from 'react';
 import {
-  CREDIT_TYPE_LABELS,
   type ConsequenceType,
   type HistoryResponse,
 } from '@purrpose/shared';
@@ -9,6 +8,7 @@ import { AppIcon, type IconName } from '@purrpose/cats';
 import { api } from '../lib/api.js';
 import { useMe } from '../lib/queries.js';
 import { fmtDate } from '../lib/format.js';
+import { foodName, fwdArrow, t } from '../i18n/index.js';
 import {
   AmountPicker,
   AnimatedNumber,
@@ -84,12 +84,12 @@ export function Pantry() {
         body: { creditType, amount },
       }),
     onSuccess: (res, creditType) => {
-      setNote(`${CREDIT_TYPE_LABELS[creditType]} topped up to ${res.amount}.`);
+      setNote(t('{food} topped up to {n}.', { food: foodName(creditType), n: res.amount }));
       setSelectedItem(null);
       void qc.invalidateQueries({ queryKey: ['me'] });
       void qc.invalidateQueries({ queryKey: ['history'] });
     },
-    onError: () => setNote('Top-up failed. Even imaginary economies have banks.'),
+    onError: () => setNote(t('Top-up failed. Even imaginary economies have banks.')),
   });
 
   const openItemDetail = (item: PantryItemMeta) => {
@@ -103,9 +103,9 @@ export function Pantry() {
     const balance = me.data?.balances.find(b => b.creditType === creditType);
     openItemDetail({
       id: creditType,
-      name: CREDIT_TYPE_LABELS[creditType],
-      badge: meta.badge,
-      description: meta.description,
+      name: foodName(creditType),
+      badge: t(meta.badge),
+      description: t(meta.description),
       icon: meta.icon,
       creditType,
       stock: balance?.amount ?? 0,
@@ -117,7 +117,7 @@ export function Pantry() {
   return (
     <main>
       <h1>
-        Your Pantry{' '}
+        {t('Your Pantry')}{' '}
         {fallKey > 0 && (
           <span key={fallKey} className="falling-bowl" aria-hidden>
             <BowlEmpty size={26} />
@@ -126,15 +126,15 @@ export function Pantry() {
       </h1>
       <div className="chip-row">
         <DoodleButton href="/shop" variant="primary">
-          <AppIcon name="purr" size={18} /> {me.data?.purr ?? 0} PURR · Cat Shop →
+          <AppIcon name="purr" size={18} /> {t('{n} PURR · Cat Shop', { n: me.data?.purr ?? 0 })} {fwdArrow()}
         </DoodleButton>
-        <span className="chip">click any item to inspect</span>
+        <span className="chip">{t('click any item to inspect')}</span>
       </div>
 
       <div style={{ marginBottom: 20 }}>
-        <h2>Consequence Supplies</h2>
+        <h2>{t('Consequence Supplies')}</h2>
         <p className="muted" style={{ marginTop: -6 }}>
-          Items staked in your commitments. When you procrastinate, your cat feasts on these.
+          {t('Items staked in your commitments. When you procrastinate, your cat feasts on these.')}
         </p>
       </div>
 
@@ -150,8 +150,8 @@ export function Pantry() {
 
       {me.isError && (
         <SketchCard variant="b" className="error-box">
-          <p>The pantry door is stuck.</p>
-          <DoodleButton onClick={() => void me.refetch()}>Try again</DoodleButton>
+          <p>{t('The pantry door is stuck.')}</p>
+          <DoodleButton onClick={() => void me.refetch()}>{t('Try again')}</DoodleButton>
         </SketchCard>
       )}
 
@@ -185,14 +185,14 @@ export function Pantry() {
                   <Icon size={22} strokeWidth={2.2} />
                 </span>
                 <span>
-                  <strong style={{ fontSize: 17 }}>{CREDIT_TYPE_LABELS[b.creditType]}</strong>
+                  <strong style={{ fontSize: 17 }}>{foodName(b.creditType)}</strong>
                 </span>
               </span>
               <span style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
                 <AnimatedNumber value={b.amount} className="hand" style={{ fontSize: 24 }} />
                 <button
                   className="chip chip-active"
-                  aria-label={`Top up ${CREDIT_TYPE_LABELS[b.creditType]}`}
+                  aria-label={t('Top up {food}', { food: foodName(b.creditType) })}
                   onClick={e => {
                     e.stopPropagation();
                     openCreditSheet(b.creditType);
@@ -205,10 +205,10 @@ export function Pantry() {
             </div>
             <div style={{ margin: '4px 0 8px', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <span className="chip" style={{ fontSize: 11, padding: '1px 8px' }}>
-                {meta.badge}
+                {t(meta.badge)}
               </span>
               <span className="muted" style={{ fontSize: 13, lineHeight: 1.35 }}>
-                {meta.description}
+                {t(meta.description)}
               </span>
             </div>
             <div
@@ -222,32 +222,34 @@ export function Pantry() {
               }}
             >
               <span>
-                at stake: <strong>{b.stakedActive}</strong>
+                {t('at stake:')} <strong>{b.stakedActive}</strong>
               </span>
               <span>
-                available: <strong>{b.available}</strong>
+                {t('available:')} <strong>{b.available}</strong>
               </span>
-              <span style={{ marginLeft: 'auto', textDecoration: 'underline' }}>tap to top up →</span>
+              <span style={{ marginInlineStart: 'auto', textDecoration: 'underline' }}>
+                {t('tap to top up')} {fwdArrow()}
+              </span>
             </div>
           </div>
         );
       })}
 
       <p className="muted" style={{ fontSize: 13 }}>
-        Available = balance − active stakes. That's the part you can still promise to cats.
+        {t("Available = balance − active stakes. That's the part you can still promise to cats.")}
       </p>
 
       <SketchCard variant="a">
-        <h2>Recent activity</h2>
-        {recent.length === 0 && <p className="muted">Nothing yet.</p>}
+        <h2>{t('Recent activity')}</h2>
+        {recent.length === 0 && <p className="muted">{t('Nothing yet.')}</p>}
         {recent.map(e => (
           <div className="row" key={e.id}>
             <span>
               <AppIcon name={CREDIT_ICON[e.creditType]} size={16} /> {e.amount > 0 ? e.amount : ''}{' '}
-              {CREDIT_TYPE_LABELS[e.creditType]}
-              {e.type === 'FAILURE_DEDUCTION' && ' — fed a cat'}
-              {e.type === 'TOPUP' && ' — top-up'}
-              {e.type === 'STARTER_GRANT' && ' — starter pantry'}
+              {foodName(e.creditType)}
+              {e.type === 'FAILURE_DEDUCTION' && ` — ${t('fed a cat')}`}
+              {e.type === 'TOPUP' && ` — ${t('top-up')}`}
+              {e.type === 'STARTER_GRANT' && ` — ${t('starter pantry')}`}
               <span className="muted"> · {fmtDate(e.atISO)}</span>
             </span>
           </div>
@@ -263,7 +265,7 @@ export function Pantry() {
       <Sheet
         open={selectedItem !== null}
         onClose={() => setSelectedItem(null)}
-        title={selectedItem?.name ?? 'Item Details'}
+        title={selectedItem?.name ?? t('Item Details')}
       >
         {selectedItem && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
@@ -286,7 +288,7 @@ export function Pantry() {
             <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
               <span className="chip chip-active">{selectedItem.badge}</span>
               {selectedItem.stock !== undefined && (
-                <span className="chip">In Pantry: {selectedItem.stock}</span>
+                <span className="chip">{t('In Pantry: {n}', { n: selectedItem.stock })}</span>
               )}
             </div>
 
@@ -306,7 +308,7 @@ export function Pantry() {
             {selectedItem.creditType && (
               <div style={{ width: '100%', marginTop: 8 }}>
                 <p className="muted" style={{ marginBottom: 8, fontSize: 13 }}>
-                  Select top-up amount for {selectedItem.name}:
+                  {t('Select top-up amount for {name}:', { name: selectedItem.name })}
                 </p>
                 <AmountPicker value={amount} onChange={setAmount} />
                 <div style={{ marginTop: 18, display: 'flex', gap: 12, justifyContent: 'center' }}>
@@ -315,9 +317,9 @@ export function Pantry() {
                     size="big"
                     onClick={() => selectedItem.creditType && topUp.mutate(selectedItem.creditType)}
                   >
-                    Add {amount} to pantry
+                    {t('Add {n} to pantry', { n: amount })}
                   </DoodleButton>
-                  <DoodleButton onClick={() => setSelectedItem(null)}>Close</DoodleButton>
+                  <DoodleButton onClick={() => setSelectedItem(null)}>{t('Close')}</DoodleButton>
                 </div>
               </div>
             )}

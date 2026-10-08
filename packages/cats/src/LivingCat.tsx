@@ -4,7 +4,7 @@ import {
 } from 'framer-motion';
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import type { CatId } from '@purrpose/shared';
-import { CAT_SEED } from '@purrpose/shared';
+import { CAT_SEED, getLocale } from '@purrpose/shared';
 import { Cat } from './Cat.js';
 import type { CatState, Expression } from './poses.js';
 import {
@@ -807,7 +807,9 @@ function wrapBubble(text: string, max = 26): string[] {
 }
 
 function SpeechBubble({ text }: { text: string }) {
-  const lines = wrapBubble(text);
+  const rtl = getLocale() === 'fa';
+  // Persian handwriting runs a little wider per letter, so lines wrap a bit sooner.
+  const lines = wrapBubble(text, rtl ? 24 : 26);
   const longest = Math.max(...lines.map(l => l.length));
   const textRef = useRef<SVGTextElement | null>(null);
   // Measured once the handwriting font is in, so the bubble hugs the words.
@@ -837,7 +839,8 @@ function SpeechBubble({ text }: { text: string }) {
           fontSize={15}
           fontWeight={500}
           fill="#2B231F"
-          style={{ fontFamily: 'Gochi Hand, cursive', letterSpacing: '0.2px' }}
+          direction={rtl ? 'rtl' : undefined}
+          style={{ fontFamily: 'var(--font-hand)', letterSpacing: rtl ? 0 : '0.2px' }}
         >
           {lines.map((l, i) => (
             <tspan key={i} x={mid} dy={i === 0 ? 0 : 20}>

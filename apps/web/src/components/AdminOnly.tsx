@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useMe } from '../lib/queries.js';
+import { t } from '../i18n/index.js';
 
 /** Local dev server or a local `vite preview` (screenshot/e2e scripts run against it). */
 function isLocal(): boolean {
@@ -14,7 +15,7 @@ function isLocal(): boolean {
 export function AdminOnly({ children }: { children: ReactNode }) {
   const me = useMe();
   if (isLocal()) return <>{children}</>;
-  if (me.isLoading) return <p className="muted">checking your badge…</p>;
+  if (me.isLoading) return <p className="muted">{t('checking your badge…')}</p>;
   if (me.data?.user.role !== 'ADMIN') return <Navigate to="/" replace />;
   return <>{children}</>;
 }

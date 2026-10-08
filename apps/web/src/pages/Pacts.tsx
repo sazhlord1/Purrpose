@@ -12,6 +12,7 @@ import { fmtRemaining } from '../lib/format.js';
 import { catNameOf, moodLabel, sceneCaption } from '../lib/labels.js';
 import { notifyFailure } from '../lib/notifications.js';
 import { useCommitments, useMe } from '../lib/queries.js';
+import { fwdArrow, t } from '../i18n/index.js';
 
 
 function isReduced(): boolean {
@@ -32,19 +33,19 @@ export function Pacts() {
   const prevStatuses = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
-    const t = setInterval(() => setTick(n => n + 1), 1000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setTick(n => n + 1), 1000);
+    return () => clearInterval(timer);
   }, []);
 
-  const t = now();
-  const hour = localHour(t);
+  const nowMs = now();
+  const hour = localHour(nowMs);
   const reduced = isReduced();
   const all = useMemo(() => commitments.data?.commitments ?? [], [commitments.data]);
 
   // Most urgent first: the featured cat is the one closest to its deadline.
   const active = all
     .filter(c => c.status === 'ACTIVE')
-    .map(c => ({ c, view: commitmentView(c, t) }))
+    .map(c => ({ c, view: commitmentView(c, nowMs) }))
     .sort((a, b) => a.view.deadlineMs - b.view.deadlineMs);
   const [featured, ...others] = active;
 
@@ -77,30 +78,30 @@ export function Pacts() {
       <header style={{ marginBottom: 16 }}>
         <BackLink />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <h1 style={{ margin: 0 }}>Commitments</h1>
+          <h1 style={{ margin: 0 }}>{t('Commitments')}</h1>
         </div>
-        <div className="chip-row" aria-label="Summary">
+        <div className="chip-row" aria-label={t('Summary')}>
           <span className="chip" style={{ background: 'var(--paper-raised)', fontWeight: 600 }}>
-            {active.length} active
+            {t('{n} active', { n: active.length })}
           </span>
           <span className="chip" style={{ color: 'var(--stamp-red)', fontWeight: 600 }}>
-            {meals?.stakedActive ?? 0} meals at stake
+            {t('{n} meals at stake', { n: meals?.stakedActive ?? 0 })}
           </span>
           <span className="chip" style={{ color: '#2E6930', fontWeight: 600 }}>
-            pantry: {meals?.available ?? 0}
+            {t('pantry: {n}', { n: meals?.available ?? 0 })}
           </span>
           <Link to="/shop" className="chip" style={{ textDecoration: 'none', fontWeight: 600 }}>
-            <AppIcon name="purr" size={16} /> {me.data?.purr ?? 0} PURR
+            <AppIcon name="purr" size={16} /> {t('{n} PURR', { n: me.data?.purr ?? 0 })}
           </Link>
         </div>
         {taunt && hungry && (
           <p className="muted" style={{ marginTop: -8 }} role="status">
-            {catNameOf(hungry.c.catId)}: “{taunt}”
+            {t('{name}: “{line}”', { name: catNameOf(hungry.c.catId), line: taunt })}
           </p>
         )}
       </header>
 
-      <section aria-label="Your cats">
+      <section aria-label={t('Your cats')}>
         {commitments.isLoading ? (
           <div style={{ padding: 12, display: 'grid', gap: 12 }}>
             <Skeleton h={380} />
@@ -109,21 +110,21 @@ export function Pacts() {
           </div>
         ) : commitments.isError ? (
           <SketchCard variant="b" className="error-box">
-            <p>The cats scattered. Something went wrong on the way home.</p>
-            <DoodleButton onClick={() => void commitments.refetch()}>Try again</DoodleButton>
+            <p>{t('The cats scattered. Something went wrong on the way home.')}</p>
+            <DoodleButton onClick={() => void commitments.refetch()}>{t('Try again')}</DoodleButton>
           </SketchCard>
         ) : !featured ? (
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
             <CatScene catId="orange" state="SLEEPING" phaseRatio={0.05} seed={1234} reduced={reduced} hour={hour} items={me.data?.loadout} />
             <div style={{ marginTop: 14 }}>
               <p className="muted">
-                A stray cat is waiting in its box.
+                {t('A stray cat is waiting in its box.')}
                 <br />
-                Make a commitment to give it a better life!
+                {t('Make a commitment to give it a better life!')}
               </p>
               <div style={{ marginTop: 14 }}>
                 <DoodleButton href="/new" variant="primary" size="big">
-                  + New Commitment
+                  {t('+ New Commitment')}
                 </DoodleButton>
               </div>
             </div>
@@ -145,7 +146,7 @@ export function Pacts() {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginTop: 10 }}>
               <Link to={`/commitment/${featured.c.id}`} style={{ fontSize: 17, fontWeight: 700, color: 'var(--ink)' }}>
-                {featured.c.title} →
+                {featured.c.title} {fwdArrow()}
               </Link>
               <span className={`stamp ${moodLabel(featured.view.pending ? undefined : featured.view.phase).hot ? 'stamp-fed' : ''}`}>
                 {featured.view.pending ? '…' : fmtRemaining(featured.view.remainingMs)}
@@ -158,7 +159,7 @@ export function Pacts() {
 
             {others.length > 0 && (
               <>
-                <h2 style={{ marginBottom: 0 }}>Your other cats</h2>
+                <h2 style={{ marginBottom: 0 }}>{t('Your other cats')}</h2>
                 <div className="cat-grid">
                   {others.map(({ c, view }) => (
                     <CatCard key={c.id} c={c} view={view} hour={hour} items={me.data?.loadout} />
@@ -169,7 +170,7 @@ export function Pacts() {
 
             <div style={{ marginTop: 14 }}>
               <DoodleButton href="/new" variant="primary" size="big">
-                + New Commitment
+                {t('+ New Commitment')}
               </DoodleButton>
             </div>
           </>

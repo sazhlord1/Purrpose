@@ -15,13 +15,13 @@ export function registerPushRoutes(app: FastifyInstance): void {
   app.post('/api/v1/push/subscribe', async (request, reply) => {
     if (!getEnv().VAPID_PUBLIC_KEY) throw new AppError('PUSH_UNAVAILABLE', undefined, 'Push is not configured');
     const userId = userIdOf(request);
-    const { endpoint, keys } = parse(pushSubscribeSchema, request.body);
+    const { endpoint, keys, locale = 'en' } = parse(pushSubscribeSchema, request.body);
     const prisma = getPrisma();
     // An endpoint belongs to exactly one browser; re-point it if the user changed accounts.
     await prisma.pushSubscription.upsert({
       where: { endpoint },
-      update: { userId, p256dh: keys.p256dh, auth: keys.auth },
-      create: { userId, endpoint, p256dh: keys.p256dh, auth: keys.auth },
+      update: { userId, p256dh: keys.p256dh, auth: keys.auth, locale },
+      create: { userId, endpoint, p256dh: keys.p256dh, auth: keys.auth, locale },
     });
     // Cap devices per user so one account can't bloat the table.
     const subs = await prisma.pushSubscription.findMany({

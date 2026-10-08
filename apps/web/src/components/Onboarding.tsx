@@ -5,6 +5,7 @@ import { Cat } from '@purrpose/cats';
 import { DoodleButton } from './ui/index.js';
 import { BowlEmpty, BowlFull } from './doodles/index.js';
 import { useReducedMotion } from '../lib/useReducedMotion.js';
+import { isRtlUi, t } from '../i18n/index.js';
 
 interface Panel {
   headline: string;
@@ -28,6 +29,8 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
   const reduced = useReducedMotion();
   const navigate = useNavigate();
   const panel = PANELS[step];
+  // Panels slide in from the reading direction (right → left in English, mirrored in Persian).
+  const slide = isRtlUi() ? -40 : 40;
 
   const finish = useCallback(
     (proceed: boolean) => {
@@ -54,7 +57,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
       className="onboarding-overlay"
       role="dialog"
       aria-modal="true"
-      aria-label="Welcome to Purrpose"
+      aria-label={t('Welcome to Purrpose')}
       onClick={advance}
     >
       <button
@@ -64,9 +67,9 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           finish(false);
         }}
       >
-        skip
+        {t('skip')}
       </button>
-      <div className="onboarding-progress" role="group" aria-label={`Panel ${step + 1} of 4`}>
+      <div className="onboarding-progress" role="group" aria-label={t('Panel {n} of {total}', { n: step + 1, total: 4 })}>
         {PANELS.map((_, i) => (
           <span
             key={i}
@@ -80,9 +83,9 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         <motion.div
           key={step}
           className="onboarding-panel"
-          initial={reduced ? false : { opacity: 0, x: 40 }}
+          initial={reduced ? false : { opacity: 0, x: slide }}
           animate={{ opacity: 1, x: 0 }}
-          exit={reduced ? undefined : { opacity: 0, x: -40 }}
+          exit={reduced ? undefined : { opacity: 0, x: -slide }}
           transition={{ duration: 0.24 }}
         >
           <div className="onboarding-art" aria-hidden>
@@ -101,24 +104,24 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
             )}
             {step === 3 && <Cat catId="black" state="WAITING" size={190} showGround />}
           </div>
-          <h1>{panel.headline}</h1>
-          <p className="muted">{panel.sub}</p>
+          <h1>{t(panel.headline)}</h1>
+          <p className="muted">{t(panel.sub)}</p>
           {panel.chip && (
             <p>
-              <span className="chip">{panel.chip}</span>
+              <span className="chip">{t(panel.chip)}</span>
             </p>
           )}
           {step === 3 && (
             <div style={{ display: 'flex', gap: 12, marginTop: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
               <DoodleButton variant="primary" size="big" onClick={() => finish(true)}>
-                Make It Official
+                {t('Make It Official')}
               </DoodleButton>
-              <DoodleButton onClick={() => finish(false)}>Look around first</DoodleButton>
+              <DoodleButton onClick={() => finish(false)}>{t('Look around first')}</DoodleButton>
             </div>
           )}
           {step < 3 && (
             <p className="muted" style={{ marginTop: 20, fontSize: 12 }}>
-              tap anywhere or press enter
+              {t('tap anywhere or press enter')}
             </p>
           )}
         </motion.div>

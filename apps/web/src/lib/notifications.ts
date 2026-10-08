@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { NOTIF_COPY, type CommitmentDto } from '@purrpose/shared';
+import { NOTIF_COPY, getLocale, notifCopy, t, type CommitmentDto } from '@purrpose/shared';
 import { api } from './api.js';
 
 export { NOTIF_COPY };
@@ -68,7 +68,7 @@ export async function enablePush(): Promise<PushState> {
   const json = sub.toJSON() as { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
   await api('/push/subscribe', {
     method: 'POST',
-    body: { endpoint: json.endpoint, keys: { p256dh: json.keys?.p256dh, auth: json.keys?.auth } },
+    body: { endpoint: json.endpoint, keys: { p256dh: json.keys?.p256dh, auth: json.keys?.auth }, locale: getLocale() },
   });
   return 'on';
 }
@@ -102,17 +102,22 @@ export function notify(title: string, body: string, tag?: string): void {
 }
 
 export function notifySuccess(commitmentId: string): void {
-  notify('Purrpose', NOTIF_COPY.success, `${commitmentId}:SUCCESS`);
+  notify(t('Purrpose'), notifCopy(getLocale()).success, `${commitmentId}:SUCCESS`);
 }
 
 export function notifyFailure(commitmentId: string): void {
-  notify('Purrpose', NOTIF_COPY.failure, `${commitmentId}:FAILED`);
+  notify(t('Purrpose'), notifCopy(getLocale()).failure, `${commitmentId}:FAILED`);
 }
 
-const NOTIF_MARKS: Array<[number, string, string]> = [
-  [24 * 3_600_000, NOTIF_COPY.t24h, 'T24H'],
-  [3_600_000, NOTIF_COPY.t1h, 'T1H'],
+const NOTIF_MARKS: Array<[number, 't24h' | 't1h', string]> = [
+  [24 * 3_600_000, 't24h', 'T24H'],
+  [3_600_000, 't1h', 'T1H'],
 ];
+
+/** After switching language: re-register this device's push so reminders come in it. */
+export async function refreshPushLocale(): Promise<void> {
+  if ((await currentPushState().catch(() => 'off')) === 'on') await enablePush().catch(() => undefined);
+}
 
 /**
  * Fallback for browsers without web push (or when the server has no VAPID keys):
@@ -141,7 +146,7 @@ export function useNotificationScheduler(commitments: CommitmentDto[] | undefine
             scheduled.current.add(tag);
             window.setTimeout(() => {
               const still = latest.current?.find(x => x.id === c.id);
-              if (still?.status === 'ACTIVE') notify('Purrpose', body, tag);
+              if (still?.status === 'ACTIVE') notify(t('Purrpose'), notifCopy(getLocale())[body], tag);
             }, delay);
           }
         }

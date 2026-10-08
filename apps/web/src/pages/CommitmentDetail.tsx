@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AppIcon, CatScene, type CatState, type LivingCatHandle } from '@purrpose/cats';
-import { CREDIT_TYPE_LABELS, now, type CommitmentDto } from '@purrpose/shared';
+import { now, type CommitmentDto } from '@purrpose/shared';
 import { GraceDelete } from '../components/GraceDelete.js';
 import { StagePath } from '../components/StagePath.js';
 import { DoodleButton, SketchCard } from '../components/ui/index.js';
@@ -14,6 +14,7 @@ import { catNameOf, sceneCaption } from '../lib/labels.js';
 import { notifyFailure, notifySuccess } from '../lib/notifications.js';
 import { useFocusSummary, useMe } from '../lib/queries.js';
 import { shareResult } from '../lib/shareCard.js';
+import { foodName, fwdArrow, t } from '../i18n/index.js';
 
 function isReduced(): boolean {
   try {
@@ -42,8 +43,8 @@ export function CommitmentDetail() {
   const me = useMe();
 
   useEffect(() => {
-    const t = setInterval(() => setTick(n => n + 1), 1000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setTick(n => n + 1), 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const query = useQuery({
@@ -54,8 +55,8 @@ export function CommitmentDetail() {
   });
 
   const c = query.data?.commitment;
-  const t = now();
-  const view = c ? commitmentView(c, t) : null;
+  const nowMs = now();
+  const view = c ? commitmentView(c, nowMs) : null;
   const pending = Boolean(view?.pending);
 
   const invalidateAll = () => {
@@ -125,13 +126,14 @@ export function CommitmentDetail() {
     },
   });
 
-  if (query.isLoading) return <main><p className="muted">fetching the cat…</p></main>;
-  if (query.isError || !c || !view) return <main><p className="muted">This commitment wandered off.</p></main>;
+  if (query.isLoading) return <main><p className="muted">{t('fetching the cat…')}</p></main>;
+  if (query.isError || !c || !view) return <main><p className="muted">{t('This commitment wandered off.')}</p></main>;
 
   prevSceneRef.current = view.sceneState;
   const sceneState = sceneOverride ?? view.sceneState;
-  const creditLabel = CREDIT_TYPE_LABELS[c.consequenceType];
-  const amountLabel = `${c.consequenceAmount} ${creditLabel}`;
+  const creditLabel = foodName(c.consequenceType);
+  // Built with t() so the share card (a canvas) gets Persian digits too.
+  const amountLabel = t('{n} {food}', { n: c.consequenceAmount, food: creditLabel });
   const catName = catNameOf(c.catId);
   const focusMins = Math.round((focus.data?.byCommitment[c.id] ?? 0) / 60);
 
@@ -161,10 +163,10 @@ export function CommitmentDetail() {
       <div className="chip-row">
         <span className="chip">{fmtDate(c.deadlineISO)}</span>
         <span className="chip">{amountLabel}</span>
-        {c.status === 'ACTIVE' && !pending && <span className="chip tabular">{fmtRemaining(view.remainingMs)} left</span>}
+        {c.status === 'ACTIVE' && !pending && <span className="chip tabular">{t('{time} left', { time: fmtRemaining(view.remainingMs) })}</span>}
         {focusMins > 0 && (
           <span className="chip" style={{ color: 'var(--accent-green)', fontWeight: 600 }}>
-            ⏱ {focusMins}m focused
+            {t('⏱ {n}m focused', { n: focusMins })}
           </span>
         )}
         {c.status === 'ACTIVE' && !pending && (
@@ -173,46 +175,46 @@ export function CommitmentDetail() {
             className="chip"
             style={{ background: 'var(--paper-warm)', color: 'var(--ink)', textDecoration: 'none' }}
           >
-            <AppIcon name="focus" size={16} /> Focus Room →
+            <AppIcon name="focus" size={16} /> {t('Focus Room')} {fwdArrow()}
           </Link>
         )}
-        {pending && <span className="chip">checking on {catName}…</span>}
+        {pending && <span className="chip">{t('checking on {name}…', { name: catName })}</span>}
       </div>
 
       {showBanner === 'success' && (
         <SketchCard variant="a" className="success-card">
-          <h2>You did it.</h2>
-          <p>Your {amountLabel} are safe.</p>
+          <h2>{t('You did it.')}</h2>
+          <p>{t('Your {amount} are safe.', { amount: amountLabel })}</p>
           <div style={{ marginTop: 8 }}>
-            <span className="stamp">KEPT</span>
+            <span className="stamp">{t('KEPT')}</span>
           </div>
-          <p className="muted">“…maybe next time.” — {catName}, walking away</p>
+          <p className="muted">{t('“…maybe next time.” — {name}, walking away', { name: catName })}</p>
         </SketchCard>
       )}
       {showBanner === 'failure' && (
         <SketchCard variant="a" className="error-box">
-          <h2>The cat won.</h2>
-          <p>You didn't do it. But your {amountLabel} will feed a cat.</p>
-          <span className="stamp stamp-fed">FED</span>
+          <h2>{t('The cat won.')}</h2>
+          <p>{t("You didn't do it. But your {amount} will feed a cat.", { amount: amountLabel })}</p>
+          <span className="stamp stamp-fed">{t('FED')}</span>
         </SketchCard>
       )}
 
       {showBanner && (
         <div className="result-actions">
           <DoodleButton href={`/new?cat=${c.catId}`} variant="primary">
-            <AppIcon name="paw" size={18} /> New pact with {catName}
+            <AppIcon name="paw" size={18} /> {t('New pact with {name}', { name: catName })}
           </DoodleButton>
           <DoodleButton onClick={() => void onShare()} disabled={shareState === 'busy'}>
-            {shareState === 'busy' ? 'Drawing…' : shareState === 'done' ? '✓ Shared' : <><AppIcon name="share" size={18} /> Share</>}
+            {shareState === 'busy' ? t('Drawing…') : shareState === 'done' ? t('✓ Shared') : <><AppIcon name="share" size={18} /> {t('Share')}</>}
           </DoodleButton>
-          <DoodleButton href="/pacts">All commitments</DoodleButton>
+          <DoodleButton href="/pacts">{t('All commitments')}</DoodleButton>
         </div>
       )}
 
       <section
         ref={sceneRef}
         className="stage"
-        aria-label={`${catName} in ${view.stage.label}`}
+        aria-label={t('{name} in {room}', { name: catName, room: t(view.stage.label) })}
         style={{ padding: 4 }}
       >
         <CatScene
@@ -221,7 +223,7 @@ export function CommitmentDetail() {
           phaseRatio={view.phaseRatio}
           seed={view.seed}
           reduced={reduced}
-          hour={localHour(t)}
+          hour={localHour(nowMs)}
           animateStages={c.status === 'ACTIVE' && !pending && !sceneOverride}
           livingRef={livingRef}
           items={me.data?.loadout}
@@ -244,11 +246,11 @@ export function CommitmentDetail() {
         <>
           {!confirming ? (
             <DoodleButton variant="primary" size="big" onClick={() => setConfirming(true)}>
-              I DID IT
+              {t('I DID IT')}
             </DoodleButton>
           ) : (
             <SketchCard variant="c">
-              <h3>Did you actually finish it?</h3>
+              <h3>{t('Did you actually finish it?')}</h3>
               <div style={{ display: 'flex', gap: 12 }}>
                 <DoodleButton
                   variant="primary"
@@ -258,9 +260,9 @@ export function CommitmentDetail() {
                     complete.mutate();
                   }}
                 >
-                  Yes, I did
+                  {t('Yes, I did')}
                 </DoodleButton>
-                <DoodleButton onClick={() => setConfirming(false)}>Not yet</DoodleButton>
+                <DoodleButton onClick={() => setConfirming(false)}>{t('Not yet')}</DoodleButton>
               </div>
             </SketchCard>
           )}
@@ -268,7 +270,7 @@ export function CommitmentDetail() {
       )}
 
       {c.status === 'ACTIVE' && !pending && (
-        <GraceDelete createdMs={view.createdMs} nowMs={t} busy={remove.isPending} onDelete={() => remove.mutate()} />
+        <GraceDelete createdMs={view.createdMs} nowMs={nowMs} busy={remove.isPending} onDelete={() => remove.mutate()} />
       )}
     </main>
   );
