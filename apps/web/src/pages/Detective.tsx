@@ -149,6 +149,13 @@ function NewCaseForm({ onDone }: { onDone: (h: HabitDto) => void }) {
             placeholder={t('No cigarettes · Stick to my diet · No doom-scrolling')}
             value={title}
             onChange={e => setTitle(e.target.value)}
+            onKeyDown={e => {
+              // Enter / "Go" just closes the keyboard; the case opens only from its button.
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                e.currentTarget.blur();
+              }
+            }}
           />
         </Field>
         <Field label={t('Detective on the case')}>

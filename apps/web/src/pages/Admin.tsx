@@ -75,9 +75,9 @@ function UsersPanel() {
       <p className="muted" style={{ fontSize: 12, margin: '8px 0 0' }}>{t('pacts and cases: active / kept / lost')}</p>
       {total > PAGE && (
         <div className="chip-row" style={{ marginTop: 8 }}>
-          <button className="chip" disabled={page === 0} onClick={() => setPage(p => p - 1)}>{backArrow()} {t('newer')}</button>
+          <button type="button" className="chip" disabled={page === 0} onClick={() => setPage(p => p - 1)}>{backArrow()} {t('newer')}</button>
           <span className="muted" style={{ fontSize: 13 }}>{t('{from}–{to} of {total}', { from: page * PAGE + 1, to: Math.min(total, (page + 1) * PAGE), total })}</span>
-          <button className="chip" disabled={(page + 1) * PAGE >= total} onClick={() => setPage(p => p + 1)}>{t('older')} {fwdArrow()}</button>
+          <button type="button" className="chip" disabled={(page + 1) * PAGE >= total} onClick={() => setPage(p => p + 1)}>{t('older')} {fwdArrow()}</button>
         </div>
       )}
     </SketchCard>

@@ -91,10 +91,10 @@ export function Login() {
           <span>{t('or use email')}</span>
         </div>
         <div className="chip-row" role="tablist">
-          <button role="tab" aria-selected={mode === 'register'} className={`chip ${mode === 'register' ? 'chip-active' : ''}`} onClick={() => setMode('register')}>
+          <button type="button" role="tab" aria-selected={mode === 'register'} className={`chip ${mode === 'register' ? 'chip-active' : ''}`} onClick={() => setMode('register')}>
             {t('Create account')}
           </button>
-          <button role="tab" aria-selected={mode === 'signin'} className={`chip ${mode === 'signin' ? 'chip-active' : ''}`} onClick={() => setMode('signin')}>
+          <button type="button" role="tab" aria-selected={mode === 'signin'} className={`chip ${mode === 'signin' ? 'chip-active' : ''}`} onClick={() => setMode('signin')}>
             {t('Sign in')}
           </button>
         </div>

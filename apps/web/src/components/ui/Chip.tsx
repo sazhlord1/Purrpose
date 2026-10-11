@@ -10,6 +10,7 @@ export function Chip({ onClick, active, children }: ChipProps) {
   if (onClick) {
     return (
       <button
+        type="button"
         className={`chip${active ? ' chip-active' : ''}`}
         onClick={onClick}
         aria-pressed={active}
