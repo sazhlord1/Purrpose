@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { NOTIF_COPY, getLocale, notifCopy, t, type CommitmentDto } from '@purrpose/shared';
 import { api } from './api.js';
+import { isNativeApp } from './platform.js';
 
 export { NOTIF_COPY };
 
@@ -9,6 +10,8 @@ export function notificationsAvailable(): boolean {
 }
 
 export function pushSupported(): boolean {
+  // Web push can't reach an app WebView; the Android app gets its own reminders.
+  if (isNativeApp()) return false;
   return (
     notificationsAvailable() &&
     'serviceWorker' in navigator &&
@@ -18,7 +21,7 @@ export function pushSupported(): boolean {
 
 /** Registers /sw.js once. Safe to call repeatedly. */
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
-  if (!('serviceWorker' in navigator)) return null;
+  if (!('serviceWorker' in navigator) || isNativeApp()) return null;
   try {
     return await navigator.serviceWorker.register('/sw.js', { scope: '/' });
   } catch {

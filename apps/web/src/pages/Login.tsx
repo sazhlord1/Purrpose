@@ -6,6 +6,7 @@ import { GoogleButton } from '../components/GoogleButton.js';
 import { createAccount, signIn, signInWithGoogle } from '../lib/auth.js';
 import { useMe } from '../lib/queries.js';
 import { backArrow, t } from '../i18n/index.js';
+import { isNativeApp } from '../lib/platform.js';
 
 type Mode = 'signin' | 'register';
 
@@ -86,10 +87,15 @@ export function Login() {
       </p>
 
       <SketchCard variant="a">
-        <GoogleButton onToken={onGoogle} disabled={busy} />
-        <div className="auth-divider" role="separator">
-          <span>{t('or use email')}</span>
-        </div>
+        {/* Google blocks its web sign-in inside app WebViews; the app gets native sign-in later. */}
+        {!isNativeApp() && (
+          <>
+            <GoogleButton onToken={onGoogle} disabled={busy} />
+            <div className="auth-divider" role="separator">
+              <span>{t('or use email')}</span>
+            </div>
+          </>
+        )}
         <div className="chip-row" role="tablist">
           <button type="button" role="tab" aria-selected={mode === 'register'} className={`chip ${mode === 'register' ? 'chip-active' : ''}`} onClick={() => setMode('register')}>
             {t('Create account')}

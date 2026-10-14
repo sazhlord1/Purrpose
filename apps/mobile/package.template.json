@@ -1,0 +1,10 @@
+{
+  "name": "@purrpose/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Purrpose Android app (Capacitor shell around apps/web).",
+  "scripts": {
+    "sync": "cap sync android",
+    "assets": "npx --yes @capacitor/assets@latest generate --android --iconBackgroundColor \"#FAF6EE\" --iconBackgroundColorDark \"#FAF6EE\" --splashBackgroundColor \"#FAF6EE\" --splashBackgroundColorDark \"#FAF6EE\""
+  }
+}

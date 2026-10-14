@@ -1,0 +1,24 @@
+{
+  "appId": "space.purrpose.app",
+  "appName": "Purrpose",
+  "webDir": "../web/dist",
+  "backgroundColor": "#FAF6EE",
+  "appendUserAgent": "PurrposeApp/1",
+  "server": {
+    "androidScheme": "https",
+    "hostname": "app.purrpose.space"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 700,
+      "launchAutoHide": true,
+      "backgroundColor": "#FAF6EE",
+      "showSpinner": false
+    }
+  }
+}

@@ -1,0 +1,80 @@
+# One-time setup of the Android app (apps/mobile). Run it once from the Actions tab.
+# It adds Capacitor to the workspace (and lockfile), generates the android/ project
+# and its icons, and commits the result to main. Building APKs is android-build.yml.
+name: Android bootstrap (run once)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency: android-bootstrap
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stop if it already ran
+        run: |
+          if [ -d apps/mobile/android ] || [ -f apps/mobile/package.json ]; then
+            echo "::error::The Android project already exists. Use the 'Android build' workflow."
+            exit 1
+          fi
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Create the mobile package
+        run: git mv apps/mobile/package.template.json apps/mobile/package.json
+
+      - name: Add Capacitor (mobile + web)
+        run: |
+          set -euo pipefail
+          pnpm install --no-frozen-lockfile
+          PLUGINS="@capacitor/core @capacitor/app @capacitor/splash-screen @capacitor/status-bar @capacitor/keyboard @capacitor/local-notifications @capacitor/share @capacitor/filesystem @capacitor/preferences"
+          pnpm --filter @purrpose/mobile add $(for p in $PLUGINS @capacitor/android; do printf '%s@latest ' "$p"; done)
+          pnpm --filter @purrpose/mobile add -D @capacitor/cli@latest
+          # The web app imports the plugins' JS; pin it to exactly the versions the mobile shell got.
+          WEB_DEPS=$(node -e '
+            const d = require("./apps/mobile/package.json").dependencies;
+            process.stdout.write(process.argv.slice(1).map(p => p + "@" + d[p]).join(" "));
+          ' $PLUGINS)
+          pnpm --filter @purrpose/web add $WEB_DEPS
+
+      - name: Generate the Android project
+        working-directory: apps/mobile
+        run: |
+          set -euo pipefail
+          # cap add needs a web build to copy; the real one is built by android-build.yml.
+          mkdir -p ../web/dist && echo '<!doctype html><title>Purrpose</title>' > ../web/dist/index.html
+          pnpm exec cap add android
+          npx --yes @capacitor/assets@latest generate --android \
+            --iconBackgroundColor '#FAF6EE' --iconBackgroundColorDark '#FAF6EE' \
+            --splashBackgroundColor '#FAF6EE' --splashBackgroundColorDark '#FAF6EE'
+          python3 scripts/customize-android.py
+
+      - name: Check that it builds
+        working-directory: apps/mobile/android
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Commit to main
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A apps/mobile apps/web/package.json pnpm-lock.yaml
+          git status --short
+          git commit -m "Android app: Capacitor project, icons and lockfile (bootstrap workflow)"
+          git push origin HEAD:main

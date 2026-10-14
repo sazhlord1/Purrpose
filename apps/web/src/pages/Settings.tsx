@@ -6,6 +6,7 @@ import { fmtDateTime, fwdArrow, getLocale, setAppLanguage, t, type Locale } from
 import { signOut } from '../lib/auth.js';
 import { currentPushState, disablePush, enablePush, refreshPushLocale, type PushState } from '../lib/notifications.js';
 import { useMe } from '../lib/queries.js';
+import { isNativeApp } from '../lib/platform.js';
 
 const PUSH_COPY: Record<PushState, string> = {
   on: 'On — reminders arrive even when Purrpose is closed.',
@@ -112,6 +113,7 @@ export function Settings() {
         )}
       </SketchCard>
 
+      {!isNativeApp() && (
       <SketchCard variant="b">
         <h2>{t('Notifications')}</h2>
         <div className="row">
@@ -124,6 +126,7 @@ export function Settings() {
           </DoodleButton>
         )}
       </SketchCard>
+      )}
 
       <SketchCard variant="b">
         <h2>{t('Accessibility')}</h2>

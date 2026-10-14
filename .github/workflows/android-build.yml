@@ -1,0 +1,107 @@
+# Builds the signed Android APK (apps/mobile). Run it from the Actions tab.
+# Needs repository secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+# ANDROID_KEY_ALIAS and the repository variable VITE_API_URL (the API address).
+name: Android build
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: Publish it as a GitHub Release (download link)
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency: android-build
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      VERSION_CODE: ${{ github.run_number }}
+      VERSION_NAME: 0.1.${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the setup
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          API: ${{ vars.VITE_API_URL }}
+        run: |
+          missing=0
+          [ -f apps/mobile/android/gradlew ] || { echo "::error::Run the 'Android bootstrap' workflow first."; missing=1; }
+          [ -n "$KS" ] || { echo "::error::Secret ANDROID_KEYSTORE_BASE64 is missing."; missing=1; }
+          [ -n "$KS_PASS" ] || { echo "::error::Secret ANDROID_KEYSTORE_PASSWORD is missing."; missing=1; }
+          [ -n "$KS_ALIAS" ] || { echo "::error::Secret ANDROID_KEY_ALIAS is missing."; missing=1; }
+          [ -n "$API" ] || { echo "::error::Variable VITE_API_URL is missing (Settings → Secrets and variables → Actions → Variables)."; missing=1; }
+          exit $missing
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build the web app
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+        run: pnpm --filter @purrpose/web build
+
+      - name: Copy it into the Android project
+        working-directory: apps/mobile
+        run: pnpm exec cap sync android
+
+      - name: Build the release APK
+        working-directory: apps/mobile/android
+        run: ./gradlew --no-daemon assembleRelease
+
+      - name: Sign it
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          KS="$RUNNER_TEMP/release.jks"
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$KS"
+          trap 'rm -f "$KS"' EXIT
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          IN=apps/mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          OUT="purrpose-$VERSION_NAME.apk"
+          "$BT/zipalign" -p -f 4 "$IN" "$RUNNER_TEMP/aligned.apk"
+          "$BT/apksigner" sign --ks "$KS" --ks-key-alias "$ANDROID_KEY_ALIAS" \
+            --ks-pass env:ANDROID_KEYSTORE_PASSWORD --key-pass env:ANDROID_KEYSTORE_PASSWORD \
+            --out "$OUT" "$RUNNER_TEMP/aligned.apk"
+          echo "Signed with:"
+          "$BT/apksigner" verify --print-certs "$OUT" | grep -i 'SHA-256'
+          echo "APK=$OUT" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: purrpose-android-${{ env.VERSION_NAME }}
+          path: ${{ env.APK }}
+          if-no-files-found: error
+
+      - name: Publish a GitHub Release
+        if: ${{ inputs.release }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "android-v$VERSION_NAME" "$APK" \
+            --title "Purrpose for Android $VERSION_NAME" \
+            --notes "Purrpose Android app, build $VERSION_CODE." \
+            --target "$GITHUB_SHA"
