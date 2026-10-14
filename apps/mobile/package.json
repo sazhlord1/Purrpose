@@ -1,0 +1,25 @@
+{
+  "name": "@purrpose/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Purrpose Android app (Capacitor shell around apps/web).",
+  "scripts": {
+    "sync": "cap sync android",
+    "assets": "npx --yes @capacitor/assets@latest generate --android --iconBackgroundColor \"#FAF6EE\" --iconBackgroundColorDark \"#FAF6EE\" --splashBackgroundColor \"#FAF6EE\" --splashBackgroundColorDark \"#FAF6EE\""
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/filesystem": "^8.1.4",
+    "@capacitor/keyboard": "^8.0.6",
+    "@capacitor/local-notifications": "^8.3.1",
+    "@capacitor/preferences": "^8.0.1",
+    "@capacitor/share": "^8.0.3",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.4"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3"
+  }
+}
