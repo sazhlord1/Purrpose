@@ -10,6 +10,8 @@ import { fmtDate } from '../lib/format.js';
 import { foodName, t } from '../i18n/index.js';
 import { Chip, SketchCard, Stamp, Skeleton } from '../components/ui/index.js';
 import { CanTin, CatFace, KibbleBag, VetCare } from '../components/doodles/index.js';
+import { Tour } from '../components/Tour.js';
+import { impactTour } from '../lib/tours.js';
 
 type FilterType = 'all' | 'fed' | 'topup';
 
@@ -90,6 +92,8 @@ export function Impact() {
     <main>
       <h1>{t('Your Impact')}</h1>
 
+      <Tour id="impact" steps={impactTour()} />
+      <div data-tour="impact-totals">
       <SketchCard variant="a">
         <div className="row">
           <strong style={{ fontSize: 20 }}>{totals.completed}</strong>
@@ -118,8 +122,9 @@ export function Impact() {
           })
         )}
       </SketchCard>
+      </div>
 
-      <div className="chip-row" role="group" aria-label={t('Filter history')} style={{ marginTop: 16 }}>
+      <div className="chip-row" role="group" aria-label={t('Filter history')} style={{ marginTop: 16 }} data-tour="impact-filters">
         {FILTERS.map(f => (
           <Chip
             key={f.id}

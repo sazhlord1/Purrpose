@@ -31,6 +31,10 @@ interface AdminUserDetail {
     catId: string;
     consequenceType: ConsequenceType;
     consequenceAmount: number;
+    mode?: 'STRICT' | 'HONOR';
+    purrStake?: number;
+    witnessEmail?: string | null;
+    reviewedBy?: string | null;
     createdAtISO: string;
     deadlineISO: string;
     settledAtISO: string | null;
@@ -109,7 +113,12 @@ export function AdminUser() {
                 <div>
                   <strong>{c.title}</strong>
                   <div className="muted" style={{ fontSize: 13 }}>
-                    {t('{n} {food}', { n: c.consequenceAmount, food: food(c.consequenceType) })} · {catNameOf(c.catId)} · {t('due {date}', { date: fmtDate(c.deadlineISO) })}
+                    {c.mode === 'HONOR'
+                      ? t('{n} PURR', { n: c.purrStake ?? 0 })
+                      : t('{n} {food}', { n: c.consequenceAmount, food: food(c.consequenceType) })}{' '}
+                    · {catNameOf(c.catId)} · {t('due {date}', { date: fmtDate(c.deadlineISO) })}
+                    {c.witnessEmail ? <> · {t('witness')} <span className="ltr">{c.witnessEmail}</span></> : null}
+                    {c.reviewedBy ? ` · ${t('reviewed by {who}', { who: t(c.reviewedBy) })}` : ''}
                   </div>
                 </div>
                 <span className={`stamp ${PACT_STATUS[c.status]?.cls ?? ''}`}>{t(PACT_STATUS[c.status]?.label ?? c.status)}</span>

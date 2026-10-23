@@ -2,19 +2,23 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AppIcon, CatScene, type CatState, type LivingCatHandle } from '@purrpose/cats';
-import { now, type CommitmentDto } from '@purrpose/shared';
+import { HONOR_STARTER_BONUS, now, type CommitmentDto } from '@purrpose/shared';
 import { GraceDelete } from '../components/GraceDelete.js';
+import { ProofForm } from '../components/pact/ProofForm.js';
+import { WitnessLink } from '../components/pact/WitnessLink.js';
 import { StagePath } from '../components/StagePath.js';
 import { DoodleButton, SketchCard } from '../components/ui/index.js';
 import { ambient } from '../lib/ambient.js';
-import { api, ApiError } from '../lib/api.js';
+import { api, apiImage, ApiError } from '../lib/api.js';
 import { commitmentView, localHour } from '../lib/commitmentView.js';
 import { fmtDate, fmtRemaining } from '../lib/format.js';
-import { catNameOf, sceneCaption } from '../lib/labels.js';
+import { catNameOf, isUnderReview, sceneCaption, stakeLabel } from '../lib/labels.js';
 import { notifyFailure, notifySuccess } from '../lib/notifications.js';
 import { useFocusSummary, useMe } from '../lib/queries.js';
 import { shareResult } from '../lib/shareCard.js';
-import { foodName, fwdArrow, t } from '../i18n/index.js';
+import { fmtDateTime, fwdArrow, t } from '../i18n/index.js';
+import { Tour } from '../components/Tour.js';
+import { pactTour } from '../lib/tours.js';
 
 function isReduced(): boolean {
   try {
@@ -31,6 +35,8 @@ export function CommitmentDetail() {
   const livingRef = useRef<LivingCatHandle | null>(null);
   const sceneRef = useRef<HTMLElement | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [proofOpen, setProofOpen] = useState(false);
+  const [proofPhoto, setProofPhoto] = useState<string | null>(null);
   const [banner, setBanner] = useState<'success' | 'failure' | null>(null);
   const [sceneOverride, setSceneOverride] = useState<CatState | null>(null);
   const [shareState, setShareState] = useState<'idle' | 'busy' | 'done'>('idle');
@@ -56,6 +62,21 @@ export function CommitmentDetail() {
 
   const c = query.data?.commitment;
   const nowMs = now();
+  const reviewing = c ? isUnderReview(c) : false;
+
+  useEffect(() => {
+    if (!c?.proofSubmittedAtISO || !c.proofRequired) return undefined;
+    let url: string | null = null;
+    apiImage(`/commitments/${c.id}/proof-image`)
+      .then(u => {
+        url = u;
+        setProofPhoto(u);
+      })
+      .catch(() => setProofPhoto(null));
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [c?.id, c?.proofSubmittedAtISO]);
   const view = c ? commitmentView(c, nowMs) : null;
   const pending = Boolean(view?.pending);
 
@@ -86,6 +107,10 @@ export function CommitmentDetail() {
     if (prev === 'ACTIVE' && c.status === 'FAILED') {
       notifyFailure(c.id);
       playEnding('failure');
+      invalidateAll();
+    }
+    if (prev === 'ACTIVE' && c.status === 'COMPLETED' && c.proofRequired) {
+      playEnding('success');
       invalidateAll();
     }
   }, [c]);
@@ -131,9 +156,9 @@ export function CommitmentDetail() {
 
   prevSceneRef.current = view.sceneState;
   const sceneState = sceneOverride ?? view.sceneState;
-  const creditLabel = foodName(c.consequenceType);
   // Built with t() so the share card (a canvas) gets Persian digits too.
-  const amountLabel = t('{n} {food}', { n: c.consequenceAmount, food: creditLabel });
+  const amountLabel = stakeLabel(c);
+  const honor = c.mode === 'HONOR';
   const catName = catNameOf(c.catId);
   const focusMins = Math.round((focus.data?.byCommitment[c.id] ?? 0) / 60);
 
@@ -159,11 +184,16 @@ export function CommitmentDetail() {
 
   return (
     <main>
+      {c.status === 'ACTIVE' && !pending && !reviewing && (
+        <Tour id="pact" steps={pactTour(c.mode ?? 'STRICT', Boolean(c.proofRequired))} delayMs={1200} />
+      )}
       <h1>{c.title}</h1>
-      <div className="chip-row">
+      <div className="chip-row" data-tour="pact-chips">
         <span className="chip">{fmtDate(c.deadlineISO)}</span>
         <span className="chip">{amountLabel}</span>
-        {c.status === 'ACTIVE' && !pending && <span className="chip tabular">{t('{time} left', { time: fmtRemaining(view.remainingMs) })}</span>}
+        <span className={`chip mode-chip ${honor ? '' : 'mode-chip-strict'}`}>{honor ? t('On my word') : c.proofRequired ? t('Strict') : t('Food pact')}</span>
+        {c.status === 'ACTIVE' && !pending && !reviewing && <span className="chip tabular">{t('{time} left', { time: fmtRemaining(view.remainingMs) })}</span>}
+        {reviewing && <span className="chip">{t('proof under review')}</span>}
         {focusMins > 0 && (
           <span className="chip" style={{ color: 'var(--accent-green)', fontWeight: 600 }}>
             {t('⏱ {n}m focused', { n: focusMins })}
@@ -185,6 +215,10 @@ export function CommitmentDetail() {
         <SketchCard variant="a" className="success-card">
           <h2>{t('You did it.')}</h2>
           <p>{t('Your {amount} are safe.', { amount: amountLabel })}</p>
+          {honor && c.starter && <p>{t('+{n} PURR for keeping a starter pact.', { n: HONOR_STARTER_BONUS })}</p>}
+          {c.reviewedBy === 'witness' && <p className="muted">{t('Your witness approved your proof.')}</p>}
+          {c.reviewedBy === 'admin' && <p className="muted">{t('The Purrpose team approved your proof.')}</p>}
+          {c.reviewedBy === 'auto' && <p className="muted">{t('Nobody objected within 48 hours, so it counts.')}</p>}
           <div style={{ marginTop: 8 }}>
             <span className="stamp">{t('KEPT')}</span>
           </div>
@@ -194,7 +228,17 @@ export function CommitmentDetail() {
       {showBanner === 'failure' && (
         <SketchCard variant="a" className="error-box">
           <h2>{t('The cat won.')}</h2>
-          <p>{t("You didn't do it. But your {amount} will feed a cat.", { amount: amountLabel })}</p>
+          <p>
+            {honor
+              ? t('You didn’t make it. {name} took your {amount}.', { name: catName, amount: amountLabel })
+              : t("You didn't do it. But your {amount} will feed a cat.", { amount: amountLabel })}
+          </p>
+          {c.reviewedBy && c.reviewedBy !== 'auto' && (
+            <p className="muted">
+              {c.reviewedBy === 'witness' ? t('Your witness didn’t accept the proof.') : t('The Purrpose team didn’t accept the proof.')}
+              {c.reviewNote ? ` ${t('“{note}”', { note: c.reviewNote })}` : ''}
+            </p>
+          )}
           <span className="stamp stamp-fed">{t('FED')}</span>
         </SketchCard>
       )}
@@ -211,8 +255,30 @@ export function CommitmentDetail() {
         </div>
       )}
 
+      {reviewing && (
+        <SketchCard variant="b" className="review-card">
+          <h3 style={{ marginTop: 0 }}>{t('Proof sent')}</h3>
+          <p style={{ margin: '0 0 6px' }}>
+            {c.witnessEmail
+              ? t('Waiting for your witness to say yes or no.')
+              : t('Waiting for the Purrpose team to check it.')}
+          </p>
+          {c.reviewDueAtISO && (
+            <p className="muted" style={{ margin: 0, fontSize: 13.5 }}>
+              {t('If nobody answers by {date}, it counts.', { date: fmtDateTime(c.reviewDueAtISO, { dateStyle: 'medium', timeStyle: 'short' }) })}
+            </p>
+          )}
+          {proofPhoto && <img className="proof-thumb" src={proofPhoto} alt={t('Your photo')} />}
+        </SketchCard>
+      )}
+
+      {c.status === 'ACTIVE' && c.witnessEmail && c.witnessToken && (
+        <WitnessLink token={c.witnessToken} email={c.witnessEmail} title={c.title} />
+      )}
+
       <section
         ref={sceneRef}
+        data-tour="pact-scene"
         className="stage"
         aria-label={t('{name} in {room}', { name: catName, room: t(view.stage.label) })}
         style={{ padding: 4 }}
@@ -238,16 +304,41 @@ export function CommitmentDetail() {
         </p>
       </section>
 
-      {c.status === 'ACTIVE' && !pending && (
-        <StagePath stage={view.stage} nextStageInMs={view.nextStageInMs} />
+      {c.status === 'ACTIVE' && !pending && !reviewing && (
+        <div data-tour="pact-stages">
+          <StagePath stage={view.stage} nextStageInMs={view.nextStageInMs} />
+        </div>
       )}
 
-      {c.status === 'ACTIVE' && !pending && !showBanner && (
+      {c.status === 'ACTIVE' && !pending && !reviewing && !showBanner && (
         <>
-          {!confirming ? (
-            <DoodleButton variant="primary" size="big" onClick={() => setConfirming(true)}>
-              {t('I DID IT')}
-            </DoodleButton>
+          {c.proofRequired ? (
+            <div data-tour="pact-did-it">
+              <DoodleButton variant="primary" size="big" onClick={() => setProofOpen(true)}>
+                {t('I DID IT')}
+              </DoodleButton>
+              <ProofForm
+                open={proofOpen}
+                commitment={c}
+                onClose={() => setProofOpen(false)}
+                onSent={() => {
+                  setProofOpen(false);
+                  invalidateAll();
+                }}
+                onLate={() => {
+                  setProofOpen(false);
+                  notifyFailure(id ?? '');
+                  playEnding('failure');
+                  invalidateAll();
+                }}
+              />
+            </div>
+          ) : !confirming ? (
+            <div data-tour="pact-did-it">
+              <DoodleButton variant="primary" size="big" onClick={() => setConfirming(true)}>
+                {t('I DID IT')}
+              </DoodleButton>
+            </div>
           ) : (
             <SketchCard variant="c">
               <h3>{t('Did you actually finish it?')}</h3>
@@ -269,7 +360,7 @@ export function CommitmentDetail() {
         </>
       )}
 
-      {c.status === 'ACTIVE' && !pending && (
+      {c.status === 'ACTIVE' && !pending && !reviewing && (
         <GraceDelete createdMs={view.createdMs} nowMs={nowMs} busy={remove.isPending} onDelete={() => remove.mutate()} />
       )}
     </main>

@@ -6,16 +6,18 @@ interface StepperProps {
   onChange: (value: number) => void;
   min?: number;
   max?: number;
+  /** How much one tap changes the value (default 1). */
+  step?: number;
   ariaLabel?: string;
 }
 
-export function Stepper({ value, onChange, min = 1, max = 9999, ariaLabel }: StepperProps) {
+export function Stepper({ value, onChange, min = 1, max = 9999, step = 1, ariaLabel }: StepperProps) {
   const clamp = (n: number) => Math.min(max, Math.max(min, n));
   return (
     <span className="stepper" role="group" aria-label={ariaLabel ?? t('amount')}>
       <button
         type="button"
-        onClick={() => onChange(clamp(value - 1))}
+        onClick={() => onChange(clamp(value - step))}
         disabled={value <= min}
         aria-label={t('decrease')}
       >
@@ -24,7 +26,7 @@ export function Stepper({ value, onChange, min = 1, max = 9999, ariaLabel }: Ste
       <span aria-live="polite">{value}</span>
       <button
         type="button"
-        onClick={() => onChange(clamp(value + 1))}
+        onClick={() => onChange(clamp(value + step))}
         disabled={value >= max}
         aria-label={t('increase')}
       >

@@ -1,11 +1,19 @@
 import type { PrismaClient } from '@prisma/client';
 import { SESSION_TTL_MS } from '@purrpose/shared';
-import type { Env } from '../env.js';
+import { getEnv, type Env } from '../env.js';
 import { AppError } from '../errors.js';
 import { generateToken, hashPassword, hashToken, verifyPassword } from '../security.js';
 import type { GoogleProfile } from './google.js';
 import { mergeGuestInto } from './merge.js';
+import { grantWelcomePurr } from './purr.js';
 import { bootstrapUserWithStarterGrant } from './wallet.js';
+
+/** Gifts for a brand-new player: welcome PURR (and starter food only if STARTER_FOOD is on). */
+async function welcomeNewPlayer(tx: Parameters<typeof grantWelcomePurr>[0], userId: string): Promise<boolean> {
+  const purr = await grantWelcomePurr(tx, userId);
+  if (getEnv().STARTER_FOOD) await bootstrapUserWithStarterGrant(tx, userId);
+  return purr;
+}
 
 export interface IssuedSession {
   token: string;
@@ -34,7 +42,8 @@ async function issueSession(
 export async function createGuestSession(prisma: PrismaClient) {
   return prisma.$transaction(async tx => {
     const user = await tx.user.create({ data: {} });
-    const starterGrantApplied = await bootstrapUserWithStarterGrant(tx, user.id);
+    // New players start with PURR only (no free food): enough for honor pacts and, kept, a new cat.
+    const starterGrantApplied = await welcomeNewPlayer(tx, user.id);
     const token = generateToken();
     await tx.session.create({ data: { tokenHash: hashToken(token), userId: user.id } });
     await tx.appEvent.create({
@@ -203,7 +212,7 @@ export async function googleSignIn(
     user = await prisma.$transaction(async tx => {
       if (guest) return tx.user.update({ where: { id: guest.id }, data: { ...data, name: guest.name ?? profile.name } });
       const created = await tx.user.create({ data });
-      await bootstrapUserWithStarterGrant(tx, created.id);
+      await welcomeNewPlayer(tx, created.id);
       return created;
     }).catch((err: { code?: string }) => {
       if (err.code === 'P2002') throw new AppError('CONFLICT', undefined, 'Please try signing in again.');
@@ -243,7 +252,7 @@ export async function ensureAdmin(prisma: PrismaClient, env: Env): Promise<'crea
     const passwordHash = await hashPassword(env.ADMIN_PASSWORD);
     await prisma.$transaction(async tx => {
       const user = await tx.user.create({ data: { email, passwordHash, role: 'ADMIN', name: 'Admin' } });
-      await bootstrapUserWithStarterGrant(tx, user.id);
+      await welcomeNewPlayer(tx, user.id);
     });
     return 'created';
   }

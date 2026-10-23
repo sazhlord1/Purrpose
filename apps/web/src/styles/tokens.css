@@ -1485,3 +1485,334 @@ html[dir='rtl'] svg { direction: ltr; }
 .ltr { direction: ltr; unicode-bidi: isolate; }
 /* Banners keep their art (title on the dark left side); in RTL the title block hugs that side too. */
 html[dir='rtl'] .hub-banner-text { justify-items: end; }
+
+/* ── The + in the nav: a true circle with a drawn plus, so it sits dead centre ── */
+.nav .nav-new {
+  padding: 0;
+  border-radius: 50%;
+}
+.nav .nav-new svg {
+  display: block;
+}
+
+/* ── Intro slides: arrows on both sides ── */
+.onboarding-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 2.5px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper-raised);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  z-index: 2;
+}
+.onboarding-arrow:active {
+  transform: translateY(calc(-50% + 2px));
+  box-shadow: none;
+}
+.onboarding-arrow-left { left: 12px; }
+.onboarding-arrow-right { right: 12px; }
+.onboarding-arrow-next {
+  background: var(--accent-orange);
+  color: #fff;
+  animation: arrow-nudge 1.6s ease-in-out infinite;
+}
+@keyframes arrow-nudge {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 4px 0; }
+}
+html[dir='rtl'] .onboarding-arrow-next { animation-name: arrow-nudge-rtl; }
+@keyframes arrow-nudge-rtl {
+  0%, 100% { translate: 0 0; }
+  50% { translate: -4px 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-arrow-next { animation: none; }
+}
+
+/* ── Centered popups (pact type, welcome gift) ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(26, 22, 20, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.modal-card {
+  width: min(460px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding: 20px 18px 18px;
+  text-align: center;
+}
+.modal-title {
+  margin: 0 0 14px;
+  font-size: 24px;
+  line-height: 1.25;
+}
+.modal-close {
+  margin-top: 12px;
+  font-size: 14px;
+}
+.mode-options {
+  display: grid;
+  gap: 12px;
+  text-align: start;
+}
+.mode-option {
+  display: block;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: var(--radius-sketch-b);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform 110ms ease-out, background 110ms ease-out;
+}
+.mode-option:hover { background: #fffaf0; transform: translateY(-1px); }
+.mode-option:active { transform: translateY(1px); box-shadow: none; }
+.mode-option.is-current { outline: 3px solid var(--accent-orange); outline-offset: 2px; }
+.mode-option-strict { background: #fff6f2; }
+.mode-option-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.mode-option-head strong {
+  display: block;
+  font-family: var(--font-hand);
+  font-size: 21px;
+  line-height: 1.1;
+}
+.mode-option-tag {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+/* The explanation under each option: lighter and smaller than the title. */
+.mode-option-lines {
+  margin: 0;
+  padding-inline-start: 18px;
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.mode-option-lines li + li { margin-top: 2px; }
+.mode-option-note {
+  display: block;
+  margin-top: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--stamp-red);
+}
+.mode-pill-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: -4px 0 14px;
+}
+.mode-pill {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  border: 1.5px solid var(--ink);
+  background: #fff3c4;
+  font-size: 13px;
+  font-weight: 700;
+}
+.mode-pill-strict { background: #ffe1d8; }
+.mode-chip { font-weight: 700; background: #fff3c4; }
+.mode-chip-strict { background: #ffe1d8; }
+.starter-stake {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 2px dashed var(--ink);
+  border-radius: 12px;
+  background: #fffbea;
+}
+.starter-stake strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 18px;
+}
+.starter-stake .muted { font-size: 13px; }
+.field-note {
+  margin: -8px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+/* ── Proofs, witness, review ── */
+.field textarea {
+  width: 100%;
+  font: inherit;
+  padding: 10px 12px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  resize: vertical;
+}
+.proof-photo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.proof-photo img,
+.proof-thumb {
+  max-width: 140px;
+  max-height: 140px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  object-fit: cover;
+}
+.proof-thumb { display: block; margin-top: 10px; }
+.proof-full {
+  display: block;
+  max-width: 100%;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  margin: 8px 0;
+}
+.proof-text {
+  white-space: pre-wrap;
+  font-size: 16px;
+  margin: 0 0 6px;
+}
+.witness-link {
+  border: 2px dashed var(--ink);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin: 0 0 14px;
+  background: var(--paper-raised);
+}
+.witness-url {
+  width: 100%;
+  margin-top: 8px;
+  font-size: 13px;
+}
+.review-card { margin-bottom: 14px; }
+.witness-hero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.witness-hero > :first-child { flex: none; }
+.witness-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+/* ── Welcome gift ── */
+.welcome-gift-art {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+.welcome-gift-coin {
+  position: absolute;
+  top: 6px;
+  inset-inline-end: calc(50% - 86px);
+  filter: drop-shadow(2px 2px 0 var(--ink));
+}
+
+/* ── Guided tour: everything dims except the thing being explained ── */
+.tour-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+}
+.tour-dim {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 16, 14, 0.62);
+}
+.tour-hole {
+  position: fixed;
+  border-radius: 14px;
+  box-shadow: 0 0 0 9999px rgba(20, 16, 14, 0.62);
+  outline: 2.5px dashed #ffd27a;
+  outline-offset: 2px;
+  transition: top 180ms ease-out, left 180ms ease-out, width 180ms ease-out, height 180ms ease-out;
+  pointer-events: none;
+}
+.tour-bubble {
+  position: fixed;
+  background: var(--paper-raised);
+  color: var(--ink);
+  border: 2.5px solid var(--ink);
+  border-radius: 16px;
+  box-shadow: 4px 4px 0 var(--ink);
+  padding: 12px 14px 10px;
+  text-align: start;
+}
+.tour-arrow {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: var(--paper-raised);
+  border: 2.5px solid var(--ink);
+  transform: translateX(-50%) rotate(45deg);
+}
+.tour-arrow-up { top: -9px; border-right: none; border-bottom: none; }
+.tour-arrow-down { bottom: -9px; border-left: none; border-top: none; }
+.tour-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.tour-title {
+  font-family: var(--font-hand);
+  font-size: 19px;
+  line-height: 1.25;
+}
+.tour-count { font-size: 12px; }
+.tour-body {
+  margin: 6px 0 10px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.tour-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tour-skip { font-size: 13px; padding-inline: 3px; }
+.tour-next, .tour-back { cursor: pointer; font: inherit; font-size: 13.5px; }
+@media (prefers-reduced-motion: reduce) {
+  .tour-hole { transition: none; }
+}
+html[lang='fa'] .mode-option-head strong,
+html[lang='fa'] .tour-title { font-weight: 900; }
+/* Explanations read lighter than their titles (Anjoman Light). */
+html[lang='fa'] .mode-option-lines,
+html[lang='fa'] .field-note { font-weight: 300; }
+html[lang='fa'] .tour-body { line-height: 1.75; }
+
+/* ── Admin: proof review queue ── */
+.admin-reviews { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.admin-review { border-bottom: 1.5px dashed rgba(43, 35, 31, 0.3); padding-bottom: 12px; }

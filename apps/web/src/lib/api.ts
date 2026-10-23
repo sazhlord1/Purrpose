@@ -34,6 +34,9 @@ const ERROR_FALLBACK: Record<string, string> = {
   INSUFFICIENT_PURR: 'Not enough PURR for that.',
   PAYMENTS_UNAVAILABLE: 'Purchases are not available yet',
   PUSH_UNAVAILABLE: 'Push is not configured',
+  PROOF_REQUIRED: 'Send a proof to finish this pact',
+  NOT_WITNESS: 'Only the witness can decide',
+  WITNESS_IS_YOU: 'Your witness needs an email that isn’t yours.',
   INTERNAL: 'Something went wrong on our side. Try again in a bit.',
 };
 
@@ -151,4 +154,14 @@ export async function api<T>(
     throw new ApiError(res.status, code, localizeError(code, err?.message ?? res.statusText, err?.details), err?.details);
   }
   return json as T;
+}
+
+/** Fetches an authenticated image (e.g. a proof photo) and returns an object URL for <img>. */
+export async function apiImage(path: string): Promise<string> {
+  const token = getToken() ?? (await ensureSession());
+  const res = await fetch(`${API_BASE_URL}/api/v1${path}`, { headers: { authorization: `Bearer ${token}` } });
+  if (!res.ok || !(res.headers.get('content-type') ?? '').startsWith('image/')) {
+    throw new ApiError(res.status, 'NOT_FOUND', 'No photo');
+  }
+  return URL.createObjectURL(await res.blob());
 }

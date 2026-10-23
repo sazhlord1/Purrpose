@@ -80,6 +80,7 @@ export async function dispatchPushNotifications(
     where: {
       ...withSubs,
       status: 'ACTIVE',
+      proofSubmittedAt: null,
       deadline: { gt: new Date(nowMs + HOUR), lte: new Date(nowMs + 24 * HOUR) },
       notifications: { none: { kind: 'T24H' } },
     },
@@ -96,6 +97,7 @@ export async function dispatchPushNotifications(
     where: {
       ...withSubs,
       status: 'ACTIVE',
+      proofSubmittedAt: null,
       deadline: { gt: new Date(nowMs), lte: new Date(nowMs + HOUR) },
       notifications: { none: { kind: 'T1H' } },
     },

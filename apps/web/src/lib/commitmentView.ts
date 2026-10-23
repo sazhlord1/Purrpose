@@ -26,7 +26,8 @@ export function commitmentView(c: CommitmentDto, nowMs: number = now()): Commitm
   const createdMs = Date.parse(c.createdAtISO);
   const deadlineMs = Date.parse(c.deadlineISO);
   const remainingMs = deadlineMs - nowMs;
-  const pending = c.status === 'ACTIVE' && remainingMs <= 0;
+  // A pact whose proof is being reviewed isn't waiting to be settled by the clock.
+  const pending = c.status === 'ACTIVE' && remainingMs <= 0 && !c.proofSubmittedAtISO;
   // A finished pact freezes its scene at the moment it ended (it stops "aging").
   const sceneNowMs =
     c.status === 'COMPLETED' && c.completedAtISO

@@ -20,6 +20,7 @@ import {
 } from '@purrpose/shared';
 import type { Role } from '../auth.js';
 import { AppError } from '../errors.js';
+import { honorStaked, lockUser } from './purr.js';
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
@@ -60,16 +61,18 @@ export async function userLoadout(db: Db, userId: string, role: Role | undefined
 }
 
 export async function shopView(prisma: PrismaClient, userId: string, role: Role | undefined, paymentsMode: PaymentsMode) {
-  const [user, owned, items, loadout] = await Promise.all([
+  const [user, owned, items, loadout, purrStaked] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { purrBalance: true } }),
     unlockedCatIds(prisma, userId, role),
     ownedItemIds(prisma, userId, role),
     userLoadout(prisma, userId, role),
+    honorStaked(prisma, userId),
   ]);
   const ownedSet = new Set(owned);
   const ownedItems = new Set(items);
   return {
     purr: user?.purrBalance ?? 0,
+    purrStaked,
     paymentsMode,
     packs: PURR_PACKS,
     loadout,
@@ -110,13 +113,15 @@ export async function unlockCat(prisma: PrismaClient, userId: string, role: Role
 
 /** Guarded debit: only succeeds if the balance covers the price (no negative balances, no races). */
 async function debitPurr(tx: Prisma.TransactionClient, userId: string, price: number): Promise<void> {
+  // PURR on the line in open honor pacts isn't spendable.
+  const balance = await lockUser(tx, userId);
+  const staked = await honorStaked(tx, userId);
   const debit = await tx.user.updateMany({
-    where: { id: userId, purrBalance: { gte: price } },
+    where: { id: userId, purrBalance: { gte: price + staked } },
     data: { purrBalance: { decrement: price } },
   });
   if (debit.count !== 1) {
-    const u = await tx.user.findUnique({ where: { id: userId }, select: { purrBalance: true } });
-    throw new AppError('INSUFFICIENT_PURR', { needed: price, balance: u?.purrBalance ?? 0 }, `You need ${price} PURR`);
+    throw new AppError('INSUFFICIENT_PURR', { needed: price, balance, staked }, `You need ${price} PURR`);
   }
 }
 

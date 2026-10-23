@@ -1,5 +1,5 @@
 import { useCallback, useState, type FormEvent, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { DoodleButton, SketchCard } from '../components/ui/index.js';
 import { ApiError } from '../lib/api.js';
 import { GoogleButton } from '../components/GoogleButton.js';
@@ -22,7 +22,9 @@ export function Login() {
   const me = useMe();
   const isGuest = me.data ? me.data.user.email === null : true;
   const [mode, setMode] = useState<Mode>(isGuest ? 'register' : 'signin');
-  const [email, setEmail] = useState('');
+  const [params] = useSearchParams();
+  // A witness link sends people here with the email they should use.
+  const [email, setEmail] = useState(() => params.get('email')?.trim().slice(0, 254) ?? '');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');

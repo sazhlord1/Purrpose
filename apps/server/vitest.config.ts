@@ -9,6 +9,8 @@ export default defineConfig({
         'postgresql://purrpose:purrpose@localhost:5433/purrpose?schema=public',
       NODE_ENV: 'test',
       PAYMENTS_MODE: 'sandbox',
+      // The suites were written around the old free starter food; new-player gifts are tested explicitly.
+      STARTER_FOOD: 'true',
       VAPID_PUBLIC_KEY: '',
       VAPID_PRIVATE_KEY: '',
     },

@@ -7,6 +7,7 @@ import { signOut } from '../lib/auth.js';
 import { currentPushState, disablePush, enablePush, refreshPushLocale, type PushState } from '../lib/notifications.js';
 import { useMe } from '../lib/queries.js';
 import { isNativeApp } from '../lib/platform.js';
+import { resetTours } from '../lib/tour.js';
 
 const PUSH_COPY: Record<PushState, string> = {
   on: 'On — reminders arrive even when Purrpose is closed.',
@@ -22,6 +23,7 @@ const LANGS: Array<{ id: Locale; label: string }> = [
 ];
 
 export function Settings() {
+  const [guideReset, setGuideReset] = useState(false);
   const me = useMe();
   const [push, setPush] = useState<PushState | null>(null);
   const [pushBusy, setPushBusy] = useState(false);
@@ -142,6 +144,21 @@ export function Settings() {
             style={{ width: 'auto' }}
           />
         </label>
+      </SketchCard>
+
+      <SketchCard variant="a">
+        <h2>{t('Guide')}</h2>
+        <p className="muted" style={{ marginTop: 0 }}>
+          {t('Each screen explains itself the first time you open it. Want the explanations again?')}
+        </p>
+        <DoodleButton
+          onClick={() => {
+            resetTours();
+            setGuideReset(true);
+          }}
+        >
+          {guideReset ? t('Done — open any screen to see its guide.') : t('Show the guide again')}
+        </DoodleButton>
       </SketchCard>
 
       <SketchCard variant="c">

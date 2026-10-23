@@ -6,22 +6,30 @@ import {
   CAT_SEED,
   CONSEQUENCE_TYPES,
   FREE_CAT_IDS,
+  HONOR_MIN_STAKE,
+  HONOR_STARTER_BONUS,
+  HONOR_STARTER_COUNT,
+  HONOR_STARTER_STAKE,
   catOverstake,
   catSubtitle,
   now,
   type CatId,
   type CommitmentDto,
+  type CommitmentMode,
   type ConsequenceType,
 } from '@purrpose/shared';
 import { AppIcon, Cat } from '@purrpose/cats';
 import { api, ApiError } from '../lib/api.js';
 import { requestNotificationPermission } from '../lib/notifications.js';
-import { AmountPicker, Chip, DoodleButton, Field, Input, SketchCard } from '../components/ui/index.js';
+import { AmountPicker, Chip, DoodleButton, Field, Input, SketchCard, Stepper } from '../components/ui/index.js';
 import { CanTin, KibbleBag, VetCare } from '../components/doodles/index.js';
 import { BackLink } from '../components/BackLink.js';
 import { PawShake } from '../components/PawShake.js';
-import { useMe } from '../lib/queries.js';
+import { PactModeChooser } from '../components/pact/PactModeChooser.js';
+import { useCommitments, useMe } from '../lib/queries.js';
 import { foodName, getLocale, t } from '../i18n/index.js';
+import { Tour } from '../components/Tour.js';
+import { newPactTour } from '../lib/tours.js';
 
 /** The cat's "you picked me" line, read at render time (CAT_SEED is localized at startup). */
 function catQuip(id: string): string | undefined {
@@ -66,7 +74,19 @@ export function NewCommitment() {
   const qc = useQueryClient();
   const [params] = useSearchParams();
   const me = useMe();
+  const commitments = useCommitments();
   const unlocked: readonly string[] = me.data?.unlockedCatIds ?? FREE_CAT_IDS;
+
+  // Step one: strict (food + proof) or on your word (PURR).
+  const [mode, setMode] = useState<CommitmentMode | null>(null);
+  const [choosing, setChoosing] = useState(true);
+  const honorSoFar = (commitments.data?.commitments ?? []).filter(c => c.mode === 'HONOR').length;
+  const startersLeft = Math.max(0, HONOR_STARTER_COUNT - honorSoFar);
+  const purrFree = Math.max(0, (me.data?.purr ?? 0) - (me.data?.purrStaked ?? 0));
+  const pantryEmpty = (me.data?.balances ?? []).every(b => b.available <= 0);
+  const [purrStake, setPurrStake] = useState(20);
+  const [witness, setWitness] = useState('');
+  const ownEmail = me.data?.user.email?.toLowerCase() ?? null;
 
   const [title, setTitle] = useState('');
   const [when, setWhen] = useState(() => localInputValue(now() + 24 * 3_600_000));
@@ -96,9 +116,20 @@ export function NewCommitment() {
 
   const minWhen = localInputValue(now() + 6 * 60_000);
   const available = me.data?.balances.find(b => b.creditType === creditType)?.available ?? 0;
-  const overstaked = amount > available;
+  const honorStake = startersLeft > 0 ? HONOR_STARTER_STAKE : purrStake;
+  const overstaked = mode === 'HONOR' ? honorStake > purrFree : amount > available;
+  const witnessEmail = witness.trim().toLowerCase();
+  const witnessError =
+    witnessEmail === ''
+      ? null
+      : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(witnessEmail)
+        ? t('That email doesn’t look right.')
+        : ownEmail && witnessEmail === ownEmail
+          ? t('Your witness needs an email that isn’t yours.')
+          : null;
   const catUnlocked = unlocked.includes(catId);
-  const isValid = title.trim().length > 0 && !overstaked && catUnlocked;
+  const isValid = mode !== null && title.trim().length > 0 && !overstaked && catUnlocked && !(mode === 'STRICT' && witnessError);
+  const stakeText = mode === 'HONOR' ? t('{n} PURR', { n: honorStake }) : `${amount} ${foodName(creditType)}`;
 
   const currentCat = CAT_SEED.find(c => c.id === catId) ?? CAT_SEED[0];
 
@@ -114,13 +145,18 @@ export function NewCommitment() {
     try {
       const res = await api<{ commitment: CommitmentDto }>('/commitments', {
         method: 'POST',
-        body: {
-          title: title.trim(),
-          deadlineISO: new Date(when).toISOString(),
-          catId,
-          consequenceType: creditType,
-          consequenceAmount: amount,
-        },
+        body:
+          mode === 'HONOR'
+            ? { title: title.trim(), deadlineISO: new Date(when).toISOString(), catId, mode, purrStake: honorStake }
+            : {
+                title: title.trim(),
+                deadlineISO: new Date(when).toISOString(),
+                catId,
+                mode: 'STRICT',
+                consequenceType: creditType,
+                consequenceAmount: amount,
+                ...(witnessEmail ? { witnessEmail } : {}),
+              },
       });
       void requestNotificationPermission();
       void qc.invalidateQueries({ queryKey: ['commitments'] });
@@ -133,6 +169,10 @@ export function NewCommitment() {
         e instanceof ApiError
           ? e.code === 'INSUFFICIENT_AVAILABLE'
             ? catOverstake(catId) ?? t('Not enough available credits.')
+            : e.code === 'INSUFFICIENT_PURR'
+              ? t('Not enough free PURR for that.')
+            : e.code === 'WITNESS_IS_YOU'
+              ? t('Your witness needs an email that isn’t yours.')
             : e.code === 'CAT_LOCKED'
               ? t('{name} is locked. Unlock them in the Cat Shop first.', { name: currentCat.name })
               : e.code === 'INVALID_INPUT'
@@ -158,6 +198,19 @@ export function NewCommitment() {
         }}
       />
 
+      <PactModeChooser
+        open={choosing}
+        startersLeft={startersLeft}
+        pantryEmpty={pantryEmpty}
+        current={mode}
+        onPick={m => {
+          setMode(m);
+          setChoosing(false);
+        }}
+        onClose={mode ? () => setChoosing(false) : undefined}
+      />
+
+      {mode && !choosing && <Tour id="new" steps={newPactTour(mode)} />}
       <BackLink to="/pacts" label="Commitments" />
       <div style={{ textAlign: 'center', marginBottom: 14 }}>
         <h1 style={{ margin: '0 0 4px', fontSize: 32 }}>{t('The Feline Pact')}</h1>
@@ -186,9 +239,20 @@ export function NewCommitment() {
             {t('FELINE COMMITMENT PACT')}
           </span>
         </div>
+        {mode && (
+          <div className="mode-pill-row" data-tour="pact-mode">
+            <span className={`mode-pill ${mode === 'STRICT' ? 'mode-pill-strict' : ''}`}>
+              {mode === 'STRICT' ? t('Strict · real food') : t('On my word · PURR')}
+            </span>
+            <button type="button" className="linklike" onClick={() => setChoosing(true)}>
+              {t('change')}
+            </button>
+          </div>
+        )}
 
         {/* 1. CAT SHOWCASE & COMPANION PICKER */}
         <div
+          data-tour="pact-cat"
           style={{
             background: 'var(--paper)',
             border: '2px solid var(--ink)',
@@ -282,7 +346,7 @@ export function NewCommitment() {
         </div>
 
         {/* 2. THE TASK INPUT */}
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 16 }} data-tour="pact-task">
           <Field label={t('I promise to get done:')} hint={t('Clear, actionable goal')}>
             <Input
               autoFocus
@@ -296,7 +360,7 @@ export function NewCommitment() {
         </div>
 
         {/* 3. DEADLINE SECTION */}
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 16 }} data-tour="pact-deadline">
           <span style={{ display: 'block', fontSize: 13.5, fontWeight: 600, color: 'var(--ink-soft)', marginBottom: 6 }}>
             {t('Deadline:')}
           </span>
@@ -328,8 +392,48 @@ export function NewCommitment() {
           />
         </div>
 
-        {/* 4. THE STAKE (WHAT'S ON THE LINE) */}
-        <div style={{ marginBottom: 16 }}>
+        {/* 4. THE STAKE — honor pacts put PURR on the line */}
+        {mode === 'HONOR' && (
+          <div style={{ marginBottom: 16 }} data-tour="pact-stake">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+              <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink-soft)' }}>{t('PURR on the line:')}</span>
+              <span style={{ fontSize: 12, color: '#2E6930', fontWeight: 600 }}>{t('{n} PURR free', { n: purrFree })}</span>
+            </div>
+            {startersLeft > 0 ? (
+              <div className="starter-stake">
+                <strong>
+                  <AppIcon name="purr" size={18} /> {t('{n} PURR', { n: HONOR_STARTER_STAKE })}
+                </strong>
+                <span className="muted">
+                  {t('Starter pact {k} of {n}: keep it and get +{bonus} PURR.', {
+                    k: HONOR_STARTER_COUNT - startersLeft + 1,
+                    n: HONOR_STARTER_COUNT,
+                    bonus: HONOR_STARTER_BONUS,
+                  })}
+                </span>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <Stepper value={purrStake} onChange={setPurrStake} min={HONOR_MIN_STAKE} max={Math.max(HONOR_MIN_STAKE, purrFree)} step={5} ariaLabel={t('PURR on the line:')} />
+                {[10, 20, 40, 80].filter(n => n <= Math.max(purrFree, HONOR_MIN_STAKE)).map(n => (
+                  <Chip key={n} active={purrStake === n} onClick={() => setPurrStake(n)}>
+                    {n}
+                  </Chip>
+                ))}
+              </div>
+            )}
+            {overstaked && (
+              <p role="alert" style={{ color: 'var(--stamp-red)', fontSize: 13, margin: '6px 0 0' }}>
+                {t('Not enough free PURR for that.')}{' '}
+                <a href="/shop">{t('Get PURR in the shop')}</a>
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* 4. THE STAKE — strict pacts put real food on the line, plus an optional witness */}
+        {mode === 'STRICT' && (
+        <div style={{ marginBottom: 16 }} data-tour="pact-stake">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
             <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink-soft)' }}>
               {t("What's at stake if you procrastinate?")}
@@ -362,7 +466,39 @@ export function NewCommitment() {
           >
             <AmountPicker value={amount} onChange={setAmount} max={9999} />
           </Field>
+
+          {pantryEmpty && (
+            <p className="card card-c" style={{ margin: '10px 0 0', padding: '10px 12px', fontSize: 13.5 }} role="status">
+              {t('Strict pacts stake real food, and your pantry is empty. Buying food opens soon — meanwhile, an honor pact works with PURR.')}{' '}
+              <button type="button" className="linklike" onClick={() => setMode('HONOR')}>
+                {t('Switch to on my word')}
+              </button>
+            </p>
+          )}
+
+          <div style={{ marginTop: 14 }} data-tour="pact-witness">
+            <Field
+              label={t('Witness (optional):')}
+              hint={t('their email')}
+              error={witnessError ?? undefined}
+            >
+              <Input
+                type="email"
+                inputMode="email"
+                className="ltr"
+                autoComplete="off"
+                maxLength={254}
+                value={witness}
+                onChange={e => setWitness(e.target.value)}
+                placeholder="friend@email.com"
+              />
+            </Field>
+            <p className="muted field-note">
+              {t('You send them a link. When you’re done, they look at your proof and say yes or no. No witness? The Purrpose team checks it. Nobody answers in 48 hours? It counts.')}
+            </p>
+          </div>
         </div>
+        )}
 
         {/* Error Alert Box */}
         {error && (
@@ -373,7 +509,7 @@ export function NewCommitment() {
 
         {/* 5. CONFIRMATION PROMPT / SUBMISSION */}
         {!confirming ? (
-          <div style={{ marginTop: 20 }}>
+          <div style={{ marginTop: 20 }} data-tour="pact-seal">
             <DoodleButton
               variant="primary"
               size="big"
@@ -399,15 +535,15 @@ export function NewCommitment() {
             <h3 style={{ margin: '0 0 6px', fontSize: 19 }}>{t('Are you sure about this commitment?')}</h3>
             <p className="muted" style={{ margin: '0 0 14px', fontSize: 13.5 }}>
               {richText(
-                t('You are staking {stake} with {cat}. If you finish in time, your food stays yours. If you fail, {name} feasts!', {
-                  name: currentCat.name,
-                }),
+                mode === 'HONOR'
+                  ? t('You are staking {stake} with {cat}. Keep your word and the PURR stays yours. Miss it, and {name} takes it!', {
+                      name: currentCat.name,
+                    })
+                  : t('You are staking {stake} with {cat}. When you’re done, send a proof. If it holds, your food stays yours. If not, it feeds real cats at a shelter.', {
+                      name: currentCat.name,
+                    }),
                 {
-                  stake: (
-                    <strong>
-                      {amount} {foodName(creditType)}
-                    </strong>
-                  ),
+                  stake: <strong>{stakeText}</strong>,
                   cat: <strong>{currentCat.name}</strong>,
                 },
               )}

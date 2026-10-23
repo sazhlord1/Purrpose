@@ -27,12 +27,15 @@ export function HubBanner({
   title,
   blurb,
   badge,
+  tour,
   children,
 }: {
   to: string;
   title: string;
   blurb: string;
   badge?: string;
+  /** Hook for the guided tour. */
+  tour?: string;
   children: ReactNode;
 }) {
   const navigate = useNavigate();
@@ -57,6 +60,7 @@ export function HubBanner({
   return (
     <a
       href={to}
+      data-tour={tour}
       className={`hub-banner ${info ? 'show-info' : ''}`}
       aria-label={`${title}. ${blurb}`}
       onClick={e => {

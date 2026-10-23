@@ -36,6 +36,16 @@ enum PurrTxnType {
   SANDBOX_PURCHASE // test-mode purchase, PAYMENTS_MODE=sandbox only (+)
   ADMIN_GRANT // granted by an admin (+)
   SPEND // spent in the shop, e.g. unlocking a cat (-)
+  WELCOME // the one-time welcome gift (+)
+  STAKE_LOST // an honor pact's stake went to the cat (-)
+  PACT_BONUS // reward for winning one of the first honor pacts (+)
+}
+
+/// How a pact is held: STRICT stakes real food (and needs a proof once it's done),
+/// HONOR stakes PURR and the user's word is enough.
+enum CommitmentMode {
+  STRICT
+  HONOR
 }
 
 /// Detective Cheat habit pacts.
@@ -70,6 +80,8 @@ model User {
   /// Equipped shop items, one per slot, e.g. {"toy":"ball"}. Validated on read.
   loadout       Json                @default("{}")
   lastLoginAt   DateTime?
+  /// When the user saw the "you got free PURR" welcome message.
+  welcomeSeenAt DateTime?
   createdAt     DateTime            @default(now())
   balances      CreditBalance[]
   commitments   Commitment[]
@@ -109,12 +121,42 @@ model Commitment {
   createdAt         DateTime            @default(now())
   completedAt       DateTime?
   failedAt          DateTime?
+  mode              CommitmentMode      @default(STRICT)
+  /// PURR on the line (honor pacts only; 0 for food pacts).
+  purrStake         Int                 @default(0)
+  /// One of the user's first honor pacts: winning it pays a bonus.
+  starter           Boolean             @default(false)
+  /// Food pacts made since proofs exist: "I did it" sends a proof that gets reviewed.
+  proofRequired     Boolean             @default(false)
+  /// Lower-cased email of the friend who reviews the proof (never the owner's email).
+  witnessEmail      String?
+  /// Opaque id in the witness link. Only the signed-in witness can act on it.
+  witnessToken      String?             @unique
+  proofSubmittedAt  DateTime?
+  /// No decision by then → approved automatically.
+  reviewDueAt       DateTime?
+  reviewedAt        DateTime?
+  /// 'witness' | 'admin' | 'auto'
+  reviewedBy        String?
+  reviewNote        String?
+  proof             CommitmentProof?
   transactions      CreditTransaction[]
   focusSessions     FocusSession[]
   notifications     NotificationLog[]
 
   @@index([userId, status])
   @@index([status, deadline])
+  @@index([reviewDueAt])
+}
+
+/// What the user sent as proof of a strict pact. Kept apart so lists never load images.
+model CommitmentProof {
+  commitmentId String     @id
+  commitment   Commitment @relation(fields: [commitmentId], references: [id], onDelete: Cascade)
+  text         String
+  image        Bytes?
+  imageType    String?
+  createdAt    DateTime   @default(now())
 }
 
 model CreditBalance {

@@ -1,9 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { adminGrantSchema, idParamsSchema } from '@purrpose/shared';
+import { adminGrantSchema, idParamsSchema, reviewSchema } from '@purrpose/shared';
 import { requireAdmin } from '../auth.js';
+import { clock } from '../clock.js';
 import { getPrisma } from '../db.js';
 import { AppError } from '../errors.js';
+import { makeCommitmentEngine } from '../services/commitments.js';
 import { toHabitDto } from '../services/habits.js';
 import { creditPurr } from '../services/shop.js';
 import { walletView } from '../services/wallet.js';
@@ -22,6 +24,54 @@ const adminUsersQuery = z.object({
 export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
   await app.register(async function adminScope(scope) {
     scope.addHook('onRequest', requireAdmin);
+    const engine = makeCommitmentEngine(getPrisma(), clock);
+
+    /**
+     * Strict-pact proofs waiting for a decision. Pacts without a witness are the
+     * admin's to judge; ones with a witness are listed too (the admin may step in).
+     * Anything left undecided is approved automatically at reviewDueAt.
+     */
+    scope.get('/api/v1/admin/reviews', async () => {
+      const rows = await getPrisma().commitment.findMany({
+        where: { status: 'ACTIVE', reviewedAt: null, proofSubmittedAt: { not: null } },
+        include: {
+          user: { select: { email: true, firstName: true } },
+          proof: { select: { text: true, imageType: true } },
+        },
+        orderBy: { reviewDueAt: 'asc' },
+        take: 200,
+      });
+      const reviews = rows
+        .map(c => ({
+          id: c.id,
+          title: c.title,
+          owner: { email: c.user.email, firstName: c.user.firstName },
+          witnessEmail: c.witnessEmail,
+          consequenceType: c.consequenceType,
+          consequenceAmount: c.consequenceAmount,
+          deadlineISO: c.deadline.toISOString(),
+          proof: { text: c.proof?.text ?? '', hasImage: Boolean(c.proof?.imageType) },
+          submittedAtISO: c.proofSubmittedAt?.toISOString() ?? null,
+          reviewDueAtISO: c.reviewDueAt?.toISOString() ?? null,
+        }))
+        // The admin's own queue (no witness) first.
+        .sort((a, b) => Number(Boolean(a.witnessEmail)) - Number(Boolean(b.witnessEmail)));
+      return { reviews };
+    });
+
+    scope.get('/api/v1/admin/reviews/:id/image', async (request, reply) => {
+      const { id } = parse(idParamsSchema, request.params);
+      const proof = await getPrisma().commitmentProof.findUnique({ where: { commitmentId: id }, select: { image: true, imageType: true } });
+      if (!proof?.image || !proof.imageType) throw new AppError('NOT_FOUND', undefined, 'No photo');
+      return reply.header('Content-Type', proof.imageType).header('Cache-Control', 'private, no-store').send(Buffer.from(proof.image));
+    });
+
+    scope.post('/api/v1/admin/reviews/:id', async request => {
+      const { id } = parse(idParamsSchema, request.params);
+      const input = parse(reviewSchema, request.body);
+      const c = await engine.reviewProof(id, input.approve, 'admin', input.note);
+      return { ok: true, status: c.status };
+    });
 
     scope.get('/api/v1/admin/stats', async () => {
       const prisma = getPrisma();
@@ -166,6 +216,10 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
           catId: c.catId,
           consequenceType: c.consequenceType,
           consequenceAmount: c.consequenceAmount,
+          mode: c.mode,
+          purrStake: c.purrStake,
+          witnessEmail: c.witnessEmail,
+          reviewedBy: c.reviewedBy,
           createdAtISO: c.createdAt.toISOString(),
           deadlineISO: c.deadline.toISOString(),
           settledAtISO: (c.completedAt ?? c.failedAt)?.toISOString() ?? null,

@@ -13,6 +13,8 @@ import { catNameOf, moodLabel, sceneCaption } from '../lib/labels.js';
 import { notifyFailure } from '../lib/notifications.js';
 import { useCommitments, useMe } from '../lib/queries.js';
 import { fwdArrow, t } from '../i18n/index.js';
+import { Tour } from '../components/Tour.js';
+import { pactsTour } from '../lib/tours.js';
 
 
 function isReduced(): boolean {
@@ -80,7 +82,7 @@ export function Pacts() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <h1 style={{ margin: 0 }}>{t('Commitments')}</h1>
         </div>
-        <div className="chip-row" aria-label={t('Summary')}>
+        <div className="chip-row" aria-label={t('Summary')} data-tour="pacts-summary">
           <span className="chip" style={{ background: 'var(--paper-raised)', fontWeight: 600 }}>
             {t('{n} active', { n: active.length })}
           </span>
@@ -101,6 +103,7 @@ export function Pacts() {
         )}
       </header>
 
+      {featured && <Tour id="pacts" steps={pactsTour()} />}
       <section aria-label={t('Your cats')}>
         {commitments.isLoading ? (
           <div style={{ padding: 12, display: 'grid', gap: 12 }}>

@@ -1,11 +1,13 @@
 import { z } from 'zod';
-import { CAT_IDS, COMMITMENT_STATUSES, CONSEQUENCE_TYPES, TRANSACTION_TYPES } from './enums.js';
+import { CAT_IDS, COMMITMENT_MODES, COMMITMENT_STATUSES, CONSEQUENCE_TYPES, TRANSACTION_TYPES } from './enums.js';
+import { HONOR_MIN_STAKE, PROOF_IMAGE_TYPES, PROOF_MAX_IMAGE_BYTES } from './economy.js';
 import { itemIdSchema, loadoutSchema } from './items.js';
 
 export const consequenceTypeSchema = z.enum(CONSEQUENCE_TYPES);
 export const catIdSchema = z.enum(CAT_IDS);
 export const commitmentStatusSchema = z.enum(COMMITMENT_STATUSES);
 export const transactionTypeSchema = z.enum(TRANSACTION_TYPES);
+export const commitmentModeSchema = z.enum(COMMITMENT_MODES);
 
 const MIN_DEADLINE_OFFSET_MS = 5 * 60_000;
 const MAX_DEADLINE_OFFSET_MS = 30 * 24 * 3_600_000;
@@ -24,8 +26,24 @@ export function createCommitmentSchema(nowMs: number) {
         message: 'deadline must be within 30 days',
       }),
     catId: catIdSchema,
-    consequenceType: consequenceTypeSchema,
-    consequenceAmount: z.number().int().min(1).max(9999),
+    /**
+     * The app always sends it. Left out (older app versions), the pact is a food pact
+     * that finishes with a plain "I did it", like before proofs existed.
+     */
+    mode: commitmentModeSchema.optional(),
+    consequenceType: consequenceTypeSchema.optional(),
+    consequenceAmount: z.number().int().min(1).max(9999).optional(),
+    /** HONOR only. The first pacts ignore it and use the starter stake. */
+    purrStake: z.number().int().min(HONOR_MIN_STAKE).max(100_000).optional(),
+    /** STRICT only: the friend who reviews the proof. */
+    witnessEmail: z.string().trim().toLowerCase().max(254).email().optional(),
+  }).superRefine((v, ctx) => {
+    if (v.mode !== 'HONOR') {
+      if (!v.consequenceType) ctx.addIssue({ code: 'custom', path: ['consequenceType'], message: 'Pick what is at stake' });
+      if (!v.consequenceAmount) ctx.addIssue({ code: 'custom', path: ['consequenceAmount'], message: 'Stake at least 1' });
+    } else if (v.witnessEmail) {
+      ctx.addIssue({ code: 'custom', path: ['witnessEmail'], message: 'Honor pacts have no witness' });
+    }
   });
 }
 
@@ -61,6 +79,19 @@ export const commitmentDtoSchema = z.object({
   failedAtISO: z.string().nullable().optional(),
   phase: z.string().optional(),
   remainingMs: z.number().optional(),
+  /** Missing on pacts from before pact modes existed: treat as STRICT without proof. */
+  mode: commitmentModeSchema.optional(),
+  purrStake: z.number().int().optional(),
+  starter: z.boolean().optional(),
+  proofRequired: z.boolean().optional(),
+  witnessEmail: z.string().nullable().optional(),
+  /** Owner only: builds the link they send to the witness. */
+  witnessToken: z.string().nullable().optional(),
+  proofSubmittedAtISO: z.string().nullable().optional(),
+  reviewDueAtISO: z.string().nullable().optional(),
+  reviewedAtISO: z.string().nullable().optional(),
+  reviewedBy: z.enum(['witness', 'admin', 'auto']).nullable().optional(),
+  reviewNote: z.string().nullable().optional(),
 });
 
 export type CommitmentDto = z.infer<typeof commitmentDtoSchema>;
@@ -80,6 +111,10 @@ export const meResponseSchema = z.object({
   }),
   balances: z.array(balanceViewSchema),
   purr: z.number().int(),
+  /** PURR locked in open honor pacts (part of `purr`, not spendable). */
+  purrStaked: z.number().int().optional(),
+  /** Set until the user has seen the welcome-gift message. */
+  welcomePurr: z.number().int().nullable().optional(),
   unlockedCatIds: z.array(catIdSchema),
   ownedItemIds: z.array(itemIdSchema),
   loadout: loadoutSchema,
@@ -189,3 +224,43 @@ export const pushSubscribeSchema = z.object({
   locale: z.enum(['en', 'fa']).optional(),
 });
 export const pushUnsubscribeSchema = z.object({ endpoint: z.string().max(2048) });
+
+// ─── Strict pacts: proof and review ──────────────────────────────────────────
+export const proofSchema = z.object({
+  text: z.string().trim().min(3, 'Tell us in a few words what you did').max(600),
+  image: z
+    .object({
+      type: z.enum(PROOF_IMAGE_TYPES),
+      /** Base64 (no data: prefix). */
+      data: z.string().max(Math.ceil((PROOF_MAX_IMAGE_BYTES * 4) / 3) + 8),
+    })
+    .optional(),
+});
+export type ProofInput = z.infer<typeof proofSchema>;
+
+export const reviewSchema = z.object({
+  approve: z.boolean(),
+  note: z.string().trim().max(200).optional(),
+});
+export type ReviewInput = z.infer<typeof reviewSchema>;
+
+/** What the witness page shows. */
+export const witnessViewSchema = z.object({
+  title: z.string(),
+  ownerName: z.string().nullable(),
+  catId: catIdSchema,
+  deadlineISO: z.string(),
+  status: commitmentStatusSchema,
+  stakeLabel: z.object({ type: consequenceTypeSchema, amount: z.number().int() }),
+  witnessEmail: z.string(),
+  /** True when the signed-in user is the witness. */
+  isWitness: z.boolean(),
+  isOwner: z.boolean(),
+  proof: z
+    .object({ text: z.string(), hasImage: z.boolean(), submittedAtISO: z.string() })
+    .nullable(),
+  reviewDueAtISO: z.string().nullable(),
+  reviewedBy: z.enum(['witness', 'admin', 'auto']).nullable(),
+  reviewNote: z.string().nullable(),
+});
+export type WitnessView = z.infer<typeof witnessViewSchema>;

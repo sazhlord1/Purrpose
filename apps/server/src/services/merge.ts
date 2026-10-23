@@ -14,6 +14,11 @@ type Tx = Prisma.TransactionClient;
  * (top-ups minus credits it already lost) is added to the account — except
  * that the credits backing the guest's open pacts always come along.
  *
+ * PURR works the same way: the guest's welcome PURR and starter-pact bonuses stay
+ * behind (the account had its own), only PURR beyond them moves. The guest's open
+ * honor pacts are dropped — they were staked with that free PURR — while its
+ * finished ones move over as history.
+ *
  * Returns false (and does nothing) when `guestId` is not a mergeable guest.
  */
 export async function mergeGuestInto(tx: Tx, guestId: string, targetId: string): Promise<boolean> {
@@ -61,6 +66,20 @@ export async function mergeGuestInto(tx: Tx, guestId: string, targetId: string):
   await tx.creditBalance.deleteMany({ where: { userId: guestId } });
   await tx.creditTransaction.deleteMany({ where: { userId: guestId, type: 'STARTER_GRANT' } });
 
+  // ── PURR: only what the guest has beyond its free welcome and starter bonuses.
+  const freePurr = await tx.purrTransaction.aggregate({
+    where: { userId: guestId, type: { in: ['WELCOME', 'PACT_BONUS'] } },
+    _sum: { amount: true },
+  });
+  const purrMoved = Math.max(0, guest.purrBalance - (freePurr._sum.amount ?? 0));
+  await tx.purrTransaction.deleteMany({ where: { userId: guestId, type: { in: ['WELCOME', 'PACT_BONUS'] } } });
+  const droppedHonor = await tx.commitment.deleteMany({ where: { userId: guestId, mode: 'HONOR', status: 'ACTIVE' } });
+  // Cats/items bought with that free PURR stay behind too (otherwise a fresh guest per
+  // device could farm unlocks into one account).
+  const ledger = await tx.purrTransaction.groupBy({ by: ['type'], where: { userId: guestId }, _sum: { amount: true } });
+  const sumOf = (...types: string[]) => ledger.filter(l => types.includes(l.type)).reduce((n, l) => n + (l._sum.amount ?? 0), 0);
+  const unlocksPaidFor = sumOf('SPEND') <= sumOf('PURCHASE', 'SANDBOX_PURCHASE', 'ADMIN_GRANT');
+
   // ── Rows that simply change owner.
   const move = { where: { userId: guestId }, data: { userId: targetId } };
   await tx.creditTransaction.updateMany(move);
@@ -72,7 +91,7 @@ export async function mergeGuestInto(tx: Tx, guestId: string, targetId: string):
   await tx.appEvent.updateMany(move);
 
   // ── Owned cats and items: union (the account may already own some).
-  const cats = await tx.catUnlock.findMany({ where: { userId: guestId } });
+  const cats = unlocksPaidFor ? await tx.catUnlock.findMany({ where: { userId: guestId } }) : [];
   if (cats.length > 0) {
     await tx.catUnlock.createMany({
       data: cats.map(c => ({ userId: targetId, catId: c.catId, createdAt: c.createdAt })),
@@ -80,7 +99,7 @@ export async function mergeGuestInto(tx: Tx, guestId: string, targetId: string):
     });
   }
   await tx.catUnlock.deleteMany({ where: { userId: guestId } });
-  const items = await tx.itemUnlock.findMany({ where: { userId: guestId } });
+  const items = unlocksPaidFor ? await tx.itemUnlock.findMany({ where: { userId: guestId } }) : [];
   if (items.length > 0) {
     await tx.itemUnlock.createMany({
       data: items.map(i => ({ userId: targetId, itemId: i.itemId, createdAt: i.createdAt })),
@@ -95,7 +114,7 @@ export async function mergeGuestInto(tx: Tx, guestId: string, targetId: string):
   await tx.user.update({
     where: { id: targetId },
     data: {
-      purrBalance: { increment: guest.purrBalance },
+      purrBalance: { increment: purrMoved },
       name: target.name ?? guest.name,
       ...(Object.keys(targetLoadout).length === 0 && Object.keys(guestLoadout).length > 0
         ? { loadout: guestLoadout as Prisma.InputJsonValue }
@@ -116,7 +135,8 @@ export async function mergeGuestInto(tx: Tx, guestId: string, targetId: string):
         focusSessions: focus.count,
         habits: habits.count,
         credits: creditsMoved,
-        purr: guest.purrBalance,
+        purr: purrMoved,
+        honorPactsDropped: droppedHonor.count,
         cats: cats.length,
         items: items.length,
       },

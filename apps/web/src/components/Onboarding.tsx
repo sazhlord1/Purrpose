@@ -6,6 +6,7 @@ import { DoodleButton } from './ui/index.js';
 import { BowlEmpty, BowlFull } from './doodles/index.js';
 import { useReducedMotion } from '../lib/useReducedMotion.js';
 import { isRtlUi, t } from '../i18n/index.js';
+import { useBlockTours } from '../lib/tour.js';
 
 interface Panel {
   headline: string;
@@ -24,9 +25,25 @@ const PANELS: Panel[] = [
   { headline: 'Make your first commitment.', sub: 'Your cat is ready. Are you?' },
 ];
 
+function Chevron({ dir }: { dir: 'left' | 'right' }) {
+  return (
+    <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden>
+      <path
+        d={dir === 'right' ? 'M9 5l7 7-7 7' : 'M15 5l-7 7 7 7'}
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </svg>
+  );
+}
+
 export function Onboarding({ onDone }: { onDone: () => void }) {
   const [step, setStep] = useState(0);
   const reduced = useReducedMotion();
+  useBlockTours('onboarding', true);
   const navigate = useNavigate();
   const panel = PANELS[step];
   // Panels slide in from the reading direction (right → left in English, mirrored in Persian).
@@ -42,15 +59,18 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
   );
 
   const advance = useCallback(() => setStep(s => Math.min(3, s + 1)), []);
+  const goBack = useCallback(() => setStep(s => Math.max(0, s - 1)), []);
+  const rtl = isRtlUi();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') finish(false);
-      else if (e.key === 'Enter' || e.key === 'ArrowRight' || e.key === ' ') advance();
+      else if (e.key === 'Enter' || e.key === ' ' || e.key === (rtl ? 'ArrowLeft' : 'ArrowRight')) advance();
+      else if (e.key === (rtl ? 'ArrowRight' : 'ArrowLeft')) goBack();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [advance, finish]);
+  }, [advance, goBack, finish, rtl]);
 
   return (
     <div
@@ -78,6 +98,34 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           />
         ))}
       </div>
+
+      {/* Arrows on both sides, so it's obvious how to move on (and back). Forward follows the reading direction. */}
+      {step > 0 && (
+        <button
+          type="button"
+          className={`onboarding-arrow ${rtl ? 'onboarding-arrow-right' : 'onboarding-arrow-left'}`}
+          aria-label={t('Previous')}
+          onClick={e => {
+            e.stopPropagation();
+            goBack();
+          }}
+        >
+          <Chevron dir={rtl ? 'right' : 'left'} />
+        </button>
+      )}
+      {step < 3 && (
+        <button
+          type="button"
+          className={`onboarding-arrow ${rtl ? 'onboarding-arrow-left' : 'onboarding-arrow-right'} onboarding-arrow-next`}
+          aria-label={t('Next')}
+          onClick={e => {
+            e.stopPropagation();
+            advance();
+          }}
+        >
+          <Chevron dir={rtl ? 'left' : 'right'} />
+        </button>
+      )}
 
       <AnimatePresence mode="wait">
         <motion.div
@@ -121,7 +169,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           )}
           {step < 3 && (
             <p className="muted" style={{ marginTop: 20, fontSize: 12 }}>
-              {t('tap anywhere or press enter')}
+              {t('tap the arrow or anywhere to continue')}
             </p>
           )}
         </motion.div>

@@ -77,10 +77,12 @@ function startPersianDigits(): void {
   const fix = (node: Node) => {
     if (node.nodeType !== Node.TEXT_NODE) return;
     const v = node.nodeValue;
-    if (!v || !/[0-9]/.test(v)) return;
+    if (!v || !/[0-9·]/.test(v)) return;
     const parent = node.parentElement;
     if (!parent || parent.closest(SKIP)) return;
-    const next = localDigits(v, 'fa');
+    // In Anjoman the "·" separator looks just like the Persian zero (۰): "۶:۱۶ · ۳" reads as
+    // "۶:۱۶ ۰ ۳". A bullet is unmistakable.
+    const next = localDigits(v, 'fa').replace(/·/g, '•');
     if (next !== v) node.nodeValue = next;
   };
   const walk = (root: Node) => {

@@ -10,6 +10,7 @@ import { Pantry } from './pages/Pantry.js';
 import { Impact } from './pages/Impact.js';
 import { SessionProvider, useSession } from './lib/session.js';
 import { Onboarding } from './components/Onboarding.js';
+import { WelcomeGift } from './components/WelcomeGift.js';
 import { DevDrawer } from './components/DevDrawer.js';
 import { AdminOnly } from './components/AdminOnly.js';
 import { registerServiceWorker, useNotificationScheduler } from './lib/notifications.js';
@@ -29,6 +30,7 @@ const AdminUser = lazy(() => import('./pages/AdminUser.js').then(m => ({ default
 const Login = lazy(() => import('./pages/Login.js').then(m => ({ default: m.Login })));
 const AdminLogin = lazy(() => import('./pages/AdminLogin.js').then(m => ({ default: m.AdminLogin })));
 const Admin = lazy(() => import('./pages/Admin.js').then(m => ({ default: m.Admin })));
+const Witness = lazy(() => import('./pages/Witness.js').then(m => ({ default: m.Witness })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,6 +40,8 @@ const queryClient = new QueryClient({
 
 function Shell() {
   const { ready } = useSession();
+  // A witness opening their link should see the promise first, not the app's intro.
+  const isWitnessLink = typeof window !== 'undefined' && window.location.pathname.startsWith('/witness/');
   const [onboarded, setOnboarded] = useState(
     () => localStorage.getItem('purrpose.onboarded') === '1',
   );
@@ -52,7 +56,8 @@ function Shell() {
 
   return (
     <>
-      {!onboarded && <Onboarding onDone={() => setOnboarded(true)} />}
+      {!onboarded && !isWitnessLink && <Onboarding onDone={() => setOnboarded(true)} />}
+      {ready && onboarded && !isWitnessLink && <WelcomeGift />}
       {ready ? (
         <>
           <MotionConfig reducedMotion="user">
@@ -72,13 +77,14 @@ function Shell() {
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/admin/users/:id" element={<AdminUser />} />
+                <Route path="/witness/:token" element={<Witness />} />
                 <Route path="/design" element={<AdminOnly><DesignSystem /></AdminOnly>} />
                 <Route path="/cats" element={<AdminOnly><CatsGallery /></AdminOnly>} />
                 <Route path="/lab" element={<AdminOnly><CatLab /></AdminOnly>} />
               </Routes>
             </Suspense>
           </MotionConfig>
-          <nav className="nav" aria-label={t('Main')}>
+          <nav className="nav" aria-label={t('Main')} data-tour="nav">
             <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
               <AppIcon name="home" size={24} className="nav-icon" />
               {t('Home')}
@@ -88,7 +94,10 @@ function Shell() {
               {t('Shop')}
             </NavLink>
             <Link to="/new" className="nav-new" aria-label={t('New commitment')}>
-              +
+              {/* Drawn, not typed: a "+" character never sits in the exact middle of the circle. */}
+              <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden>
+                <path d="M12 4.5v15M4.5 12h15" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" fill="none" />
+              </svg>
             </Link>
             <NavLink to="/pantry" className={({ isActive }) => (isActive ? 'active' : '')}>
               <AppIcon name="pantry" size={24} className="nav-icon" />

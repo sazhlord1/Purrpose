@@ -30,6 +30,11 @@ const envSchema = z.object({
 
   /** PURR purchases: 'disabled' (default), 'sandbox' (free test credits), 'live' (provider). */
   PAYMENTS_MODE: z.enum(['disabled', 'sandbox', 'live']).default('disabled'),
+  /**
+   * Also give new players the old free starter food (10 meals, 2 dry food, 1 vet care).
+   * Off by default: new players get welcome PURR only, and food is bought. Tests turn it on.
+   */
+  STARTER_FOOD: bool,
 
   /** Web push (VAPID). Generate with: pnpm --filter @purrpose/server vapid:generate */
   VAPID_PUBLIC_KEY: opt(z.string()),

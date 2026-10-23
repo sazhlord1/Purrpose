@@ -5,6 +5,8 @@ import { DetectiveBanner, FocusBanner, HubBanner, PactsBanner } from '../compone
 import { t } from '../i18n/index.js';
 import { localHour } from '../lib/commitmentView.js';
 import { useCommitments, useHabits, useMe } from '../lib/queries.js';
+import { Tour } from '../components/Tour.js';
+import { homeTour } from '../lib/tours.js';
 
 type Greeting = 'Up late' | 'Good morning' | 'Good afternoon' | 'Good evening';
 
@@ -76,12 +78,12 @@ export function Home() {
                 <AppIcon name="crown" size={16} /> {t('admin')}
               </Link>
             )}
-            <Link to="/settings" className="muted" aria-label={t('Settings')}>
+            <Link to="/settings" className="muted" aria-label={t('Settings')} data-tour="home-settings">
               <AppIcon name="settings" size={16} /> {t('settings')}
             </Link>
           </div>
         </div>
-        <div className="chip-row" aria-label={t('Summary')}>
+        <div className="chip-row" aria-label={t('Summary')} data-tour="home-wallet">
           <span className="chip" style={{ color: '#2E6930', fontWeight: 600 }}>
             {t('pantry: {n} meals', { n: meals?.available ?? 0 })}
           </span>
@@ -91,9 +93,11 @@ export function Home() {
         </div>
       </header>
 
+      <Tour id="home" steps={homeTour()} />
       <nav className="hub" aria-label={t('Rooms')}>
         <HubBanner
           to="/pacts"
+          tour="hub-pacts"
           title={t('Make a commitment')}
           badge={activePacts > 0 ? t('{n} active', { n: activePacts }) : undefined}
           blurb={t('Pick a task and a deadline, and stake some cat food. Finish in time and your stray moves up in the world. Miss it, and the cats eat.')}
@@ -102,6 +106,7 @@ export function Home() {
         </HubBanner>
         <HubBanner
           to="/focus"
+          tour="hub-focus"
           title={t('Focus Room')}
           blurb={t('A quiet room for deep work. Start the timer, your cat curls up on its cushion, and you both stay put until it rings.')}
         >
@@ -109,6 +114,7 @@ export function Home() {
         </HubBanner>
         <HubBanner
           to="/detective"
+          tour="hub-detective"
           title={t('Detective Cheat')}
           badge={
             openCases > 0

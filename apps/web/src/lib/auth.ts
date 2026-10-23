@@ -11,9 +11,31 @@ function switchTo(token: string | null, to = '/'): void {
   window.location.assign(to);
 }
 
-/** Admins land straight in their panel; everyone else on the home screen. */
+const AFTER_LOGIN_KEY = 'purrpose.afterLogin';
+
+/** Remember where to come back to after signing in (e.g. a witness page). Same-site paths only. */
+export function returnAfterLogin(path: string): void {
+  try {
+    if (path.startsWith('/') && !path.startsWith('//')) sessionStorage.setItem(AFTER_LOGIN_KEY, path);
+  } catch {
+    /* storage blocked: they land on home instead */
+  }
+}
+
+function takeReturnPath(): string | null {
+  try {
+    const path = sessionStorage.getItem(AFTER_LOGIN_KEY);
+    sessionStorage.removeItem(AFTER_LOGIN_KEY);
+    return path && path.startsWith('/') && !path.startsWith('//') ? path : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Admins land straight in their panel; everyone else back where they came from, or home. */
 function landingFor(res: AuthResponse): string {
-  return res.role === 'ADMIN' ? '/admin' : '/';
+  const back = takeReturnPath();
+  return back ?? (res.role === 'ADMIN' ? '/admin' : '/');
 }
 
 export async function signIn(email: string, password: string): Promise<void> {
@@ -43,7 +65,7 @@ export async function createAccount(
     method: 'POST',
     body: { email, password, firstName, lastName },
   });
-  switchTo(res.token, '/settings');
+  switchTo(res.token, takeReturnPath() ?? '/settings');
 }
 
 export async function signOut(): Promise<void> {

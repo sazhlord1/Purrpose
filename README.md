@@ -80,6 +80,8 @@ Toys, comfort items, bowls, wearables and room decor, bought with PURR in the Ca
 
 **Upgrading to Persian (v7):** run `infra/supabase_upgrade_v7.sql` in Supabase **before** deploying the server (adds `PushSubscription.locale`, so reminders arrive in the device's language). The language is picked in Settings and stored per device; Persian switches the app to RTL with the Anjoman font in `apps/web/public/fonts` (Black 900 for titles and speech bubbles).
 
+**Upgrading to pact modes (v8):** run `infra/supabase_upgrade_v8.sql` in Supabase **before** deploying the server. It is additive (the previous server keeps working on it). It adds honor (PURR) and strict (food + proof) pacts, witnesses, proofs and the one-time welcome PURR. New players now get `PURR_WELCOME` (120) PURR and no free food; set `STARTER_FOOD=true` on the server to keep the old starter food as well. Proofs without a decision are approved automatically after 48h by the sweep; proof photos are dropped 30 days after the decision.
+
 ## Tests
 
 ```powershell

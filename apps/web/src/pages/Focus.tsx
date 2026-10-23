@@ -10,6 +10,9 @@ import { FocusScene } from '../components/FocusScene.js';
 import { AppIcon } from '@purrpose/cats';
 import { DoodleButton, Chip, SketchCard, Field, Select } from '../components/ui/index.js';
 import { getLocale, t } from '../i18n/index.js';
+import { Tour } from '../components/Tour.js';
+import { focusTour } from '../lib/tours.js';
+import { stakeLabel } from '../lib/labels.js';
 
 type FocusStatus = 'idle' | 'focusing' | 'paused' | 'finished';
 
@@ -250,7 +253,8 @@ export function Focus() {
       )}
 
       {/* Main Focus Window Scene */}
-      <section style={{ position: 'relative', marginBottom: 14 }}>
+      {!zenMode && <Tour id="focus" steps={focusTour()} />}
+      <section style={{ position: 'relative', marginBottom: 14 }} data-tour="focus-scene">
         <FocusScene
           catId={selectedCat}
           isFocusing={isFocusing}
@@ -288,7 +292,7 @@ export function Focus() {
         </div>
 
         {/* Stopwatch Action Controls */}
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }} data-tour="focus-controls">
           {status === 'idle' && (
             <DoodleButton variant="primary" size="big" onClick={startFocus}>
               ▶ {t('Start Focus')}
@@ -378,7 +382,7 @@ export function Focus() {
                 <option value="">{t('-- No specific task (Pure Focus) --')}</option>
                 {activeCommitments.map(c => (
                   <option key={c.id} value={c.id}>
-                    {t('{title} ({n} meals at stake)', { title: c.title, n: c.consequenceAmount })}
+                    {t('{title} ({stake} at stake)', { title: c.title, stake: stakeLabel(c) })}
                   </option>
                 ))}
               </Select>

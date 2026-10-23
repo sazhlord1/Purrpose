@@ -25,6 +25,8 @@ import { api, ApiError } from '../lib/api.js';
 import { catNameOf } from '../lib/labels.js';
 import { useHabits, useMe } from '../lib/queries.js';
 import { foodName, t } from '../i18n/index.js';
+import { Tour } from '../components/Tour.js';
+import { detectiveTour } from '../lib/tours.js';
 
 const FOOD_ICON: Record<ConsequenceType, IconName> = { MEALS: 'meals', DRY_FOOD: 'dryFood', VET_CARE: 'vetCare' };
 const DAY_MS = 24 * 3_600_000;
@@ -337,7 +339,9 @@ export function Detective() {
         </p>
       )}
 
+      {current && <Tour id="detective" steps={detectiveTour()} />}
       {current && (
+        <div data-tour="detective-locker">
         <SketchCard variant="a">
           <h2 style={{ marginTop: 0 }}>{t('Evidence locker')}</h2>
           <EvidenceLocker h={current} />
@@ -351,6 +355,7 @@ export function Detective() {
             </p>
           )}
         </SketchCard>
+        </div>
       )}
 
       {habits.isLoading ? (

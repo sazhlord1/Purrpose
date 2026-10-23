@@ -18,8 +18,12 @@ import { DoodleButton, SketchCard } from '../components/ui/index.js';
 import { backArrow, getLocale, t } from '../i18n/index.js';
 import { api, ApiError } from '../lib/api.js';
 import { catNameOf } from '../lib/labels.js';
+import { Tour } from '../components/Tour.js';
+import { shopTour } from '../lib/tours.js';
 
 interface ShopResponse {
+  /** PURR locked in open honor pacts (part of `purr`, not spendable). */
+  purrStaked?: number;
   purr: number;
   paymentsMode: PaymentsMode;
   packs: PurrPack[];
@@ -122,12 +126,13 @@ export function Shop() {
   if (shop.isLoading) return <main><p className="muted">{t('opening the shop…')}</p></main>;
   if (shop.isError || !shop.data) return <main><p className="muted">{t('The shop is closed for a nap. Try again soon.')}</p></main>;
 
-  const { purr, cats, packs, paymentsMode, items, loadout } = shop.data;
+  const { purr, purrStaked = 0, cats, packs, paymentsMode, items, loadout } = shop.data;
 
   const balance = (
     <div className="shop-balance">
       <span className="purr-balance"><AppIcon name="purr" size={28} /> {purr}</span>
       <span className="muted">{t('PURR')}</span>
+      {purrStaked > 0 && <span className="muted" style={{ fontSize: 12.5 }}>{t('({n} in open pacts)', { n: purrStaked })}</span>}
       {section !== 'purr' && (
         <button type="button" className="chip chip-purr" onClick={() => open('purr')}>
           + {t('Get PURR')}
@@ -154,6 +159,7 @@ export function Shop() {
       <main>
         <h1>{t('Cat Shop')}</h1>
         {balance}
+        <Tour id="shop" steps={shopTour()} />
         <nav className="shop-menu" aria-label={t('Shop sections')}>
           {SECTION_ORDER.map(s => (
             <button

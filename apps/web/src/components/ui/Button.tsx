@@ -35,7 +35,7 @@ export function DoodleButton({
 
   if (href !== undefined) {
     return (
-      <Link to={href} className={cls} aria-label={ariaLabel} style={style}>
+      <Link to={href} className={cls} aria-label={ariaLabel} style={style} onClick={onClick}>
         {children}
       </Link>
     );

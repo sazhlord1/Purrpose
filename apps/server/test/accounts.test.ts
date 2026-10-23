@@ -99,7 +99,7 @@ describe.skipIf(!dbReady)('accounts, admin, PURR shop, focus, push', () => {
     const token = await guest();
     const me = (await call('GET', '/api/v1/me', token)).json();
     expect(me.unlockedCatIds.sort()).toEqual(['black', 'orange', 'tuxedo']);
-    expect(me.purr).toBe(0);
+    expect(me.purr).toBe(120); // welcome PURR
 
     const locked = await call('POST', '/api/v1/commitments', token, commitmentBody('mochi'));
     expect(locked.statusCode).toBe(403);
@@ -109,11 +109,11 @@ describe.skipIf(!dbReady)('accounts, admin, PURR shop, focus, push', () => {
     expect(broke.json().error.code).toBe('INSUFFICIENT_PURR');
 
     const bought = await call('POST', '/api/v1/shop/checkout', token, { packId: 'purr_150' });
-    expect(bought.json()).toMatchObject({ status: 'credited', purr: 150 });
+    expect(bought.json()).toMatchObject({ status: 'credited', purr: 270 });
 
     const unlocked = await call('POST', '/api/v1/shop/unlock', token, { catId: 'mochi' });
     expect(unlocked.statusCode).toBe(200);
-    expect(unlocked.json().purr).toBe(0);
+    expect(unlocked.json().purr).toBe(120);
 
     const twice = await call('POST', '/api/v1/shop/unlock', token, { catId: 'mochi' });
     expect(twice.json().error.code).toBe('ALREADY_OWNED');
@@ -144,7 +144,7 @@ describe.skipIf(!dbReady)('accounts, admin, PURR shop, focus, push', () => {
     expect((await call('POST', '/api/v1/commitments', token, commitmentBody('yuki'))).statusCode).toBe(201);
 
     const grant = await call('POST', '/api/v1/admin/purr/grant', token, { email: 'user@test.dev', amount: 500 });
-    expect(grant.json()).toMatchObject({ email: 'user@test.dev', purr: 500 });
+    expect(grant.json()).toMatchObject({ email: 'user@test.dev', purr: 620 });
     expect((await call('GET', '/api/v1/admin/stats', token)).json().accounts).toBe(2);
 
     // Non-admins get 403 from admin routes.

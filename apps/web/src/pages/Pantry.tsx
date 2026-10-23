@@ -21,6 +21,8 @@ import {
   BowlEmpty,
   type DoodleProps,
 } from '../components/doodles/index.js';
+import { Tour } from '../components/Tour.js';
+import { pantryTour } from '../lib/tours.js';
 
 /** Coloured doodles for the three credit types (same look as the landing page). */
 const CREDIT_ICON: Record<ConsequenceType, IconName> = { MEALS: 'meals', DRY_FOOD: 'dryFood', VET_CARE: 'vetCare' };
@@ -60,6 +62,10 @@ export function Pantry() {
   const qc = useQueryClient();
   const me = useMe();
   const history = useQuery({ queryKey: ['history'], queryFn: () => api<HistoryResponse>('/history') });
+  // Food is bought, not handed out: free top-ups only exist in sandbox (test) mode.
+  const shop = useQuery({ queryKey: ['shop'], queryFn: () => api<{ paymentsMode: string }>('/shop') });
+  const isAdmin = me.data?.user.role === 'ADMIN';
+  const canTopUp = shop.data?.paymentsMode === 'sandbox' || isAdmin;
 
   const [selectedItem, setSelectedItem] = useState<PantryItemMeta | null>(null);
   const [amount, setAmount] = useState(10);
@@ -131,7 +137,8 @@ export function Pantry() {
         <span className="chip">{t('click any item to inspect')}</span>
       </div>
 
-      <div style={{ marginBottom: 20 }}>
+      <Tour id="pantry" steps={pantryTour()} />
+      <div style={{ marginBottom: 20 }} data-tour="pantry-supplies">
         <h2>{t('Consequence Supplies')}</h2>
         <p className="muted" style={{ marginTop: -6 }}>
           {t('Items staked in your commitments. When you procrastinate, your cat feasts on these.')}
@@ -305,7 +312,15 @@ export function Pantry() {
               {selectedItem.description}
             </p>
 
-            {selectedItem.creditType && (
+            {selectedItem.creditType && !canTopUp && (
+              <div style={{ width: '100%', marginTop: 8 }}>
+                <p className="card card-c" style={{ padding: '10px 12px', fontSize: 14 }} role="status">
+                  {t('Buying real cat food opens soon. Until then, “on my word” pacts work with PURR.')}
+                </p>
+                <DoodleButton onClick={() => setSelectedItem(null)}>{t('Close')}</DoodleButton>
+              </div>
+            )}
+            {selectedItem.creditType && canTopUp && (
               <div style={{ width: '100%', marginTop: 8 }}>
                 <p className="muted" style={{ marginBottom: 8, fontSize: 13 }}>
                   {t('Select top-up amount for {name}:', { name: selectedItem.name })}

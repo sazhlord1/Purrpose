@@ -1,6 +1,10 @@
 export const COMMITMENT_STATUSES = ['ACTIVE', 'COMPLETED', 'FAILED'] as const;
 export type CommitmentStatus = (typeof COMMITMENT_STATUSES)[number];
 
+export const COMMITMENT_MODES = ['STRICT', 'HONOR'] as const;
+/** STRICT: real food on the line and a reviewed proof. HONOR: PURR on the line, your word is enough. */
+export type CommitmentMode = (typeof COMMITMENT_MODES)[number];
+
 export const CONSEQUENCE_TYPES = ['MEALS', 'DRY_FOOD', 'VET_CARE'] as const;
 export type ConsequenceType = (typeof CONSEQUENCE_TYPES)[number];
 
