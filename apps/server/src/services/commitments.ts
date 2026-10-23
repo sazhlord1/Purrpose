@@ -309,7 +309,13 @@ export function makeCommitmentEngine(prisma: PrismaClient, clock: ClockApi) {
       });
       if (marked.count !== 1) throw new AppError('ALREADY_SETTLED', { finalStatus: 'SETTLED_BY_RACE' });
       await tx.commitmentProof.create({
-        data: { commitmentId: id, text: input.text, image, imageType: image ? input.image?.type ?? null : null },
+        data: {
+          commitmentId: id,
+          text: input.text,
+          // Prisma's Bytes wants a plain Uint8Array (not a Node Buffer view).
+          image: image ? new Uint8Array(image) : null,
+          imageType: image ? input.image?.type ?? null : null,
+        },
       });
       await tx.appEvent.create({
         data: { userId, name: 'proof_submitted', payload: { commitmentId: id, image: Boolean(image), witness: Boolean(commitment.witnessEmail) } },
