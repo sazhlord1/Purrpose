@@ -1,11 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type FC } from 'react';
 import {
+  FOOD_PRICES,
+  usd,
   type ConsequenceType,
   type HistoryResponse,
 } from '@purrpose/shared';
+import { Link } from 'react-router-dom';
 import { AppIcon, type IconName } from '@purrpose/cats';
-import { api } from '../lib/api.js';
+import { api, ApiError } from '../lib/api.js';
+import { canBuyHere, goToCheckout } from '../lib/payments.js';
+import { TestCardNote } from '../components/TestCardNote.js';
 import { useMe } from '../lib/queries.js';
 import { fmtDate } from '../lib/format.js';
 import { foodName, fwdArrow, t } from '../i18n/index.js';
@@ -63,9 +68,11 @@ export function Pantry() {
   const me = useMe();
   const history = useQuery({ queryKey: ['history'], queryFn: () => api<HistoryResponse>('/history') });
   // Food is bought, not handed out: free top-ups only exist in sandbox (test) mode.
-  const shop = useQuery({ queryKey: ['shop'], queryFn: () => api<{ paymentsMode: string }>('/shop') });
+  const shop = useQuery({ queryKey: ['shop'], queryFn: () => api<{ paymentsMode: string; paymentsTest?: boolean }>('/shop') });
   const isAdmin = me.data?.user.role === 'ADMIN';
-  const canTopUp = shop.data?.paymentsMode === 'sandbox' || isAdmin;
+  // Real food for real money: Stripe, English version only.
+  const canBuy = shop.data?.paymentsMode === 'stripe' && canBuyHere();
+  const canTopUp = !canBuy && (shop.data?.paymentsMode === 'sandbox' || isAdmin);
 
   const [selectedItem, setSelectedItem] = useState<PantryItemMeta | null>(null);
   const [amount, setAmount] = useState(10);
@@ -98,9 +105,25 @@ export function Pantry() {
     onError: () => setNote(t('Top-up failed. Even imaginary economies have banks.')),
   });
 
+  const [needsAccount, setNeedsAccount] = useState(false);
+  const buyFood = useMutation({
+    mutationFn: (creditType: ConsequenceType) =>
+      api<{ status: 'redirect'; url: string }>('/wallet/checkout', { method: 'POST', body: { creditType, quantity: amount } }),
+    onSuccess: res => goToCheckout(res.url),
+    onError: e => {
+      if (e instanceof ApiError && e.code === 'ACCOUNT_REQUIRED') {
+        setNeedsAccount(true);
+        setNote(t('Create an account first, so what you buy is safe.'));
+        return;
+      }
+      setNote(e instanceof ApiError ? e.message : t('Purchase failed.'));
+    },
+  });
+
   const openItemDetail = (item: PantryItemMeta) => {
-    setAmount(10);
+    setAmount(canBuy ? 1 : 10);
     setNote(null);
+    setNeedsAccount(false);
     setSelectedItem(item);
   };
 
@@ -312,7 +335,39 @@ export function Pantry() {
               {selectedItem.description}
             </p>
 
-            {selectedItem.creditType && !canTopUp && (
+            {selectedItem.creditType && canBuy && (() => {
+              const price = FOOD_PRICES[selectedItem.creditType as ConsequenceType];
+              const unit = { can: t('per can'), kg: t('per kg'), visit: t('per visit') }[price.unit];
+              return (
+                <div style={{ width: '100%', marginTop: 8 }}>
+                  {shop.data?.paymentsTest && <TestCardNote />}
+                  <p style={{ margin: '0 0 8px', fontWeight: 700 }}>
+                    <span className="ltr">{usd(price.cents)}</span> {unit}
+                  </p>
+                  <AmountPicker value={amount} onChange={setAmount} max={price.maxQty} />
+                  {note && (
+                    <p className="form-error" role="status" style={{ marginTop: 10 }}>
+                      {note} {needsAccount && <Link to="/login">{t('Create account / Sign in')}</Link>}
+                    </p>
+                  )}
+                  <div style={{ marginTop: 18, display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <DoodleButton
+                      variant="primary"
+                      size="big"
+                      disabled={buyFood.isPending}
+                      onClick={() => selectedItem.creditType && buyFood.mutate(selectedItem.creditType)}
+                    >
+                      {buyFood.isPending ? '…' : t('Checkout · {total}', { total: usd(price.cents * amount) })}
+                    </DoodleButton>
+                    <DoodleButton onClick={() => setSelectedItem(null)}>{t('Close')}</DoodleButton>
+                  </div>
+                  <p className="muted" style={{ fontSize: 12.5, marginTop: 10 }}>
+                    {t('Secure checkout by Stripe. Prices in US dollars.')}
+                  </p>
+                </div>
+              );
+            })()}
+            {selectedItem.creditType && !canTopUp && !canBuy && (
               <div style={{ width: '100%', marginTop: 8 }}>
                 <p className="card card-c" style={{ padding: '10px 12px', fontSize: 14 }} role="status">
                   {t('Buying real cat food opens soon. Until then, “on my word” pacts work with PURR.')}

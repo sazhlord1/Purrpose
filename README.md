@@ -82,6 +82,8 @@ Toys, comfort items, bowls, wearables and room decor, bought with PURR in the Ca
 
 **Upgrading to pact modes (v8):** run `infra/supabase_upgrade_v8.sql` in Supabase **before** deploying the server. It is additive (the previous server keeps working on it). It adds honor (PURR) and strict (food + proof) pacts, witnesses, proofs and the one-time welcome PURR. New players now get `PURR_WELCOME` (120) PURR and no free food; set `STARTER_FOOD=true` on the server to keep the old starter food as well. Proofs without a decision are approved automatically after 48h by the sweep; proof photos are dropped 30 days after the decision.
 
+**Upgrading to payments (v9):** run `infra/supabase_upgrade_v9.sql` in Supabase **before** deploying the server (adds the `Payment` table). Stripe Checkout sells PURR packs and pantry food in the English version (the Persian version hides buying; it will use Cafe Bazaar billing). Server variables: `PAYMENTS_MODE=stripe`, `STRIPE_SECRET_KEY` (`sk_test_…` for test mode, `sk_live_…` for real money — never commit it), optional `STRIPE_WEBHOOK_SECRET` (`whsec_…`) for the endpoint `POST /api/v1/stripe/webhook` with the events `checkout.session.completed` and `checkout.session.async_payment_succeeded`. Without the webhook, a purchase is credited when the buyer returns from Checkout. Prices live in `packages/shared/src/store.ts` (`PURR_PACKS`, `FOOD_PRICES`); a purchase needs a signed-in account.
+
 ## Tests
 
 ```powershell

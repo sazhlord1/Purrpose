@@ -191,6 +191,13 @@ export type AuthResponse = z.infer<typeof authResponseSchema>;
 // ─── Shop / PURR ─────────────────────────────────────────────────────────────
 export const unlockCatSchema = z.object({ catId: catIdSchema });
 export const checkoutSchema = z.object({ packId: z.string().min(1).max(40) });
+/** Buying real food for the pantry (Stripe). */
+export const foodCheckoutSchema = z.object({
+  creditType: consequenceTypeSchema,
+  quantity: z.number().int().min(1).max(50),
+});
+/** Back from Stripe Checkout: settle that session. */
+export const confirmPaymentSchema = z.object({ sessionId: z.string().regex(/^cs_(test|live)_[A-Za-z0-9]+$/) });
 export const adminGrantSchema = z.object({
   email: emailSchema,
   amount: z.number().int().min(1).max(100_000),

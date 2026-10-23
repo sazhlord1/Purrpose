@@ -1,6 +1,7 @@
 import { userIdOf } from '../auth.js';
 import type { FastifyInstance } from 'fastify';
-import { topUpSchema } from '@purrpose/shared';
+import { foodCheckoutSchema, topUpSchema } from '@purrpose/shared';
+import { startFoodCheckout } from '../services/payments.js';
 import { topUp } from '../services/wallet.js';
 import { getPrisma } from '../db.js';
 import { getEnv } from '../env.js';
@@ -21,5 +22,11 @@ export function registerWalletRoutes(app: FastifyInstance): void {
     const input = parse(topUpSchema, request.body);
     const amount = await topUp(getPrisma(), userId, input.creditType, input.amount);
     return { creditType: input.creditType, amount, serverTime: clock.now() };
+  });
+
+  /** Buying real food with Stripe Checkout (English version). Credited when paid. */
+  app.post('/api/v1/wallet/checkout', async request => {
+    const { creditType, quantity } = parse(foodCheckoutSchema, request.body);
+    return startFoodCheckout(getPrisma(), getEnv(), userIdOf(request), creditType, quantity, request.headers.origin);
   });
 }

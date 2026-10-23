@@ -18,6 +18,7 @@ import { registerMeRoutes } from './routes/me.js';
 import { registerPublicPushRoutes, registerPushRoutes } from './routes/push.js';
 import { registerSessionRoutes } from './routes/session.js';
 import { registerShopRoutes } from './routes/shop.js';
+import { registerPaymentRoutes, registerStripeWebhook } from './routes/payments.js';
 import { registerWalletRoutes } from './routes/wallet.js';
 import { makeCommitmentEngine } from './services/commitments.js';
 
@@ -91,6 +92,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   registerCatsRoutes(app);
   registerPublicAuthRoutes(app);
   registerPublicPushRoutes(app);
+  await registerStripeWebhook(app);
 
   // Everything below requires a valid bearer token.
   await app.register(async function authenticatedScope(scope) {
@@ -103,6 +105,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     registerHistoryRoutes(scope);
     registerHabitRoutes(scope);
     registerShopRoutes(scope);
+    registerPaymentRoutes(scope);
     registerFocusRoutes(scope);
     registerPushRoutes(scope);
     await registerAdminRoutes(scope);

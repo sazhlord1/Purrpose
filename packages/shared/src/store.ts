@@ -4,22 +4,51 @@ export const PURR_SYMBOL = 'PURR';
 export interface PurrPack {
   id: string;
   purr: number;
-  /** Display price only. The real charge is decided by the payment provider. */
+  /** What Stripe charges, in US cents. The label is derived from it. */
+  priceCents: number;
   priceLabel: string;
   bonusLabel?: string;
 }
 
+/** Prices are in US dollars (the English/international version only). */
+export const PAYMENT_CURRENCY = 'usd';
+
+/** "$1.99" from 199. */
+export function usd(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+const pack = (purr: number, priceCents: number, bonusLabel?: string): PurrPack => ({
+  id: `purr_${purr}`,
+  purr,
+  priceCents,
+  priceLabel: usd(priceCents),
+  ...(bonusLabel ? { bonusLabel } : {}),
+});
+
 export const PURR_PACKS: readonly PurrPack[] = [
-  { id: 'purr_150', purr: 150, priceLabel: '$1.99' },
-  { id: 'purr_400', purr: 400, priceLabel: '$4.99', bonusLabel: '+10%' },
-  { id: 'purr_900', purr: 900, priceLabel: '$9.99', bonusLabel: '+25%' },
+  pack(150, 199),
+  pack(250, 250),
+  pack(500, 349),
+  pack(1000, 500, 'Best value'),
 ];
 
 export function purrPackById(id: string): PurrPack | undefined {
   return PURR_PACKS.find(p => p.id === id);
 }
 
-export type PaymentsMode = 'disabled' | 'sandbox' | 'live';
+/** Real cat food for strict pacts, bought per unit. A dry-food unit is one kilogram. */
+export const FOOD_PRICES = {
+  MEALS: { cents: 299, unit: 'can', maxQty: 50 },
+  DRY_FOOD: { cents: 1000, unit: 'kg', maxQty: 20 },
+  VET_CARE: { cents: 15000, unit: 'visit', maxQty: 3 },
+} as const satisfies Record<'MEALS' | 'DRY_FOOD' | 'VET_CARE', { cents: number; unit: string; maxQty: number }>;
+
+/**
+ * disabled: nothing can be bought · sandbox: free test credits (never in production) ·
+ * stripe: real checkout through Stripe (test or live, depending on the key).
+ */
+export type PaymentsMode = 'disabled' | 'sandbox' | 'stripe';
 
 /** Shop item ids are namespaced so the ledger can hold more than cats later. */
 export const catItemId = (catId: string): string => `cat:${catId}`;

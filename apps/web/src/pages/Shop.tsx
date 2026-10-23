@@ -20,12 +20,16 @@ import { api, ApiError } from '../lib/api.js';
 import { catNameOf } from '../lib/labels.js';
 import { Tour } from '../components/Tour.js';
 import { shopTour } from '../lib/tours.js';
+import { canBuyHere, goToCheckout } from '../lib/payments.js';
+import { TestCardNote } from '../components/TestCardNote.js';
 
 interface ShopResponse {
   /** PURR locked in open honor pacts (part of `purr`, not spendable). */
   purrStaked?: number;
   purr: number;
   paymentsMode: PaymentsMode;
+  /** Stripe with a test key: nothing is really charged. */
+  paymentsTest?: boolean;
   packs: PurrPack[];
   cats: Array<{ id: CatId; name: string; type: string; personality: string; pricePurr: number; owned: boolean }>;
   items: Array<ShopItem & { owned: boolean }>;
@@ -53,8 +57,11 @@ function previewRatio(category: ItemCategory): number {
   return stage === 3 ? 0.5 : 0.7;
 }
 
+/** "Get PURR" (buying with money) only exists in the English version. */
+const visibleSections = (): Section[] => (canBuyHere() ? SECTION_ORDER : SECTION_ORDER.filter(s => s !== 'purr'));
+
 function isSection(v: string | null): v is Section {
-  return v !== null && (SECTION_ORDER as string[]).includes(v);
+  return v !== null && (visibleSections() as string[]).includes(v);
 }
 
 export function Shop() {
@@ -63,7 +70,7 @@ export function Shop() {
   const focusCat = params.get('cat');
   const raw = params.get('section');
   const section: Section | null = isSection(raw) ? raw : focusCat ? 'cats' : null;
-  const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+  const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string; needsAccount?: boolean } | null>(null);
   const [trying, setTrying] = useState<ShopItem | null>(null);
   const shop = useQuery({ queryKey: ['shop'], queryFn: () => api<ShopResponse>('/shop') });
 
@@ -111,16 +118,24 @@ export function Shop() {
   });
 
   const buyPack = useMutation({
-    mutationFn: (packId: string) => api<{ status: string; purr: number }>('/shop/checkout', { method: 'POST', body: { packId } }),
+    mutationFn: (packId: string) =>
+      api<{ status: 'credited'; purr: number } | { status: 'redirect'; url: string }>('/shop/checkout', { method: 'POST', body: { packId } }),
     onSuccess: res => {
+      // Stripe: off to its checkout page; we credit when the buyer comes back paid.
+      if (res.status === 'redirect') return goToCheckout(res.url);
       setMessage({ kind: 'ok', text: t('Done! You now have {n} PURR.', { n: res.purr }) });
       refresh();
     },
-    onError: e =>
+    onError: e => {
+      if (e instanceof ApiError && e.code === 'ACCOUNT_REQUIRED') {
+        setMessage({ kind: 'err', text: t('Create an account first, so what you buy is safe.'), needsAccount: true });
+        return;
+      }
       setMessage({
         kind: 'err',
         text: e instanceof ApiError && e.code === 'PAYMENTS_UNAVAILABLE' ? t('Buying PURR is coming soon.') : t('Purchase failed.'),
-      }),
+      });
+    },
   });
 
   if (shop.isLoading) return <main><p className="muted">{t('opening the shop…')}</p></main>;
@@ -133,7 +148,7 @@ export function Shop() {
       <span className="purr-balance"><AppIcon name="purr" size={28} /> {purr}</span>
       <span className="muted">{t('PURR')}</span>
       {purrStaked > 0 && <span className="muted" style={{ fontSize: 12.5 }}>{t('({n} in open pacts)', { n: purrStaked })}</span>}
-      {section !== 'purr' && (
+      {section !== 'purr' && canBuyHere() && (
         <button type="button" className="chip chip-purr" onClick={() => open('purr')}>
           + {t('Get PURR')}
         </button>
@@ -144,6 +159,12 @@ export function Shop() {
   const status = message && (
     <p role="status" className={message.kind === 'err' ? 'form-error' : 'muted'} style={{ fontWeight: 600 }}>
       {message.text}
+      {message.needsAccount && (
+        <>
+          {' '}
+          <Link to="/login">{t('Create account / Sign in')}</Link>
+        </>
+      )}
     </p>
   );
 
@@ -161,7 +182,7 @@ export function Shop() {
         {balance}
         <Tour id="shop" steps={shopTour()} />
         <nav className="shop-menu" aria-label={t('Shop sections')}>
-          {SECTION_ORDER.map(s => (
+          {visibleSections().map(s => (
             <button
               key={s}
               type="button"
@@ -242,6 +263,8 @@ export function Shop() {
         {header}
         {paymentsMode === 'disabled' && <p className="muted">{t('Buying PURR is coming soon.')}</p>}
         {paymentsMode === 'sandbox' && <p className="muted">{t('Test mode: purchases are free and nothing is charged.')}</p>}
+        {paymentsMode === 'stripe' && shop.data.paymentsTest && <TestCardNote />}
+        {paymentsMode === 'stripe' && <p className="muted" style={{ fontSize: 13 }}>{t('Secure checkout by Stripe. Prices in US dollars.')}</p>}
         <div className="shop-grid">
           {packs.map(pack => (
             <div key={pack.id} className="shop-cat">

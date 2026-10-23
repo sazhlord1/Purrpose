@@ -89,6 +89,7 @@ export async function mergeGuestInto(tx: Tx, guestId: string, targetId: string):
   await tx.purrTransaction.updateMany(move);
   await tx.pushSubscription.updateMany(move);
   await tx.appEvent.updateMany(move);
+  await tx.payment.updateMany(move);
 
   // ── Owned cats and items: union (the account may already own some).
   const cats = unlocksPaidFor ? await tx.catUnlock.findMany({ where: { userId: guestId } }) : [];

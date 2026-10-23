@@ -11,6 +11,7 @@ import { Impact } from './pages/Impact.js';
 import { SessionProvider, useSession } from './lib/session.js';
 import { Onboarding } from './components/Onboarding.js';
 import { WelcomeGift } from './components/WelcomeGift.js';
+import { CheckoutReturn } from './components/CheckoutReturn.js';
 import { DevDrawer } from './components/DevDrawer.js';
 import { AdminOnly } from './components/AdminOnly.js';
 import { registerServiceWorker, useNotificationScheduler } from './lib/notifications.js';
@@ -58,6 +59,7 @@ function Shell() {
     <>
       {!onboarded && !isWitnessLink && <Onboarding onDone={() => setOnboarded(true)} />}
       {ready && onboarded && !isWitnessLink && <WelcomeGift />}
+      {ready && <CheckoutReturn />}
       {ready ? (
         <>
           <MotionConfig reducedMotion="user">

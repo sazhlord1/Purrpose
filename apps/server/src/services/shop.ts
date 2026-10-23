@@ -16,6 +16,7 @@ import {
   type ItemId,
   type ItemSlot,
   type Loadout,
+  FOOD_PRICES,
   type PaymentsMode,
 } from '@purrpose/shared';
 import type { Role } from '../auth.js';
@@ -60,7 +61,14 @@ export async function userLoadout(db: Db, userId: string, role: Role | undefined
   return clean;
 }
 
-export async function shopView(prisma: PrismaClient, userId: string, role: Role | undefined, paymentsMode: PaymentsMode) {
+export async function shopView(
+  prisma: PrismaClient,
+  userId: string,
+  role: Role | undefined,
+  paymentsMode: PaymentsMode,
+  /** Stripe with a test key: nothing is really charged (the app says so). */
+  paymentsTest = false,
+) {
   const [user, owned, items, loadout, purrStaked] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { purrBalance: true } }),
     unlockedCatIds(prisma, userId, role),
@@ -74,7 +82,9 @@ export async function shopView(prisma: PrismaClient, userId: string, role: Role 
     purr: user?.purrBalance ?? 0,
     purrStaked,
     paymentsMode,
+    paymentsTest,
     packs: PURR_PACKS,
+    foodPrices: FOOD_PRICES,
     loadout,
     items: SHOP_ITEMS.map(i => ({ ...i, owned: ownedItems.has(i.id) })),
     cats: CAT_SEED.map(c => ({

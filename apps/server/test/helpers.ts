@@ -3,6 +3,7 @@ import { resetRateLimits } from '../src/ratelimit.js';
 
 /** Wipes every table (children first) and resets in-memory rate limits. */
 export async function wipeDatabase(prisma: PrismaClient): Promise<void> {
+  await prisma.payment.deleteMany({});
   await prisma.notificationLog.deleteMany({});
   await prisma.pushSubscription.deleteMany({});
   await prisma.focusSession.deleteMany({});

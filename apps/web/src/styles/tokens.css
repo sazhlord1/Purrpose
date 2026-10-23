@@ -1816,3 +1816,23 @@ html[lang='fa'] .tour-body { line-height: 1.75; }
 /* ── Admin: proof review queue ── */
 .admin-reviews { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
 .admin-review { border-bottom: 1.5px dashed rgba(43, 35, 31, 0.3); padding-bottom: 12px; }
+
+/* ── Back from Stripe Checkout ── */
+.checkout-toast {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  width: min(440px, calc(100% - 32px));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--paper-raised);
+  border: 2.5px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  font-weight: 600;
+}

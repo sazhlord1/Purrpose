@@ -28,8 +28,17 @@ const envSchema = z.object({
   /** OAuth client id for "Sign in with Google" (public; the web app uses the same one). */
   GOOGLE_CLIENT_ID: opt(z.string()).transform(v => v ?? DEFAULT_GOOGLE_CLIENT_ID),
 
-  /** PURR purchases: 'disabled' (default), 'sandbox' (free test credits), 'live' (provider). */
-  PAYMENTS_MODE: z.enum(['disabled', 'sandbox', 'live']).default('disabled'),
+  /**
+   * Purchases (PURR packs and pantry food): 'disabled' (default), 'sandbox' (free test
+   * credits, never in production) or 'stripe' (Stripe Checkout; 'live' means the same).
+   * Whether Stripe charges real money depends only on the key: sk_test_… or sk_live_….
+   */
+  PAYMENTS_MODE: z.enum(['disabled', 'sandbox', 'stripe', 'live']).default('disabled'),
+  /** Stripe secret key (sk_test_… / sk_live_… or a restricted rk_…). Never commit it. */
+  STRIPE_SECRET_KEY: opt(z.string().regex(/^(sk|rk)_(test|live)_[A-Za-z0-9]+$/, 'Not a Stripe secret key')),
+  /** Signing secret of the Stripe webhook endpoint (whsec_…). Optional: without it,
+   * purchases are settled when the buyer returns from Checkout. */
+  STRIPE_WEBHOOK_SECRET: opt(z.string().startsWith('whsec_')),
   /**
    * Also give new players the old free starter food (10 meals, 2 dry food, 1 vet care).
    * Off by default: new players get welcome PURR only, and food is bought. Tests turn it on.
@@ -54,6 +63,13 @@ export function getEnv(): Env {
 /** Test helper: forget the cached env so a test can change process.env. */
 export function resetEnvCache(): void {
   cached = undefined;
+}
+
+/** What the app can actually do: 'stripe' needs a key, otherwise nothing can be bought. */
+export function paymentsMode(env: Env): 'disabled' | 'sandbox' | 'stripe' {
+  if (env.PAYMENTS_MODE === 'sandbox') return 'sandbox';
+  if ((env.PAYMENTS_MODE === 'stripe' || env.PAYMENTS_MODE === 'live') && env.STRIPE_SECRET_KEY) return 'stripe';
+  return 'disabled';
 }
 
 export function allowedOrigins(env: Env): string[] {

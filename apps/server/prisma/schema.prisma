@@ -298,3 +298,25 @@ model HabitSlip {
 
   @@index([habitId])
 }
+
+/// A Stripe Checkout purchase (PURR pack or pantry food). Settled exactly once:
+/// status goes pending → paid in the same transaction that credits the buyer.
+model Payment {
+  /// The Stripe Checkout Session id (cs_test_… / cs_live_…).
+  id          String    @id
+  userId      String
+  /// 'purr' (a PURR pack) | 'food' (pantry credits)
+  kind        String
+  /// Pack id (purr_150) or credit type (MEALS / DRY_FOOD / VET_CARE).
+  item        String
+  quantity    Int
+  amountCents Int
+  currency    String
+  /// 'pending' | 'paid'
+  status      String    @default("pending")
+  livemode    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  paidAt      DateTime?
+
+  @@index([userId, createdAt])
+}
