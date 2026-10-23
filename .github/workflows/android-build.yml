@@ -10,6 +10,10 @@ on:
         description: Publish it as a GitHub Release (download link)
         type: boolean
         default: false
+  # Lets a build be started through the API too: event_type "android-build",
+  # client_payload {"release": true} to publish it.
+  repository_dispatch:
+    types: [android-build]
 
 permissions:
   contents: write
@@ -97,7 +101,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publish a GitHub Release
-        if: ${{ inputs.release }}
+        if: ${{ inputs.release || github.event.client_payload.release }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
