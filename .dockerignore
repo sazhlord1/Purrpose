@@ -1,0 +1,15 @@
+.git
+.github
+**/node_modules
+**/dist
+**/coverage
+apps/mobile/android
+apps/web/public
+docs
+infra
+scripts
+playwright-report
+test-results
+*.log
+.env
+.env.*

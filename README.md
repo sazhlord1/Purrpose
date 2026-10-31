@@ -131,3 +131,10 @@ node scripts/responsive-sweep.mjs   # overflow check + screenshots at 4 breakpoi
 node scripts/chaos-check.mjs        # kill DB mid-settle → clean recovery, exactly-once
 node scripts/capture-living.mjs     # living-scene screenshots
 ```
+
+
+## Iranian edition on Liara
+
+The API server also runs on Liara (Docker): `Dockerfile` + `liara.json` at the repo root build only `packages/shared` and `apps/server` (Node 22, pnpm). The container runs `prisma migrate deploy` on start, so a fresh Liara PostgreSQL gets the full schema automatically. Builds run in Liara's Germany location so npm, Docker and Prisma downloads aren't blocked.
+
+Server variables on Liara: `DATABASE_URL` (the Liara PostgreSQL URL on the private network), `NODE_ENV=production`, `WEB_ORIGIN` (the Liara web address, plus `https://app.purrpose.space` for the Android app), `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `PAYMENTS_MODE=disabled` (no Stripe in Iran; Cafe Bazaar billing comes later).
