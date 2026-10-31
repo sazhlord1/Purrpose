@@ -1,6 +1,8 @@
 # Builds the signed Android APK (apps/mobile). Run it from the Actions tab.
 # Needs repository secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
 # ANDROID_KEY_ALIAS and the repository variable VITE_API_URL (the API address).
+# Edition "ir" builds the Iranian app instead: Persian only, no Stripe, no Google, and it
+# talks to the Liara server (variable VITE_API_URL_IR, default https://purrpose.liara.run).
 name: Android build
 
 on:
@@ -10,8 +12,13 @@ on:
         description: Publish it as a GitHub Release (download link)
         type: boolean
         default: false
+      edition:
+        description: "Which app: global (English + Persian) or ir (Iranian edition on Liara)"
+        type: choice
+        options: [global, ir]
+        default: global
   # Lets a build be started through the API too: event_type "android-build",
-  # client_payload {"release": true} to publish it.
+  # client_payload {"release": true, "edition": "ir"}.
   repository_dispatch:
     types: [android-build]
 
@@ -26,7 +33,9 @@ jobs:
     timeout-minutes: 40
     env:
       VERSION_CODE: ${{ github.run_number }}
-      VERSION_NAME: 0.1.${{ github.run_number }}
+      EDITION: ${{ inputs.edition || github.event.client_payload.edition || 'global' }}
+      VERSION_NAME: 0.1.${{ github.run_number }}${{ (inputs.edition || github.event.client_payload.edition) == 'ir' && '-ir' || '' }}
+      API_URL: ${{ (inputs.edition || github.event.client_payload.edition) == 'ir' && (vars.VITE_API_URL_IR || 'https://purrpose.liara.run') || vars.VITE_API_URL }}
     steps:
       - uses: actions/checkout@v4
 
@@ -35,14 +44,13 @@ jobs:
           KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          API: ${{ vars.VITE_API_URL }}
         run: |
           missing=0
           [ -f apps/mobile/android/gradlew ] || { echo "::error::Run the 'Android bootstrap' workflow first."; missing=1; }
           [ -n "$KS" ] || { echo "::error::Secret ANDROID_KEYSTORE_BASE64 is missing."; missing=1; }
           [ -n "$KS_PASS" ] || { echo "::error::Secret ANDROID_KEYSTORE_PASSWORD is missing."; missing=1; }
           [ -n "$KS_ALIAS" ] || { echo "::error::Secret ANDROID_KEY_ALIAS is missing."; missing=1; }
-          [ -n "$API" ] || { echo "::error::Variable VITE_API_URL is missing (Settings → Secrets and variables → Actions → Variables)."; missing=1; }
+          [ -n "$API_URL" ] || { echo "::error::Variable VITE_API_URL is missing (Settings → Secrets and variables → Actions → Variables)."; missing=1; }
           exit $missing
 
       - uses: pnpm/action-setup@v4
@@ -61,9 +69,12 @@ jobs:
 
       - name: Build the web app
         env:
-          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_API_URL: ${{ env.API_URL }}
+          VITE_EDITION: ${{ env.EDITION }}
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
-        run: pnpm --filter @purrpose/web build
+        run: |
+          echo "Edition: $EDITION — API: $VITE_API_URL"
+          pnpm --filter @purrpose/web build
 
       - name: Copy it into the Android project
         working-directory: apps/mobile
@@ -105,7 +116,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          if [ "$EDITION" = ir ]; then TITLE="پرپوز (نسخه‌ی ایران) $VERSION_NAME"; else TITLE="Purrpose for Android $VERSION_NAME"; fi
           gh release create "android-v$VERSION_NAME" "$APK" \
-            --title "Purrpose for Android $VERSION_NAME" \
-            --notes "Purrpose Android app, build $VERSION_CODE." \
+            --title "$TITLE" \
+            --notes "Purrpose Android app ($EDITION edition, API $API_URL), build $VERSION_CODE." \
             --target "$GITHUB_SHA"

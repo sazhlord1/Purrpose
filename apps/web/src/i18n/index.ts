@@ -1,5 +1,6 @@
 import { getLocale, localDigits, localizeCats, registerTranslations, setLocale, t as t2, type Locale } from '@purrpose/shared';
 import { FA } from './fa/index.js';
+import { IS_IR_EDITION } from '../lib/edition.js';
 
 export { t, num, getLocale, type Locale } from '@purrpose/shared';
 
@@ -25,7 +26,8 @@ function defaultLocale(): Locale {
  * swaps the cats' names/lines, and sets <html lang/dir> for RTL.
  */
 export function initLocale(): Locale {
-  const locale = savedLocale() ?? defaultLocale();
+  // The Iranian edition is Persian only.
+  const locale: Locale = IS_IR_EDITION ? 'fa' : (savedLocale() ?? defaultLocale());
   setLocale(locale);
   registerTranslations('fa', FA);
   localizeCats(locale);

@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { DoodleButton, SketchCard } from '../components/ui/index.js';
 import { ApiError } from '../lib/api.js';
 import { GoogleButton } from '../components/GoogleButton.js';
+import { IS_IR_EDITION } from '../lib/edition.js';
 import { createAccount, signIn, signInWithGoogle } from '../lib/auth.js';
 import { useMe } from '../lib/queries.js';
 import { backArrow, t } from '../i18n/index.js';
@@ -90,7 +91,7 @@ export function Login() {
 
       <SketchCard variant="a">
         {/* Google blocks its web sign-in inside app WebViews; the app gets native sign-in later. */}
-        {!isNativeApp() && (
+        {!isNativeApp() && !IS_IR_EDITION && (
           <>
             <GoogleButton onToken={onGoogle} disabled={busy} />
             <div className="auth-divider" role="separator">

@@ -21,6 +21,7 @@ import { registerShopRoutes } from './routes/shop.js';
 import { registerPaymentRoutes, registerStripeWebhook } from './routes/payments.js';
 import { registerWalletRoutes } from './routes/wallet.js';
 import { makeCommitmentEngine } from './services/commitments.js';
+import { makeWebHandler, WEB_CSP, webReplies } from './web.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const env = getEnv();
@@ -46,13 +47,20 @@ export async function buildApp(): Promise<FastifyInstance> {
   }
 
   // Security headers for every API response (an API never needs to be framed or sniffed).
+  // Pages and files of the web app (when this server hosts it) get web-page headers instead.
   app.addHook('onSend', async (_request, reply, payload) => {
     reply.header('X-Content-Type-Options', 'nosniff');
     reply.header('X-Frame-Options', 'DENY');
-    reply.header('Referrer-Policy', 'no-referrer');
-    reply.header('Cross-Origin-Opener-Policy', 'same-origin');
-    reply.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
-    reply.header('Cache-Control', 'no-store');
+    if (webReplies.has(reply)) {
+      reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+      reply.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+      reply.header('Content-Security-Policy', WEB_CSP);
+    } else {
+      reply.header('Referrer-Policy', 'no-referrer');
+      reply.header('Cross-Origin-Opener-Policy', 'same-origin');
+      reply.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
+      reply.header('Cache-Control', 'no-store');
+    }
     if (isProd) reply.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     return payload;
   });
@@ -79,11 +87,14 @@ export async function buildApp(): Promise<FastifyInstance> {
     return reply.code(500).send({ error: { code: 'INTERNAL', message: 'Internal server error' } });
   });
 
-  app.setNotFoundHandler((_request, reply) =>
-    reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Not found' } }),
-  );
+  // With WEB_DIST set, everything outside /api that isn't an API route is the web app.
+  const serveWeb = env.WEB_DIST ? makeWebHandler(env.WEB_DIST) : null;
+  app.setNotFoundHandler(async (request, reply) => {
+    if (serveWeb && (await serveWeb(request, reply))) return reply;
+    return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Not found' } });
+  });
 
-  app.get('/', async () => ({ ok: true, name: 'purrpose-api' }));
+  if (!serveWeb) app.get('/', async () => ({ ok: true, name: 'purrpose-api' }));
   app.get('/healthz', async () => ({ ok: true, serverTime: clock.now() }));
   app.get('/api/v1/healthz', async () => ({ ok: true, serverTime: clock.now() }));
 

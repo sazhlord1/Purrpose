@@ -1,12 +1,32 @@
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export default defineConfig({
-  plugins: [react()],
+/**
+ * The Iranian edition (VITE_EDITION=ir) must not depend on anything outside Iran:
+ * drop the Google Fonts stylesheet (Persian uses the bundled Anjoman font) and start
+ * the page in Persian, right to left.
+ */
+function iranianEdition(isIr: boolean): Plugin {
+  return {
+    name: 'purrpose-iranian-edition',
+    transformIndexHtml(html) {
+      if (!isIr) return html;
+      return html
+        .replace(/\s*<link rel="preconnect" href="https:\/\/fonts\.(googleapis|gstatic)\.com"[^>]*\/>/g, '')
+        .replace(/\s*<link\s+href="https:\/\/fonts\.googleapis\.com[^"]*"\s+rel="stylesheet"\s*\/>/g, '')
+        .replace('<html lang="en">', '<html lang="fa" dir="rtl">')
+        .replace('<title>Purrpose</title>', '<title>پرپوز</title>')
+        .replace('content="Purrpose" />', 'content="پرپوز" />');
+    },
+  };
+}
+
+export default defineConfig(({ mode }) => ({
+  plugins: [react(), iranianEdition((process.env.VITE_EDITION ?? loadEnv(mode, process.cwd(), 'VITE_').VITE_EDITION ?? '').trim().toLowerCase() === 'ir')],
   resolve: {
     alias: {
       '@purrpose/shared': path.resolve(__dirname, '../../packages/shared/src/index.ts'),
@@ -31,4 +51,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

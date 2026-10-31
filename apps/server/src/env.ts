@@ -21,6 +21,12 @@ const envSchema = z.object({
   /** Trust X-Forwarded-For from the platform proxy (Render, Fly, etc.). */
   TRUST_PROXY: bool,
 
+  /**
+   * Folder with the built web app (apps/web/dist). When set, this server also serves the
+   * website on the same address (the Iranian edition on Liara: one app, no CORS).
+   */
+  WEB_DIST: opt(z.string()),
+
   /** Admin account bootstrap. The password is hashed on startup, never stored raw. */
   ADMIN_EMAIL: opt(z.string().email()),
   ADMIN_PASSWORD: opt(z.string().min(8)),
@@ -33,7 +39,10 @@ const envSchema = z.object({
    * credits, never in production) or 'stripe' (Stripe Checkout; 'live' means the same).
    * Whether Stripe charges real money depends only on the key: sk_test_… or sk_live_….
    */
-  PAYMENTS_MODE: z.enum(['disabled', 'sandbox', 'stripe', 'live']).default('disabled'),
+  PAYMENTS_MODE: z.preprocess(
+    v => (typeof v === 'string' ? v.trim().toLowerCase() || undefined : v),
+    z.enum(['disabled', 'sandbox', 'stripe', 'live']).default('disabled'),
+  ),
   /** Stripe secret key (sk_test_… / sk_live_… or a restricted rk_…). Never commit it. */
   STRIPE_SECRET_KEY: opt(z.string().regex(/^(sk|rk)_(test|live)_[A-Za-z0-9]+$/, 'Not a Stripe secret key')),
   /** Signing secret of the Stripe webhook endpoint (whsec_…). Optional: without it,

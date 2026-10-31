@@ -4,6 +4,7 @@ import { BackLink } from '../components/BackLink.js';
 import { DoodleButton, SketchCard } from '../components/ui/index.js';
 import { fmtDateTime, fwdArrow, getLocale, setAppLanguage, t, type Locale } from '../i18n/index.js';
 import { signOut } from '../lib/auth.js';
+import { IS_IR_EDITION } from '../lib/edition.js';
 import { currentPushState, disablePush, enablePush, refreshPushLocale, type PushState } from '../lib/notifications.js';
 import { useMe } from '../lib/queries.js';
 import { isNativeApp } from '../lib/platform.js';
@@ -55,29 +56,32 @@ export function Settings() {
       <BackLink />
       <h1>{t('Settings')}</h1>
 
-      <SketchCard variant="a">
-        <h2>{t('Language')}</h2>
-        <div className="chip-row" role="radiogroup" aria-label={t('Language')} style={{ margin: 0 }}>
-          {LANGS.map(l => (
-            <button
-              key={l.id}
-              type="button"
-              role="radio"
-              aria-checked={locale === l.id}
-              lang={l.id}
-              className={`chip ${locale === l.id ? 'chip-active' : ''}`}
-              onClick={() => {
-                if (l.id !== locale) setAppLanguage(l.id, refreshPushLocale);
-              }}
-            >
-              {l.label}
-            </button>
-          ))}
-        </div>
-        <p className="muted" style={{ margin: '8px 0 0', fontSize: 13 }}>
-          {t('The app reloads in the language you pick.')}
-        </p>
-      </SketchCard>
+      {/* The Iranian edition is Persian only. */}
+      {!IS_IR_EDITION && (
+        <SketchCard variant="a">
+          <h2>{t('Language')}</h2>
+          <div className="chip-row" role="radiogroup" aria-label={t('Language')} style={{ margin: 0 }}>
+            {LANGS.map(l => (
+              <button
+                key={l.id}
+                type="button"
+                role="radio"
+                aria-checked={locale === l.id}
+                lang={l.id}
+                className={`chip ${locale === l.id ? 'chip-active' : ''}`}
+                onClick={() => {
+                  if (l.id !== locale) setAppLanguage(l.id, refreshPushLocale);
+                }}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+          <p className="muted" style={{ margin: '8px 0 0', fontSize: 13 }}>
+            {t('The app reloads in the language you pick.')}
+          </p>
+        </SketchCard>
+      )}
 
       <SketchCard variant="a">
         <h2>{t('Account')}</h2>
