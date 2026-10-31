@@ -4,7 +4,7 @@
 
 # ---- Stage 1: the website (runs in parallel with stage 2) ----
 FROM node:22-bookworm-slim AS web
-RUN corepack enable && corepack prepare pnpm@10 --activate
+RUN npm install -g pnpm@10 --no-fund --no-audit || (sleep 5 && npm install -g pnpm@10 --no-fund --no-audit)
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages/shared/package.json packages/shared/
@@ -23,7 +23,7 @@ RUN cd apps/web && pnpm exec vite build
 # ---- Stage 2: the API server ----
 FROM node:22-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
-RUN corepack enable && corepack prepare pnpm@10 --activate
+RUN npm install -g pnpm@10 --no-fund --no-audit || (sleep 5 && npm install -g pnpm@10 --no-fund --no-audit)
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages/shared/package.json packages/shared/
