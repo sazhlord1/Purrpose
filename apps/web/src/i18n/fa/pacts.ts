@@ -133,13 +133,13 @@ export const PACTS: Record<string, string> = {
   '“{title}”': '«{title}»',
   'My {amount} are safe.': '{amount} مال خودم موند.',
   'My {amount} will feed a cat.': 'با {amount} من یه گربه سیر میشه.',
-  purrpose: 'پرپوز',
+  purrpose: 'پرپس',
 
   // onboarding
-  'Welcome to Purrpose': 'به پرپوز خوش اومدی',
+  'Welcome to Purrpose': 'به پرپس خوش اومدی',
   skip: 'رد کن',
   'Panel {n} of {total}': 'صفحه‌ی {n} از {total}',
-  'Meet Purrpose.': 'با پرپوز آشنا شو.',
+  'Meet Purrpose.': 'با پرپس آشنا شو.',
   'Get things done.': 'کارهاتو انجام بده.',
   'If you don’t…': 'اگه انجامش ندی…',
   '(it happens to everyone)': '(برای همه پیش میاد)',

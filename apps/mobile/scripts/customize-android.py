@@ -1,7 +1,7 @@
 """Small, repeatable tweaks to the generated Capacitor Android project.
 
 Run from apps/mobile after `cap add android` (the bootstrap workflow does this):
-- the launcher name is "Purrpose" in English and «پرپوز» on Persian phones;
+- the launcher name is "Purrpose" in English and «پرپس» on Persian phones;
 - versionCode / versionName come from the build (VERSION_CODE / VERSION_NAME env),
   so every CI build installs as an update of the previous one.
 """
@@ -15,8 +15,8 @@ fa.mkdir(parents=True, exist_ok=True)
 (fa / 'strings.xml').write_text(
     '<?xml version="1.0" encoding="utf-8"?>\n'
     '<resources>\n'
-    '    <string name="app_name">پرپوز</string>\n'
-    '    <string name="title_activity_main">پرپوز</string>\n'
+    '    <string name="app_name">پرپس</string>\n'
+    '    <string name="title_activity_main">پرپس</string>\n'
     '</resources>\n',
     encoding='utf-8',
 )

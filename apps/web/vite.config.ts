@@ -19,8 +19,8 @@ function iranianEdition(isIr: boolean): Plugin {
         .replace(/\s*<link rel="preconnect" href="https:\/\/fonts\.(googleapis|gstatic)\.com"[^>]*\/>/g, '')
         .replace(/\s*<link\s+href="https:\/\/fonts\.googleapis\.com[^"]*"\s+rel="stylesheet"\s*\/>/g, '')
         .replace('<html lang="en">', '<html lang="fa" dir="rtl">')
-        .replace('<title>Purrpose</title>', '<title>پرپوز</title>')
-        .replace('content="Purrpose" />', 'content="پرپوز" />');
+        .replace('<title>Purrpose</title>', '<title>پرپس</title>')
+        .replace('content="Purrpose" />', 'content="پرپس" />');
     },
   };
 }

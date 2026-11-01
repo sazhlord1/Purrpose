@@ -7,7 +7,7 @@ export const TOUR: Record<string, string> = {
   'Pantry is real cat food you can put on the line in strict pacts. PURR is the app’s coin: you stake it in “on my word” pacts, and spend it on new cats and toys. You start with {n} PURR.':
     'انبار یعنی غذای واقعی گربه که توی قرارهای سفت و سخت گرو می‌ذاری. میو سکه‌ی خود اپه: توی قرارهای مرامی گروش می‌ذاری و باهاش گربه و اسباب‌بازی جدید می‌خری. با {n} میو شروع می‌کنی.',
   'The heart of Purrpose. Pick a task and a deadline, put something on the line, and a cat waits with you — getting hungrier as the deadline gets close.':
-    'قلب پرپوز. یه کار و یه ددلاین انتخاب کن، یه چیزی گرو بذار، و یه گربه کنارت منتظر می‌مونه — هر چی ددلاین نزدیک‌تر بشه گشنه‌تر می‌شه.',
+    'قلب پرپس. یه کار و یه ددلاین انتخاب کن، یه چیزی گرو بذار، و یه گربه کنارت منتظر می‌مونه — هر چی ددلاین نزدیک‌تر بشه گشنه‌تر می‌شه.',
   'A quiet room for deep work: start the timer and your cat curls up beside you. Press and hold any room to read what it’s for.':
     'یه اتاق آروم برای تمرکز: تایمر رو بزن، گربه‌ت کنارت جمع می‌شه. روی هر اتاق انگشتت رو نگه داری، می‌گه به چه دردی می‌خوره.',
   'For quitting a habit. You confess every slip to the detective, and each slip locks part of what you staked.':

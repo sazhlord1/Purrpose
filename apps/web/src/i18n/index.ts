@@ -34,7 +34,7 @@ export function initLocale(): Locale {
   if (typeof document !== 'undefined') {
     document.documentElement.lang = locale;
     document.documentElement.dir = locale === 'fa' ? 'rtl' : 'ltr';
-    document.title = locale === 'fa' ? 'پرپوز' : 'Purrpose';
+    document.title = locale === 'fa' ? 'پرپس' : 'Purrpose';
     if (locale === 'fa') startPersianDigits();
   }
   return locale;

@@ -3,7 +3,7 @@
  * the cats' homes, and the narration around the cats ("lines about cats").
  *
  * Glossary (keep these consistent everywhere):
- *   Purrpose → پرپوز · PURR → میو · commitment / pact → قرار · stake → گرو
+ *   Purrpose → پرپس · PURR → میو · commitment / pact → قرار · stake → گرو
  *   deadline → ددلاین · Pantry → انبار · Impact → کارنامه · Shop → مغازه
  *   Focus Room → اتاق تمرکز · Detective Cheat → کارآگاه چیت · slip / cheat → چیت
  *   case → پرونده · kept → انجامش دادی / سر قولت موندی · fed → گربه خورد
@@ -11,7 +11,7 @@
  */
 export const COMMON: Record<string, string> = {
   // brand + nav
-  Purrpose: 'پرپوز',
+  Purrpose: 'پرپس',
   PURR: 'میو',
   '{n} PURR': '{n} میو',
   Home: 'خانه',
@@ -99,11 +99,11 @@ export const COMMON: Record<string, string> = {
   'Create account / Sign in': 'ساخت حساب / ورود',
   Notifications: 'نوتیفیکیشن‌ها',
   'Deadline reminders': 'یادآوری ددلاین',
-  'On — reminders arrive even when Purrpose is closed.': 'روشنه — حتی وقتی پرپوز بسته‌ست یادآوری‌ها میرسن.',
+  'On — reminders arrive even when Purrpose is closed.': 'روشنه — حتی وقتی پرپس بسته‌ست یادآوری‌ها میرسن.',
   Off: 'خاموش',
   'Blocked in your browser settings.': 'تو تنظیمات مرورگرت بلاک شده.',
   'Not supported in this browser. On iPhone, add Purrpose to your Home Screen first.':
-    'این مرورگر پشتیبانی نمی‌کنه. رو آیفون اول پرپوز رو به صفحه‌ی اصلی (Home Screen) اضافه کن.',
+    'این مرورگر پشتیبانی نمی‌کنه. رو آیفون اول پرپس رو به صفحه‌ی اصلی (Home Screen) اضافه کن.',
   'Not available on this server yet.': 'فعلاً رو سرور فعال نیست.',
   'Turn off': 'خاموشش کن',
   'Turn on': 'روشنش کن',
