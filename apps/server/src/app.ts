@@ -21,7 +21,7 @@ import { registerShopRoutes } from './routes/shop.js';
 import { registerPaymentRoutes, registerStripeWebhook } from './routes/payments.js';
 import { registerWalletRoutes } from './routes/wallet.js';
 import { makeCommitmentEngine } from './services/commitments.js';
-import { makeWebHandler, WEB_CSP, webReplies } from './web.js';
+import { makeWebHandler, webReplies } from './web.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const env = getEnv();
@@ -51,10 +51,11 @@ export async function buildApp(): Promise<FastifyInstance> {
   app.addHook('onSend', async (_request, reply, payload) => {
     reply.header('X-Content-Type-Options', 'nosniff');
     reply.header('X-Frame-Options', 'DENY');
-    if (webReplies.has(reply)) {
+    const webCsp = webReplies.get(reply);
+    if (webCsp) {
       reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
       reply.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-      reply.header('Content-Security-Policy', WEB_CSP);
+      reply.header('Content-Security-Policy', webCsp);
     } else {
       reply.header('Referrer-Policy', 'no-referrer');
       reply.header('Cross-Origin-Opener-Policy', 'same-origin');
@@ -88,7 +89,8 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
 
   // With WEB_DIST set, everything outside /api that isn't an API route is the web app.
-  const serveWeb = env.WEB_DIST ? makeWebHandler(env.WEB_DIST) : null;
+  const landing = env.LANDING_DIST ? { dir: env.LANDING_DIST, hosts: (env.LANDING_HOSTS ?? '').split(',') } : undefined;
+  const serveWeb = env.WEB_DIST ? makeWebHandler(env.WEB_DIST, landing) : null;
   app.setNotFoundHandler(async (request, reply) => {
     if (serveWeb && (await serveWeb(request, reply))) return reply;
     return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Not found' } });

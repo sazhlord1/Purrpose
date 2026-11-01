@@ -38,6 +38,8 @@ RUN pnpm --filter @purrpose/shared build \
  && pnpm --filter @purrpose/server exec prisma generate \
  && pnpm --filter @purrpose/server exec tsc -p tsconfig.json
 COPY --from=web /app/apps/web/dist /app/web
-ENV NODE_ENV=production PORT=3000 HOST=0.0.0.0 WEB_DIST=/app/web PRISMA_HIDE_UPDATE_MESSAGE=1 NPM_CONFIG_UPDATE_NOTIFIER=false
+# Landing page for purrpose.ir / www.purrpose.ir (static, made by scripts/sync-landing-ir.mjs).
+COPY apps/landing-ir /app/landing
+ENV NODE_ENV=production PORT=3000 HOST=0.0.0.0 WEB_DIST=/app/web LANDING_DIST=/app/landing PRISMA_HIDE_UPDATE_MESSAGE=1 NPM_CONFIG_UPDATE_NOTIFIER=false
 EXPOSE 3000
 CMD ["sh", "-c", "cd apps/server && npx prisma migrate deploy && node dist/index.js"]

@@ -39,8 +39,14 @@ export const WEB_CSP =
   "img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; " +
   "manifest-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'";
 
-/** Requests answered with a web page/file rather than the API (they get web headers). */
-export const webReplies = new WeakSet<FastifyReply>();
+/**
+ * The landing page is a single static file with inline scripts (no build step), so it
+ * needs 'unsafe-inline' for scripts. It has no sign-in and no user data.
+ */
+export const LANDING_CSP = WEB_CSP.replace("script-src 'self'", "script-src 'self' 'unsafe-inline'");
+
+/** Replies that are a web page/file rather than the API, with the CSP each one gets. */
+export const webReplies = new WeakMap<FastifyReply, string>();
 
 export function isApiPath(url: string): boolean {
   const p = url.split('?')[0] ?? '';
@@ -65,15 +71,30 @@ async function fileAt(root: string, urlPath: string): Promise<string | null> {
   }
 }
 
-export function makeWebHandler(distDir: string) {
-  const root = path.resolve(distDir);
-  let indexHtml: Buffer | null = null;
+interface Site {
+  root: string;
+  csp: string;
+  index: Buffer | null;
+}
+
+/**
+ * `distDir` is the app. With a landing folder, requests for one of `landingHosts`
+ * (e.g. purrpose.ir, www.purrpose.ir) get the landing page instead; every other
+ * address (app.purrpose.ir, purrpose.liara.run) gets the app.
+ */
+export function makeWebHandler(distDir: string, landing?: { dir: string; hosts: string[] }) {
+  const app: Site = { root: path.resolve(distDir), csp: WEB_CSP, index: null };
+  const land: Site | null = landing ? { root: path.resolve(landing.dir), csp: LANDING_CSP, index: null } : null;
+  const landingHosts = new Set((landing?.hosts ?? []).map(h => h.trim().toLowerCase()).filter(Boolean));
 
   return async function serveWeb(request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
     if ((request.method !== 'GET' && request.method !== 'HEAD') || isApiPath(request.url)) return false;
 
+    const host = (request.hostname ?? '').toLowerCase().replace(/:\d+$/, '');
+    const site = land && landingHosts.has(host) ? land : app;
+    const root = site.root;
     const file = await fileAt(root, request.url);
-    webReplies.add(reply);
+    webReplies.set(reply, site.csp);
     if (file) {
       const ext = path.extname(file).toLowerCase();
       reply.header('Content-Type', TYPES[ext] ?? 'application/octet-stream');
@@ -93,10 +114,10 @@ export function makeWebHandler(distDir: string) {
       return true;
     }
 
-    indexHtml ??= await readFile(path.join(root, 'index.html'));
+    site.index ??= await readFile(path.join(root, 'index.html'));
     reply.header('Content-Type', TYPES['.html']);
     reply.header('Cache-Control', 'no-cache');
-    await reply.code(200).send(indexHtml);
+    await reply.code(200).send(site.index);
     return true;
   };
 }

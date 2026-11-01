@@ -26,6 +26,9 @@ const envSchema = z.object({
    * website on the same address (the Iranian edition on Liara: one app, no CORS).
    */
   WEB_DIST: opt(z.string()),
+  /** Static landing page (apps/landing-ir) and the addresses that show it instead of the app. */
+  LANDING_DIST: opt(z.string()),
+  LANDING_HOSTS: z.string().default('purrpose.ir,www.purrpose.ir'),
 
   /** Admin account bootstrap. The password is hashed on startup, never stored raw. */
   ADMIN_EMAIL: opt(z.string().email()),
