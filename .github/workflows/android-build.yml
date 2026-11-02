@@ -2,7 +2,7 @@
 # Needs repository secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
 # ANDROID_KEY_ALIAS and the repository variable VITE_API_URL (the API address).
 # Edition "ir" builds the Iranian app instead: Persian only, no Stripe, no Google, and it
-# talks to the Liara server (variable VITE_API_URL_IR, default https://purrpose.liara.run).
+# talks to the Liara server (variable VITE_API_URL_IR, default https://app.purrpose.ir).
 name: Android build
 
 on:
@@ -35,7 +35,7 @@ jobs:
       VERSION_CODE: ${{ github.run_number }}
       EDITION: ${{ inputs.edition || github.event.client_payload.edition || 'global' }}
       VERSION_NAME: 0.1.${{ github.run_number }}${{ (inputs.edition || github.event.client_payload.edition) == 'ir' && '-ir' || '' }}
-      API_URL: ${{ (inputs.edition || github.event.client_payload.edition) == 'ir' && (vars.VITE_API_URL_IR || 'https://purrpose.liara.run') || vars.VITE_API_URL }}
+      API_URL: ${{ (inputs.edition || github.event.client_payload.edition) == 'ir' && (vars.VITE_API_URL_IR || 'https://app.purrpose.ir') || vars.VITE_API_URL }}
     steps:
       - uses: actions/checkout@v4
 
