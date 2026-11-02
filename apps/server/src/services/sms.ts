@@ -9,11 +9,14 @@ import { AppError } from '../errors.js';
  *               (SMS_TEMPLATE = the template name; the code fills %token)
  *  - smsir:     POST https://api.sms.ir/v1/send/verify, header X-API-KEY
  *               (SMS_TEMPLATE = the numeric template id; the code fills #SMS_CODE_PARAM#)
+ *  - ippanel:   POST https://edge.ippanel.com/v1/api/send, header Authorization: <key>
+ *               (IPPanel and the panels built on it, e.g. Artapayamak; SMS_TEMPLATE = the
+ *               pattern code, SMS_FROM = your sender line, the code fills SMS_CODE_PARAM)
  *  - console:   development only: prints the code in the server log, sends nothing.
  *
  * The API key lives only in the server's environment (Liara), never in the repo.
  */
-export type SmsProvider = 'kavenegar' | 'smsir' | 'console';
+export type SmsProvider = 'kavenegar' | 'smsir' | 'ippanel' | 'console';
 
 export interface SmsSender {
   provider: SmsProvider;
@@ -71,6 +74,45 @@ export function makeSmsSender(env: Env, fetchImpl: FetchLike = fetch as unknown 
         try {
           const status = (JSON.parse(text) as { return?: { status?: number } }).return?.status;
           if (status !== 200) fail(provider, text);
+        } catch (err) {
+          if (err instanceof AppError) throw err;
+          fail(provider, text);
+        }
+      },
+    };
+  }
+
+  if (provider === 'ippanel') {
+    const from = env.SMS_FROM;
+    if (!from) return null;
+    // IPPanel wants numbers in international form: 09121234567 → +989121234567.
+    const e164 = (raw: string) => {
+      const n = raw.replace(/[\s-]/g, '');
+      if (n.startsWith('+')) return n;
+      if (n.startsWith('0098')) return `+${n.slice(2)}`;
+      if (n.startsWith('98') && n.length >= 12) return `+${n}`;
+      return `+98${n.startsWith('0') ? n.slice(1) : n}`; // 0912… or a line like 3000505
+    };
+    return {
+      provider,
+      async sendCode(phone, code) {
+        const res = await fetchImpl('https://edge.ippanel.com/v1/api/send', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', accept: 'application/json', authorization: key },
+          body: JSON.stringify({
+            sending_type: 'pattern',
+            from_number: e164(from),
+            code: template,
+            recipients: [e164(phone)],
+            params: { [env.SMS_CODE_PARAM]: code },
+          }),
+          signal: AbortSignal.timeout(TIMEOUT_MS),
+        }).catch(err => fail(provider, String(err)));
+        const text = await res.text().catch(() => '');
+        if (!res.ok) fail(provider, `HTTP ${res.status}: ${text}`);
+        // IPPanel answers {"meta":{"status":true,...}} on success.
+        try {
+          if ((JSON.parse(text) as { meta?: { status?: boolean } }).meta?.status !== true) fail(provider, text);
         } catch (err) {
           if (err instanceof AppError) throw err;
           fail(provider, text);

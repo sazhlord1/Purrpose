@@ -58,17 +58,19 @@ const envSchema = z.object({
   STARTER_FOOD: bool,
 
   /**
-   * Sign-in with a mobile number + SMS code (Iranian edition). Provider 'kavenegar' or
-   * 'smsir' (with SMS_API_KEY and SMS_TEMPLATE), or 'console' for local development
+   * Sign-in with a mobile number + SMS code (Iranian edition). Provider 'kavenegar', 'smsir'
+   * or 'ippanel' (with SMS_API_KEY and SMS_TEMPLATE), or 'console' for local development
    * (prints the code; refused in production). Unset = phone sign-in is off.
    */
-  SMS_PROVIDER: opt(z.string().transform(v => v.trim().toLowerCase()).pipe(z.enum(['kavenegar', 'smsir', 'console']))),
+  SMS_PROVIDER: opt(z.string().transform(v => v.trim().toLowerCase()).pipe(z.enum(['kavenegar', 'smsir', 'ippanel', 'console']))),
   /** The gateway's API key. Only in the hosting dashboard — never commit it. */
   SMS_API_KEY: opt(z.string()),
-  /** Kavenegar: the verify template's name. sms.ir: the numeric template id. */
+  /** Kavenegar: the verify template's name. sms.ir: the numeric template id. IPPanel: the pattern code. */
   SMS_TEMPLATE: opt(z.string()),
-  /** sms.ir only: the template's parameter name for the code (#CODE# → CODE). */
+  /** sms.ir / IPPanel: the template's variable name for the code (e.g. #CODE# → CODE, %code% → code). */
   SMS_CODE_PARAM: z.string().default('CODE'),
+  /** IPPanel only: the sender line the pattern is sent from (e.g. 3000505 or +983000505). */
+  SMS_FROM: opt(z.string()),
 
   /** Web push (VAPID). Generate with: pnpm --filter @purrpose/server vapid:generate */
   VAPID_PUBLIC_KEY: opt(z.string()),

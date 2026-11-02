@@ -38,6 +38,23 @@ describe('phone numbers', () => {
     expect(calls[1]!.init?.headers?.['x-api-key']).toBe('KEY');
     expect(JSON.parse(calls[1]!.init!.body!)).toEqual({ mobile: '09121234567', templateId: 123456, parameters: [{ name: 'CODE', value: '12345' }] });
 
+    const ipp = makeSmsSender(
+      { ...base, SMS_PROVIDER: 'ippanel', SMS_TEMPLATE: 'pat123', SMS_FROM: '3000505', SMS_CODE_PARAM: 'code' },
+      ok({ data: { message_outbox_ids: [1] }, meta: { status: true, message_code: '200-1' } }),
+    );
+    await ipp!.sendCode('09121234567', '12345');
+    expect(calls[2]!.url).toBe('https://edge.ippanel.com/v1/api/send');
+    expect(calls[2]!.init?.headers?.authorization).toBe('KEY');
+    expect(JSON.parse(calls[2]!.init!.body!)).toEqual({
+      sending_type: 'pattern',
+      from_number: '+983000505',
+      code: 'pat123',
+      recipients: ['+989121234567'],
+      params: { code: '12345' },
+    });
+    // No sender line, no IPPanel.
+    expect(makeSmsSender({ ...base, SMS_PROVIDER: 'ippanel', SMS_TEMPLATE: 'pat123', SMS_FROM: undefined })).toBeNull();
+
     // A gateway that says no is an error, not a silent success.
     const refused = makeSmsSender({ ...base, SMS_PROVIDER: 'smsir', SMS_TEMPLATE: '1' }, ok({ status: 0, message: 'no credit' }));
     await expect(refused!.sendCode('09121234567', '12345')).rejects.toMatchObject({ code: 'SMS_FAILED' });
