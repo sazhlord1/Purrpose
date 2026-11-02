@@ -1,5 +1,7 @@
 import { Fragment, useEffect, type ReactNode } from 'react';
 import { backArrow, fmtDateTime, getLocale, t } from '../i18n/index.js';
+import { IS_IR_EDITION } from '../lib/edition.js';
+import { PrivacyIr, TermsIr } from './LegalIr.js';
 
 /** Where people can reach us about their data. Change it here if the address changes. */
 export const CONTACT_EMAIL = 'support@purrpose.space';
@@ -162,7 +164,8 @@ export function LegalPage({ kind }: { kind: 'privacy' | 'terms' }) {
       <a className="legal-back" href="/">
         {backArrow()} {t('Purrpose')}
       </a>
-      {kind === 'privacy' ? <Privacy /> : <Terms />}
+      {/* The Iranian edition has its own texts (phone sign-in, servers in Iran, Cafe Bazaar). */}
+      {IS_IR_EDITION ? kind === 'privacy' ? <PrivacyIr /> : <TermsIr /> : kind === 'privacy' ? <Privacy /> : <Terms />}
       <p className="muted" style={{ marginTop: 32 }}>
         <a href="/privacy">{t('Privacy Policy')}</a> · <a href="/terms">{t('Terms of Service')}</a>
       </p>
