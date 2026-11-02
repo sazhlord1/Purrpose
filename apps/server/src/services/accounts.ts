@@ -15,16 +15,22 @@ async function welcomeNewPlayer(tx: Parameters<typeof grantWelcomePurr>[0], user
   return purr;
 }
 
+/** A guest: no email, no Google account, no phone, not an admin — just this device. */
+export function isGuestUser(u: { email: string | null; googleId: string | null; phone?: string | null; role?: string }): boolean {
+  return u.email === null && u.googleId === null && (u.phone ?? null) === null && (u.role ?? 'USER') === 'USER';
+}
+
 export interface IssuedSession {
   token: string;
   userId: string;
   email: string;
+  phone: string | null;
   role: 'USER' | 'ADMIN';
 }
 
 async function issueSession(
   prisma: PrismaClient,
-  user: { id: string; email: string | null; role: 'USER' | 'ADMIN' },
+  user: { id: string; email: string | null; phone?: string | null; role: 'USER' | 'ADMIN' },
 ): Promise<IssuedSession> {
   const token = generateToken();
   await prisma.session.create({
@@ -35,7 +41,7 @@ async function issueSession(
     },
   });
   await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
-  return { token, userId: user.id, email: user.email ?? '', role: user.role };
+  return { token, userId: user.id, email: user.email ?? '', phone: user.phone ?? null, role: user.role };
 }
 
 /** Creates a brand-new guest user + session (the original anonymous flow). */
@@ -70,7 +76,7 @@ export async function registerAccount(
   }
   const current = await prisma.user.findUnique({ where: { id: currentUserId } });
   if (!current) throw new AppError('UNAUTHORIZED');
-  if (current.email) {
+  if (current.email || current.phone) {
     throw new AppError('ALREADY_REGISTERED', undefined, 'This device is already signed in to an account');
   }
   const passwordHash = await hashPassword(password);
@@ -104,10 +110,10 @@ async function absorbDeviceSession(prisma: PrismaClient, deviceSessionHash: stri
   if (!deviceSessionHash) return;
   const session = await prisma.session.findUnique({
     where: { tokenHash: deviceSessionHash },
-    select: { userId: true, user: { select: { email: true, googleId: true } } },
+    select: { userId: true, user: { select: { email: true, googleId: true, phone: true, role: true } } },
   });
   if (!session || session.userId === targetId) return;
-  if (session.user.email === null && session.user.googleId === null) {
+  if (isGuestUser(session.user)) {
     await prisma.$transaction(tx => mergeGuestInto(tx, session.userId, targetId));
   } else {
     await prisma.session.deleteMany({ where: { tokenHash: deviceSessionHash } });
@@ -200,7 +206,7 @@ export async function googleSignIn(
     const device = deviceSessionHash
       ? await prisma.session.findUnique({ where: { tokenHash: deviceSessionHash }, select: { user: true } })
       : null;
-    const guest = device?.user && device.user.email === null && device.user.googleId === null ? device.user : null;
+    const guest = device?.user && isGuestUser(device.user) ? device.user : null;
     const data = {
       email: profile.email,
       googleId: profile.sub,
@@ -232,6 +238,53 @@ export async function googleSignIn(
 
   await absorbDeviceSession(prisma, deviceSessionHash, user.id);
   return issueSession(prisma, user);
+}
+
+/**
+ * Sign in with a mobile number the person just proved they own (SMS code checked by
+ * the caller). Finds the account by number, else turns this device's guest into the
+ * account (keeping all its progress), else creates a new account. Any guest progress
+ * on this device ends up in the account.
+ */
+export async function phoneSignIn(
+  prisma: PrismaClient,
+  phone: string,
+  names: { firstName?: string; lastName?: string },
+  deviceSessionHash?: string,
+): Promise<IssuedSession & { isNew: boolean }> {
+  let user = await prisma.user.findUnique({ where: { phone } });
+  let isNew = false;
+  if (user) {
+    await prisma.appEvent.create({ data: { userId: user.id, name: 'login', payload: { via: 'phone' } } });
+  } else {
+    const device = deviceSessionHash
+      ? await prisma.session.findUnique({ where: { tokenHash: deviceSessionHash }, select: { user: true } })
+      : null;
+    const guest = device?.user && isGuestUser(device.user) ? device.user : null;
+    const first = names.firstName?.trim() || null;
+    const last = names.lastName?.trim() || null;
+    const data = {
+      phone,
+      phoneVerifiedAt: new Date(),
+      ...(first ? { firstName: first, lastName: last, name: `${first} ${last ?? ''}`.trim() } : {}),
+    };
+    user = await prisma
+      .$transaction(async tx => {
+        if (guest) return tx.user.update({ where: { id: guest.id }, data });
+        const created = await tx.user.create({ data });
+        await welcomeNewPlayer(tx, created.id);
+        return created;
+      })
+      .catch((err: { code?: string }) => {
+        if (err.code === 'P2002') throw new AppError('CONFLICT', undefined, 'Please try signing in again.');
+        throw err;
+      });
+    isNew = true;
+    await prisma.appEvent.create({ data: { userId: user.id, name: 'account_registered', payload: { via: 'phone' } } });
+    if (guest) await prisma.session.deleteMany({ where: { userId: user.id } }); // rotate the guest token
+  }
+  await absorbDeviceSession(prisma, deviceSessionHash, user.id);
+  return { ...(await issueSession(prisma, user)), isNew };
 }
 
 export async function logout(prisma: PrismaClient, tokenHash: string): Promise<void> {

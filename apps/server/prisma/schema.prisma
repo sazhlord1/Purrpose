@@ -75,6 +75,9 @@ model User {
   googleId      String?             @unique
   /// Set when we know the user controls the email (e.g. Google said it's verified).
   emailVerifiedAt DateTime?
+  /// Iranian mobile number, 09xxxxxxxxx (sign-in with an SMS code). Null otherwise.
+  phone         String?             @unique
+  phoneVerifiedAt DateTime?
   role          UserRole            @default(USER)
   purrBalance   Int                 @default(0)
   /// Equipped shop items, one per slot, e.g. {"toy":"ball"}. Validated on read.
@@ -319,4 +322,14 @@ model Payment {
   paidAt      DateTime?
 
   @@index([userId, createdAt])
+}
+
+/// A one-time sign-in code sent by SMS. One live code per phone; only its hash is stored.
+model PhoneCode {
+  phone     String   @id
+  codeHash  String
+  expiresAt DateTime
+  /// Wrong guesses for this code; it stops working after too many.
+  attempts  Int      @default(0)
+  sentAt    DateTime @default(now())
 }

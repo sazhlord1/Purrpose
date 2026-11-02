@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { isGuestAccount } from '../lib/auth.js';
 import { AppIcon } from '@purrpose/cats';
 import { now } from '@purrpose/shared';
 import { DetectiveBanner, FocusBanner, HubBanner, PactsBanner } from '../components/HubBanners.js';
@@ -44,7 +45,7 @@ export function Home() {
   const me = useMe();
   const commitments = useCommitments(60_000);
   const habits = useHabits();
-  const isGuest = me.data ? me.data.user.email === null : false;
+  const isGuest = me.data ? isGuestAccount(me.data.user) : false;
   const firstName = me.data?.user.firstName?.trim() || null;
   const hour = localHour(now());
   const reduced = isReduced();

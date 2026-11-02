@@ -23,6 +23,10 @@ export type ErrorCode =
   | 'PROOF_REQUIRED'
   | 'NOT_WITNESS'
   | 'WITNESS_IS_YOU'
+  | 'SMS_UNAVAILABLE'
+  | 'SMS_FAILED'
+  | 'CODE_INVALID'
+  | 'PHONE_TAKEN'
   | 'INTERNAL';
 
 const STATUS_BY_CODE: Record<ErrorCode, number> = {
@@ -50,6 +54,10 @@ const STATUS_BY_CODE: Record<ErrorCode, number> = {
   PROOF_REQUIRED: 409,
   NOT_WITNESS: 403,
   WITNESS_IS_YOU: 400,
+  SMS_UNAVAILABLE: 503,
+  SMS_FAILED: 502,
+  CODE_INVALID: 400,
+  PHONE_TAKEN: 409,
   INTERNAL: 500,
 };
 

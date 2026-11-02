@@ -1,10 +1,11 @@
-import { useCallback, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { DoodleButton, SketchCard } from '../components/ui/index.js';
 import { ApiError } from '../lib/api.js';
 import { GoogleButton } from '../components/GoogleButton.js';
 import { IS_IR_EDITION } from '../lib/edition.js';
-import { createAccount, signIn, signInWithGoogle } from '../lib/auth.js';
+import { createAccount, isGuestAccount, phoneLoginEnabled, signIn, signInWithGoogle } from '../lib/auth.js';
+import { PhoneLogin } from '../components/PhoneLogin.js';
 import { useMe } from '../lib/queries.js';
 import { backArrow, t } from '../i18n/index.js';
 import { isNativeApp } from '../lib/platform.js';
@@ -21,7 +22,14 @@ function withParts(template: string, parts: Record<string, ReactNode>): ReactNod
 
 export function Login() {
   const me = useMe();
-  const isGuest = me.data ? me.data.user.email === null : true;
+  const isGuest = me.data ? isGuestAccount(me.data.user) : true;
+  // Iranian edition: a mobile number + SMS code is the main way in (email stays for the admin).
+  const [phoneOn, setPhoneOn] = useState(false);
+  const [useEmail, setUseEmail] = useState(false);
+  useEffect(() => {
+    if (IS_IR_EDITION) void phoneLoginEnabled().then(setPhoneOn);
+  }, []);
+  const phoneFirst = IS_IR_EDITION && phoneOn && !useEmail;
   const [mode, setMode] = useState<Mode>(isGuest ? 'register' : 'signin');
   const [params] = useSearchParams();
   // A witness link sends people here with the email they should use.
@@ -63,12 +71,12 @@ export function Login() {
     }
   };
 
-  if (me.data?.user.email) {
+  if (me.data && !isGuestAccount(me.data.user)) {
     return (
       <main>
         <h1>{t("You're signed in")}</h1>
         <p className="muted">
-          {withParts(t('as {email}'), { email: <span className="ltr">{me.data.user.email}</span> })}
+          {withParts(t('as {email}'), { email: <span className="ltr">{me.data.user.email || me.data.user.phone}</span> })}
         </p>
         {me.data.user.role === 'ADMIN' && (
           <DoodleButton href="/admin" variant="primary">
@@ -89,7 +97,26 @@ export function Login() {
         )}
       </p>
 
+      {phoneFirst && (
+        <SketchCard variant="a">
+          <PhoneLogin />
+          <p style={{ margin: '12px 0 0', textAlign: 'center' }}>
+            <button type="button" className="link-button" onClick={() => setUseEmail(true)}>
+              {t('Use email instead')}
+            </button>
+          </p>
+        </SketchCard>
+      )}
+
+      {!phoneFirst && (
       <SketchCard variant="a">
+        {IS_IR_EDITION && phoneOn && (
+          <p style={{ margin: '0 0 10px' }}>
+            <button type="button" className="link-button" onClick={() => setUseEmail(false)}>
+              {backArrow()} {t('Sign in with your mobile number')}
+            </button>
+          </p>
+        )}
         {/* Google blocks its web sign-in inside app WebViews; the app gets native sign-in later. */}
         {!isNativeApp() && !IS_IR_EDITION && (
           <>
@@ -142,6 +169,7 @@ export function Login() {
           </DoodleButton>
         </form>
       </SketchCard>
+      )}
       <p className="muted legal-note">
         {withParts(t('By continuing you agree to our {terms} and {privacy}.'), {
           terms: <a href="/terms">{t('Terms')}</a>,

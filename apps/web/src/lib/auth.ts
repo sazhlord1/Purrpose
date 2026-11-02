@@ -68,6 +68,44 @@ export async function createAccount(
   switchTo(res.token, takeReturnPath() ?? '/settings');
 }
 
+/** Is "sign in with your phone number" switched on at this server? */
+export async function phoneLoginEnabled(): Promise<boolean> {
+  try {
+    return (await api<{ enabled: boolean }>('/auth/phone')).enabled;
+  } catch {
+    return false;
+  }
+}
+
+/** Step 1: text a code to an 09… number. */
+export async function sendPhoneCode(phone: string): Promise<{ resendInMs: number; expiresInMs: number }> {
+  return api('/auth/phone/send', { method: 'POST', body: { phone } });
+}
+
+/**
+ * Step 2: the code → a session. The token is stored but the page isn't reloaded yet,
+ * so a brand-new account can give its name first (finishSignIn reloads).
+ */
+export async function verifyPhoneCode(phone: string, code: string): Promise<AuthResponse> {
+  const res = await api<AuthResponse>('/auth/phone/verify', { method: 'POST', body: { phone, code } });
+  storeToken(res.token);
+  return res;
+}
+
+export async function saveName(firstName: string, lastName: string): Promise<void> {
+  await api('/me/name', { method: 'POST', body: { firstName, lastName } });
+}
+
+/** After a phone sign-in: reload into the account. */
+export function finishSignIn(res: AuthResponse): void {
+  window.location.assign(landingFor(res));
+}
+
+/** Guests have neither an email nor a phone number. */
+export function isGuestAccount(user: { email: string | null; phone?: string | null } | undefined): boolean {
+  return !user || (!user.email && !user.phone);
+}
+
 export async function signOut(): Promise<void> {
   try {
     await api<void>('/auth/logout', { method: 'POST', retryOn401: false });

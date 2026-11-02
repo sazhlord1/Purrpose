@@ -56,9 +56,9 @@ function UsersPanel() {
           {list.data.users.map(u => (
             <Link key={u.id} to={`/admin/users/${u.id}`} className="admin-list-row admin-user-row">
               <div style={{ minWidth: 0 }}>
-                <strong className="admin-ellipsis">{u.name ?? u.email ?? t('Guest')}</strong>
+                <strong className="admin-ellipsis">{u.name ?? u.email ?? u.phone ?? t('Guest')}</strong>
                 <div className="muted admin-ellipsis" style={{ fontSize: 12.5 }}>
-                  {u.email ? <span className="ltr">{u.email}</span> : t('guest')}{u.viaGoogle ? ' · Google' : ''} · {t('joined {date}', { date: fmtDate(u.createdAtISO) })}
+                  {u.email ? <span className="ltr">{u.email}</span> : u.phone ? <span className="ltr">{u.phone}</span> : t('guest')}{u.viaGoogle ? ' · Google' : ''} · {t('joined {date}', { date: fmtDate(u.createdAtISO) })}
                 </div>
                 <div style={{ fontSize: 12.5 }}>
                   {t('pacts')} {u.pacts.active}/{u.pacts.kept}/<span style={{ color: 'var(--stamp-red)' }}>{u.pacts.failed}</span> · {t('cases')}{' '}

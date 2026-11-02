@@ -57,6 +57,19 @@ const envSchema = z.object({
    */
   STARTER_FOOD: bool,
 
+  /**
+   * Sign-in with a mobile number + SMS code (Iranian edition). Provider 'kavenegar' or
+   * 'smsir' (with SMS_API_KEY and SMS_TEMPLATE), or 'console' for local development
+   * (prints the code; refused in production). Unset = phone sign-in is off.
+   */
+  SMS_PROVIDER: opt(z.string().transform(v => v.trim().toLowerCase()).pipe(z.enum(['kavenegar', 'smsir', 'console']))),
+  /** The gateway's API key. Only in the hosting dashboard — never commit it. */
+  SMS_API_KEY: opt(z.string()),
+  /** Kavenegar: the verify template's name. sms.ir: the numeric template id. */
+  SMS_TEMPLATE: opt(z.string()),
+  /** sms.ir only: the template's parameter name for the code (#CODE# → CODE). */
+  SMS_CODE_PARAM: z.string().default('CODE'),
+
   /** Web push (VAPID). Generate with: pnpm --filter @purrpose/server vapid:generate */
   VAPID_PUBLIC_KEY: opt(z.string()),
   VAPID_PRIVATE_KEY: opt(z.string()),

@@ -3,6 +3,8 @@ import { userIdOf } from '../auth.js';
 import { clock } from '../clock.js';
 import { getPrisma } from '../db.js';
 import { AppError } from '../errors.js';
+import { parse } from '../validate.js';
+import { nameSchema } from '@purrpose/shared';
 import { ensureWelcomePurr, honorStaked } from '../services/purr.js';
 import { ownedItemIds, unlockedCatIds, userLoadout } from '../services/shop.js';
 import { walletView } from '../services/wallet.js';
@@ -16,7 +18,7 @@ export function registerMeRoutes(app: FastifyInstance): void {
     const [user, balances, cats, items, loadout, purrStaked] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
-        select: { id: true, createdAt: true, email: true, role: true, purrBalance: true, firstName: true, welcomeSeenAt: true },
+        select: { id: true, createdAt: true, email: true, phone: true, role: true, purrBalance: true, firstName: true, welcomeSeenAt: true },
       }),
       walletView(prisma, userId),
       unlockedCatIds(prisma, userId, request.role),
@@ -33,6 +35,7 @@ export function registerMeRoutes(app: FastifyInstance): void {
         id: user.id,
         createdAtISO: user.createdAt.toISOString(),
         email: user.email,
+        phone: user.phone,
         role: user.role,
         firstName: user.firstName,
       },
@@ -45,6 +48,17 @@ export function registerMeRoutes(app: FastifyInstance): void {
       loadout,
       serverTime: clock.now(),
     };
+  });
+
+  /** Set your name (people who signed up with a phone number give it after the code). */
+  app.post('/api/v1/me/name', async request => {
+    const userId = userIdOf(request);
+    const { firstName, lastName } = parse(nameSchema, request.body);
+    await getPrisma().user.update({
+      where: { id: userId },
+      data: { firstName, lastName: lastName || null, name: `${firstName} ${lastName}`.trim() },
+    });
+    return { ok: true };
   });
 
   /** The welcome-gift message was shown; don't show it again (on any device). */

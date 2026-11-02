@@ -103,17 +103,23 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       const q = parse(adminUsersQuery, request.query);
       const prisma = getPrisma();
       const term = q.q?.trim();
+      // Accounts = an email or a phone number; guests have neither.
       const where = {
-        ...(q.guests ? {} : { email: { not: null } }),
-        ...(term
-          ? {
-              OR: [
-                { email: { contains: term, mode: 'insensitive' as const } },
-                { firstName: { contains: term, mode: 'insensitive' as const } },
-                { lastName: { contains: term, mode: 'insensitive' as const } },
-              ],
-            }
-          : {}),
+        AND: [
+          ...(q.guests ? [] : [{ OR: [{ email: { not: null } }, { phone: { not: null } }] }]),
+          ...(term
+            ? [
+                {
+                  OR: [
+                    { email: { contains: term, mode: 'insensitive' as const } },
+                    { phone: { contains: term } },
+                    { firstName: { contains: term, mode: 'insensitive' as const } },
+                    { lastName: { contains: term, mode: 'insensitive' as const } },
+                  ],
+                },
+              ]
+            : []),
+        ],
       };
       const [total, users] = await Promise.all([
         prisma.user.count({ where }),
@@ -123,7 +129,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
           skip: q.offset,
           take: q.limit,
           select: {
-            id: true, email: true, firstName: true, lastName: true, role: true, googleId: true,
+            id: true, email: true, phone: true, firstName: true, lastName: true, role: true, googleId: true,
             createdAt: true, lastLoginAt: true, purrBalance: true,
           },
         }),
@@ -150,6 +156,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
         users: users.map(u => ({
           id: u.id,
           email: u.email,
+          phone: u.phone,
           name: [u.firstName, u.lastName].filter(Boolean).join(' ') || null,
           role: u.role,
           viaGoogle: u.googleId !== null,
@@ -175,7 +182,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       const user = await prisma.user.findUnique({
         where: { id },
         select: {
-          id: true, email: true, firstName: true, lastName: true, role: true, googleId: true,
+          id: true, email: true, phone: true, firstName: true, lastName: true, role: true, googleId: true,
           createdAt: true, lastLoginAt: true, purrBalance: true,
         },
       });
@@ -198,6 +205,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
         user: {
           id: user.id,
           email: user.email,
+          phone: user.phone,
           name: [user.firstName, user.lastName].filter(Boolean).join(' ') || null,
           role: user.role,
           viaGoogle: user.googleId !== null,

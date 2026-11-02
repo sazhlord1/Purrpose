@@ -105,6 +105,8 @@ export const meResponseSchema = z.object({
     createdAtISO: z.string(),
     /** Null while the user is still a guest (anonymous session). */
     email: z.string().nullable(),
+    /** Mobile number for accounts that sign in with an SMS code (Iranian edition). */
+    phone: z.string().nullable().optional(),
     role: userRoleSchema,
     /** For the greeting; null for guests and accounts that never gave a name. */
     firstName: z.string().nullable(),
@@ -180,10 +182,50 @@ export const googleSignInSchema = z.object({
   credential: z.string().min(20).max(4096),
 });
 
+/** Persian (۰-۹) and Arabic (٠-٩) digits → 0-9; spaces and dashes dropped. */
+export function normalizeDigits(value: string): string {
+  return value
+    .replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 0x06f0))
+    .replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[\s\-‌]/g, '');
+}
+
+/** An Iranian mobile number: starts with 09 and is exactly 11 digits (e.g. 09121234567). */
+export const PHONE_RE = /^09\d{9}$/;
+export const PHONE_ERROR = 'The number must start with 09 and have 11 digits';
+export const phoneSchema = z.string().max(40).transform(normalizeDigits).pipe(z.string().regex(PHONE_RE, PHONE_ERROR));
+
+/** Length of the SMS sign-in code. */
+export const PHONE_CODE_LENGTH = 5;
+
+/** POST /me/name — first name required, last name optional. */
+export const nameSchema = z.object({
+  firstName: personName,
+  lastName: z.string().trim().max(40).default(''),
+});
+
+/** POST /auth/phone/send */
+export const phoneSendSchema = z.object({ phone: phoneSchema });
+
+/** POST /auth/phone/verify — names only matter for a brand-new account. */
+export const phoneVerifySchema = z.object({
+  phone: phoneSchema,
+  code: z
+    .string()
+    .max(20)
+    .transform(normalizeDigits)
+    .pipe(z.string().regex(new RegExp(`^\\d{${PHONE_CODE_LENGTH}}$`), 'Enter the code from the SMS')),
+  firstName: z.string().trim().max(40).optional(),
+  lastName: z.string().trim().max(40).optional(),
+});
+
 export const authResponseSchema = z.object({
   token: z.string(),
   userId: z.string(),
   email: z.string(),
+  phone: z.string().nullable().optional(),
+  /** Phone sign-in: true when this created the account (the app then asks for a name). */
+  isNew: z.boolean().optional(),
   role: userRoleSchema,
 });
 export type AuthResponse = z.infer<typeof authResponseSchema>;

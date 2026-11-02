@@ -37,6 +37,9 @@ const ERROR_FALLBACK: Record<string, string> = {
   PROOF_REQUIRED: 'Send a proof to finish this pact',
   NOT_WITNESS: 'Only the witness can decide',
   WITNESS_IS_YOU: 'Your witness needs an email that isn’t yours.',
+  SMS_UNAVAILABLE: 'Signing in with a phone number isn’t available yet.',
+  SMS_FAILED: 'We couldn’t send the SMS. Try again in a minute.',
+  CODE_INVALID: 'That code isn’t right. Check the SMS and try again.',
   INTERNAL: 'Something went wrong on our side. Try again in a bit.',
 };
 

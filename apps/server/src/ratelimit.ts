@@ -40,6 +40,8 @@ export const credentialLimiter = createLimiter(10, 15 * 60_000);
  * The limit is looser because many phones share one IP (carrier NAT).
  */
 export const googleLimiter = createLimiter(30, 15 * 60_000);
+/** SMS codes: 5 per hour per number and per IP (each one costs money and annoys the owner). */
+export const smsLimiter = createLimiter(5, 60 * 60_000);
 /** Anonymous session creation: 30 per hour per IP. */
 export const sessionLimiter = createLimiter(30, 60 * 60_000);
 
@@ -58,5 +60,6 @@ export function resetRateLimits(): void {
   mutationLimiter.reset();
   credentialLimiter.reset();
   googleLimiter.reset();
+  smsLimiter.reset();
   sessionLimiter.reset();
 }

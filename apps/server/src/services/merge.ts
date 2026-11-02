@@ -5,7 +5,7 @@ type Tx = Prisma.TransactionClient;
 
 /**
  * Moves everything a guest did on this device into the account they just signed
- * in to, then deletes the guest. Only real guests (no email, no Google id, plain
+ * in to, then deletes the guest. Only real guests (no email, no Google id, no phone, plain
  * USER) are ever merged — a signed-in account is never folded into another one.
  *
  * What moves: pacts, habits, focus sessions, credit history and balances, PURR and its
@@ -24,7 +24,7 @@ type Tx = Prisma.TransactionClient;
 export async function mergeGuestInto(tx: Tx, guestId: string, targetId: string): Promise<boolean> {
   if (guestId === targetId) return false;
   const guest = await tx.user.findUnique({ where: { id: guestId }, include: { balances: true } });
-  if (!guest || guest.email !== null || guest.googleId !== null || guest.role !== 'USER') return false;
+  if (!guest || guest.email !== null || guest.googleId !== null || guest.phone !== null || guest.role !== 'USER') return false;
   const target = await tx.user.findUnique({ where: { id: targetId } });
   if (!target) return false;
 
@@ -125,7 +125,7 @@ export async function mergeGuestInto(tx: Tx, guestId: string, targetId: string):
 
   await tx.session.deleteMany({ where: { userId: guestId } });
   // Only ever delete a user that is still a guest (it can't have registered meanwhile).
-  const gone = await tx.user.deleteMany({ where: { id: guestId, email: null, googleId: null, role: 'USER' } });
+  const gone = await tx.user.deleteMany({ where: { id: guestId, email: null, googleId: null, phone: null, role: 'USER' } });
   if (gone.count !== 1) throw new Error('Guest changed during sign-in; nothing was merged.');
   await tx.appEvent.create({
     data: {

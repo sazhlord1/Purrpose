@@ -10,6 +10,7 @@ import { backArrow, fmtDateTime, foodName, t } from '../i18n/index.js';
 export interface AdminUserRow {
   id: string;
   email: string | null;
+  phone?: string | null;
   name: string | null;
   role: 'USER' | 'ADMIN';
   viaGoogle: boolean;
@@ -78,9 +79,9 @@ export function AdminUser() {
   return (
     <main>
       <Link to="/admin" className="back-link">{backArrow()} {t('Users')}</Link>
-      <h1 style={{ marginBottom: 4 }}>{d.user.name ?? d.user.email ?? t('Guest')}</h1>
+      <h1 style={{ marginBottom: 4 }}>{d.user.name ?? d.user.email ?? d.user.phone ?? t('Guest')}</h1>
       <p className="muted" style={{ marginTop: 0 }}>
-        {d.user.email ? <span className="ltr">{d.user.email}</span> : t('guest (no account)')} {d.user.viaGoogle ? '· Google' : ''}{' '}
+        {d.user.email ? <span className="ltr">{d.user.email}</span> : d.user.phone ? <span className="ltr">{d.user.phone}</span> : t('guest (no account)')} {d.user.viaGoogle ? '· Google' : ''}{' '}
         {d.user.role === 'ADMIN' ? `· ${t('admin')}` : ''}
         <br />
         {t('joined {date}', { date: fmtDate(d.user.createdAtISO) })} · {t('last sign-in {date}', { date: fmtDate(d.user.lastLoginAtISO) })}

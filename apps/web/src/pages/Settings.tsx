@@ -85,12 +85,12 @@ export function Settings() {
 
       <SketchCard variant="a">
         <h2>{t('Account')}</h2>
-        {user?.email ? (
+        {user && (user.email || user.phone) ? (
           <>
             <div className="row">
               <span className="muted">{t('Signed in as')}</span>
               <span>
-                <span className="ltr">{user.email}</span>
+                <span className="ltr">{user.email || user.phone}</span>
                 {isAdmin ? ` · ${t('admin')}` : ''}
               </span>
             </div>
