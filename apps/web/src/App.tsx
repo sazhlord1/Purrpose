@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MotionConfig } from 'framer-motion';
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { BrowserRouter, Link, NavLink, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Link, NavLink, Route, Routes, useNavigate } from 'react-router-dom';
 import { Home } from './pages/Home.js';
 import { NewCommitment } from './pages/NewCommitment.js';
 import { CommitmentDetail } from './pages/CommitmentDetail.js';
@@ -15,6 +15,7 @@ import { CheckoutReturn } from './components/CheckoutReturn.js';
 import { DevDrawer } from './components/DevDrawer.js';
 import { AdminOnly } from './components/AdminOnly.js';
 import { registerServiceWorker, useNotificationScheduler } from './lib/notifications.js';
+import { onReminderTap } from './lib/localReminders.js';
 import { useCommitments } from './lib/queries.js';
 import { AppIcon } from '@purrpose/cats';
 import { LegalPage } from './pages/Legal.js';
@@ -51,8 +52,11 @@ function Shell() {
   const commitments = useCommitments(undefined, ready);
   useNotificationScheduler(ready ? commitments.data?.commitments : undefined);
 
+  const navigate = useNavigate();
   useEffect(() => {
     void registerServiceWorker();
+    // Android app: tapping a pact reminder opens that pact.
+    void onReminderTap(url => navigate(url));
   }, []);
 
   return (

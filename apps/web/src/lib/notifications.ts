@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { NOTIF_COPY, getLocale, notifCopy, t, type CommitmentDto } from '@purrpose/shared';
 import { api } from './api.js';
 import { isNativeApp } from './platform.js';
+import { disableLocalReminders, enableLocalReminders, localReminderState, syncLocalReminders } from './localReminders.js';
 
 export { NOTIF_COPY };
 
@@ -40,6 +41,8 @@ function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
 export type PushState = 'on' | 'off' | 'denied' | 'unsupported' | 'unavailable';
 
 export async function currentPushState(): Promise<PushState> {
+  // In the Android app "push" means reminders scheduled on the phone itself.
+  if (isNativeApp()) return localReminderState();
   if (!pushSupported()) return 'unsupported';
   if (Notification.permission === 'denied') return 'denied';
   const reg = await navigator.serviceWorker.getRegistration('/');
@@ -53,6 +56,7 @@ export async function currentPushState(): Promise<PushState> {
  * (On iPhone this works once Purrpose is added to the Home Screen.)
  */
 export async function enablePush(): Promise<PushState> {
+  if (isNativeApp()) return enableLocalReminders();
   if (!pushSupported()) return 'unsupported';
   const permission = await Notification.requestPermission().catch(() => 'denied' as NotificationPermission);
   if (permission !== 'granted') return permission === 'denied' ? 'denied' : 'off';
@@ -77,6 +81,7 @@ export async function enablePush(): Promise<PushState> {
 }
 
 export async function disablePush(): Promise<PushState> {
+  if (isNativeApp()) return disableLocalReminders();
   if (!pushSupported()) return 'unsupported';
   const reg = await navigator.serviceWorker.getRegistration('/');
   const sub = await reg?.pushManager.getSubscription();
@@ -89,6 +94,7 @@ export async function disablePush(): Promise<PushState> {
 
 /** Kept for the create flow: ask once, contextually, right after the first pact. */
 export async function requestNotificationPermission(): Promise<boolean> {
+  if (isNativeApp()) return (await enableLocalReminders().catch(() => 'off')) === 'on';
   if (!notificationsAvailable() || Notification.permission === 'denied') return false;
   const state = await enablePush().catch(() => 'off' as PushState);
   return state === 'on' || Notification.permission === 'granted';
@@ -119,6 +125,7 @@ const NOTIF_MARKS: Array<[number, 't24h' | 't1h', string]> = [
 
 /** After switching language: re-register this device's push so reminders come in it. */
 export async function refreshPushLocale(): Promise<void> {
+  if (isNativeApp()) return; // local reminders are rebuilt in the new language on reload
   if ((await currentPushState().catch(() => 'off')) === 'on') await enablePush().catch(() => undefined);
 }
 
@@ -133,6 +140,11 @@ export function useNotificationScheduler(commitments: CommitmentDto[] | undefine
   const scheduled = useRef<Set<string>>(new Set());
 
   useEffect(() => {
+    // Android app: hand the whole list to the phone's own scheduler (works offline).
+    if (isNativeApp()) {
+      void syncLocalReminders(commitments);
+      return;
+    }
     if (!commitments || commitments.length === 0) return;
     if (!notificationsAvailable() || Notification.permission !== 'granted') return;
     let cancelled = false;

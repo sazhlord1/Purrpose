@@ -122,4 +122,6 @@ export const COMMON: Record<string, string> = {
   English: 'English',
   'فارسی': 'فارسی',
   'The app reloads in the language you pick.': 'برنامه با زبانی که انتخاب کنی دوباره باز میشه.',
+  // reminders scheduled on the phone (Android app)
+  'Time’s up. Open Purrpose to see how it went.': 'وقت تموم شد. پرپس رو باز کن ببین چی شد.',
 };
