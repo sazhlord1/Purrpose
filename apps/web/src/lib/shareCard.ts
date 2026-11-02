@@ -1,9 +1,13 @@
 /**
- * Builds a 1080×1350 PNG "receipt" of a finished pact (the cat scene + result)
- * and hands it to the native share sheet, or downloads it where sharing files
- * isn't supported.
+ * Builds a 1080×1350 PNG card of a pact — when it starts, and when it ends (the cat
+ * scene + result) — and hands it to the native share sheet, or downloads it where
+ * sharing files isn't supported.
  */
 import { getLocale, t } from '../i18n/index.js';
+import { IS_IR_EDITION } from './edition.js';
+
+/** Address printed on the card (the app's own origin is just a label inside the Android app). */
+const CARD_HOST = IS_IR_EDITION ? 'purrpose.ir' : 'purrpose.space';
 
 const W = 1080;
 const H = 1350;
@@ -13,9 +17,19 @@ const PAPER = '#FAF6EE';
 export interface ShareCardInput {
   sceneSvg: SVGSVGElement | null;
   title: string;
-  outcome: 'success' | 'failure';
+  /** 'started' = a new pact; 'success' / 'failure' = how it ended. */
+  outcome: 'started' | 'success' | 'failure';
   amountLabel: string; // e.g. "5 Cat Meals"
   catName: string;
+  /** Deadline, already formatted (only for 'started'). */
+  deadlineLabel?: string;
+}
+
+/** The big line at the top of the card. */
+export function cardHeadline(input: Pick<ShareCardInput, 'outcome' | 'catName'>): string {
+  if (input.outcome === 'started') return t('I made a pact with {name} 😼', { name: input.catName });
+  if (input.outcome === 'success') return t('I beat {name} 😸', { name: input.catName });
+  return t('I lost my pact to {name} 😿', { name: input.catName });
 }
 
 function svgToImage(svg: SVGSVGElement): Promise<HTMLImageElement> {
@@ -77,12 +91,19 @@ export async function renderShareCard(input: ShareCardInput, includeScene = true
     await Promise.all([document.fonts?.load('900 76px Anjoman'), document.fonts?.load('600 38px Anjoman')]).catch(() => undefined);
   }
 
-  // Headline
+  // Headline (shrinks until it fits: cat names and Persian run long)
   const won = input.outcome === 'success';
+  const started = input.outcome === 'started';
   ctx.fillStyle = INK;
   ctx.textAlign = 'center';
-  ctx.font = `${heavy}76px ${hand}`;
-  ctx.fillText(won ? t('I did it.') : t('{name} won.', { name: input.catName }), W / 2, 110);
+  const headline = cardHeadline(input);
+  let headSize = 76;
+  ctx.font = `${heavy}${headSize}px ${hand}`;
+  while (ctx.measureText(headline).width > W - 120 && headSize > 40) {
+    headSize -= 4;
+    ctx.font = `${heavy}${headSize}px ${hand}`;
+  }
+  ctx.fillText(headline, W / 2, 110);
 
   ctx.font = `600 38px ${body}`;
   wrap(ctx, t('“{title}”', { title: input.title }), W - 160).forEach((l, i) => ctx.fillText(l, W / 2, 175 + i * 46));
@@ -112,7 +133,13 @@ export async function renderShareCard(input: ShareCardInput, includeScene = true
   ctx.fillStyle = INK;
   ctx.font = `600 36px ${body}`;
   ctx.fillText(
-    won ? t('My {amount} are safe.', { amount: input.amountLabel }) : t('My {amount} will feed a cat.', { amount: input.amountLabel }),
+    started
+      ? input.deadlineLabel
+        ? t('{amount} at stake · until {date}', { amount: input.amountLabel, date: input.deadlineLabel })
+        : t('{amount} at stake', { amount: input.amountLabel })
+      : won
+        ? t('My {amount} are safe.', { amount: input.amountLabel })
+        : t('My {amount} will feed a cat.', { amount: input.amountLabel }),
     W / 2,
     H - 150,
   );
@@ -120,11 +147,12 @@ export async function renderShareCard(input: ShareCardInput, includeScene = true
   ctx.save();
   ctx.translate(W - 170, H - 250);
   ctx.rotate(-0.14);
-  ctx.strokeStyle = won ? INK : '#B4443C';
-  ctx.fillStyle = won ? INK : '#B4443C';
+  const stampColor = won ? INK : started ? '#C2702E' : '#B4443C';
+  ctx.strokeStyle = stampColor;
+  ctx.fillStyle = stampColor;
   ctx.lineWidth = 7;
   ctx.strokeRect(-110, -44, 220, 88);
-  const stamp = won ? t('KEPT') : t('FED');
+  const stamp = started ? t('AT STAKE') : won ? t('KEPT') : t('FED');
   // Shrink the stamp word until it fits its box (Persian words run longer).
   let stampSize = 64;
   ctx.font = `${heavy}${stampSize}px ${hand}`;
@@ -137,7 +165,7 @@ export async function renderShareCard(input: ShareCardInput, includeScene = true
 
   ctx.font = `${heavy}34px ${hand}`;
   ctx.fillStyle = '#6B5F57';
-  ctx.fillText(window.location.host ? `${t('purrpose')} · ${window.location.host}` : t('purrpose'), W / 2, H - 70);
+  ctx.fillText(`${t('purrpose')} · ${CARD_HOST}`, W / 2, H - 70);
 
   // toBlob throws synchronously if some browser considers the SVG snapshot "tainted".
   return new Promise((resolve, reject) => {
@@ -153,9 +181,11 @@ export async function shareResult(input: ShareCardInput): Promise<'shared' | 'do
   const blob = await renderShareCard(input).catch(() => renderShareCard(input, false));
   const file = new File([blob], 'purrpose.png', { type: 'image/png' });
   const text =
-    input.outcome === 'success'
-      ? t('I beat {name} and finished “{title}” 🐾', { name: input.catName, title: input.title })
-      : t('{name} won this round — my stake feeds a cat 🐾', { name: input.catName });
+    input.outcome === 'started'
+      ? t('I made a pact with {name}: “{title}”. Wish me luck 🐾', { name: input.catName, title: input.title })
+      : input.outcome === 'success'
+        ? t('I beat {name} and finished “{title}” 🐾', { name: input.catName, title: input.title })
+        : t('{name} won this round — my stake feeds a cat 🐾', { name: input.catName });
   if (navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({ files: [file], text });

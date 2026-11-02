@@ -149,4 +149,17 @@ export const PACTS: Record<string, string> = {
   'Make It Official': 'رسمیش کن',
   'Look around first': 'اول یه نگاهی بندازم',
   'tap anywhere or press enter': 'هر جا رو بزن یا اینتر رو فشار بده',
+
+  // share cards: when a pact starts and when it ends
+  'I made a pact with {name} 😼': 'با {name} شرط بستم 😼',
+  'I beat {name} 😸': 'شرط رو از {name} بردم 😸',
+  'I lost my pact to {name} 😿': 'قرارم رو به {name} باختم 😿',
+  '{amount} at stake · until {date}': '{amount} گرو گذاشتم · تا {date}',
+  '{amount} at stake': '{amount} گرو گذاشتم',
+  'I made a pact with {name}: “{title}”. Wish me luck 🐾': 'با {name} قرار گذاشتم: «{title}». برام دعا کن 🐾',
+  'Your pact card is ready 😼': 'کارت قرارت آماده‌ست 😼',
+  'Tell your friends you made a pact with {name}. Saying it out loud makes it harder to skip.':
+    'به دوستات بگو با {name} قرار گذاشتی. وقتی بلند بگیش، در رفتن ازش سخت‌تر میشه.',
+  'Share my pact': 'قرارم رو بفرست',
+  Later: 'بعداً',
 };

@@ -193,7 +193,7 @@ export function NewCommitment() {
         catName={currentCat.name}
         onComplete={() => {
           if (sealedCommitmentId) {
-            navigate(`/commitment/${sealedCommitmentId}`);
+            navigate(`/commitment/${sealedCommitmentId}?new=1`);
           }
         }}
       />

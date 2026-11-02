@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { AppIcon, CatScene, type CatState, type LivingCatHandle } from '@purrpose/cats';
 import { HONOR_STARTER_BONUS, now, type CommitmentDto } from '@purrpose/shared';
 import { GraceDelete } from '../components/GraceDelete.js';
@@ -31,6 +31,9 @@ function isReduced(): boolean {
 export function CommitmentDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // Just sealed (NewCommitment adds ?new=1): offer the pact's card right away.
+  const [justMade, setJustMade] = useState(searchParams.get('new') === '1');
   const qc = useQueryClient();
   const livingRef = useRef<LivingCatHandle | null>(null);
   const sceneRef = useRef<HTMLElement | null>(null);
@@ -59,6 +62,9 @@ export function CommitmentDetail() {
     refetchInterval: 30_000,
     enabled: Boolean(id),
   });
+  // A new card for each moment: the "started" card shared earlier doesn't count for the result.
+  const status = query.data?.commitment.status;
+  useEffect(() => setShareState('idle'), [status, banner]);
 
   const c = query.data?.commitment;
   const nowMs = now();
@@ -166,15 +172,17 @@ export function CommitmentDetail() {
     banner ?? (pending ? null : c.status === 'COMPLETED' ? 'success' : c.status === 'FAILED' ? 'failure' : null);
 
   const onShare = async () => {
-    if (!showBanner) return;
+    const outcome = showBanner ?? (c.status === 'ACTIVE' ? 'started' : null);
+    if (!outcome) return;
     setShareState('busy');
     try {
       await shareResult({
         sceneSvg: sceneRef.current?.querySelector('svg') ?? null,
         title: c.title,
-        outcome: showBanner,
+        outcome,
         amountLabel,
         catName,
+        deadlineLabel: fmtDate(c.deadlineISO),
       });
       setShareState('done');
     } catch {
@@ -272,6 +280,21 @@ export function CommitmentDetail() {
         </SketchCard>
       )}
 
+      {c.status === 'ACTIVE' && !pending && justMade && (
+        <SketchCard variant="b" className="share-new-card">
+          <h3 style={{ marginTop: 0 }}>{t('Your pact card is ready 😼')}</h3>
+          <p className="muted" style={{ margin: '0 0 10px' }}>
+            {t('Tell your friends you made a pact with {name}. Saying it out loud makes it harder to skip.', { name: catName })}
+          </p>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <DoodleButton variant="primary" onClick={() => void onShare()} disabled={shareState === 'busy'}>
+              {shareState === 'busy' ? t('Drawing…') : shareState === 'done' ? t('✓ Shared') : <><AppIcon name="share" size={18} /> {t('Share my pact')}</>}
+            </DoodleButton>
+            <DoodleButton onClick={() => setJustMade(false)}>{t('Later')}</DoodleButton>
+          </div>
+        </SketchCard>
+      )}
+
       {c.status === 'ACTIVE' && c.witnessEmail && c.witnessToken && (
         <WitnessLink token={c.witnessToken} email={c.witnessEmail} title={c.title} />
       )}
@@ -358,6 +381,14 @@ export function CommitmentDetail() {
             </SketchCard>
           )}
         </>
+      )}
+
+      {c.status === 'ACTIVE' && !pending && !justMade && (
+        <p style={{ textAlign: 'center', margin: '14px 0 0' }}>
+          <button type="button" className="link-button" onClick={() => void onShare()} disabled={shareState === 'busy'}>
+            <AppIcon name="share" size={16} /> {shareState === 'busy' ? t('Drawing…') : t('Share my pact')}
+          </button>
+        </p>
       )}
 
       {c.status === 'ACTIVE' && !pending && !reviewing && (
