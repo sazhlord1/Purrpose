@@ -45,6 +45,10 @@ html = html
   .replaceAll('https://purrpose.space/', 'https://purrpose.ir/');
 html = html.replace('"inLanguage": ["en", "fa"]', '"inLanguage": "fa"');
 
+// Enamad (e-trust seal) site verification: meta tag on the home page + empty file at the root.
+const ENAMAD_CODE = '4894141';
+html = html.replace('<meta charset="utf-8">', `<meta charset="utf-8">\n<meta name="enamad" content="${ENAMAD_CODE}" />`);
+
 // Persian only: fix the language and hide the switch.
 must(/var LANG=\(function\(\)\{/, 'the language picker script');
 html = html.replace(/var LANG=\(function\(\)\{[\s\S]*?\}\)\(\);/, "var LANG='fa';");
@@ -66,6 +70,7 @@ for (const f of readdirSync(path.join(src, 'img'))) {
 }
 cpSync(path.join(src, 'og-fa.png'), path.join(out, 'og-fa.png'));
 
+writeFileSync(path.join(out, `${ENAMAD_CODE}.txt`), '');
 writeFileSync(path.join(out, 'robots.txt'), 'User-agent: *\nAllow: /\n\nSitemap: https://purrpose.ir/sitemap.xml\n');
 writeFileSync(
   path.join(out, 'sitemap.xml'),
