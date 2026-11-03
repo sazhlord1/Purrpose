@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { ambient } from '../lib/ambient.js';
 import {
   CAT_STATES,
   MACRO_TABLE,
@@ -114,7 +115,10 @@ export function CatLab() {
         reduced={reduced}
         hour={hour}
         livingRef={livingRef}
-        onSceneEvent={pushLog}
+        onSceneEvent={e => {
+          pushLog(e);
+          if (e === 'tap') ambient.meowOnTap();
+        }}
         items={items}
         interactive
       />

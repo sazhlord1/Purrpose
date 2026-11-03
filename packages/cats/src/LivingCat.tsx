@@ -811,6 +811,7 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
             noYarn={items?.noYarn}
             mood={mood}
             idleExpression={IDLE_EYES[displayState]?.[mood]}
+            talking={Boolean(bubble)}
           />
         </g>
       </g>
@@ -827,8 +828,20 @@ const QUIET_AFTER_SPEECH_MS = 12_000;
 /** Where the bubble's tail points (just above the cat's head), in cat coordinates. */
 const BUBBLE_TAIL_Y = -177;
 
-function SpeechBubble({ text }: { text: string }) {
+/**
+ * In a right-to-left line, ASCII faces like ":(" or ">-<" get flipped by the bidi
+ * algorithm (brackets mirror, order reverses). Wrapping each one in a left-to-right
+ * isolate (U+2066 … U+2069) keeps it exactly as typed.
+ */
+export function isolateEmoticons(text: string): string {
+  return text.replace(/[:;=^<>()\-_~*xXoO0-9]{2,}/g, m =>
+    /[:;=^<>()]/.test(m) ? `\u2066${m}\u2069` : m,
+  );
+}
+
+function SpeechBubble({ text: raw }: { text: string }) {
   const rtl = getLocale() === 'fa';
+  const text = rtl ? isolateEmoticons(raw) : raw;
   const fontsV = useFontsVersion();
   // Persian bubbles are Anjoman Black; the English ones keep the hand-drawn font.
   const size = 15;

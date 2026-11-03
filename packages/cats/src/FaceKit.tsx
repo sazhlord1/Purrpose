@@ -212,11 +212,14 @@ export function FaceOverlays({
   action,
   spec,
   mood = 0,
+  talking = false,
 }: {
   state: CatState;
   action?: CatAction | null;
   spec: FaceSpec;
   mood?: number;
+  /** A speech bubble is up: skip the thought cloud, which would sit right behind it. */
+  talking?: boolean;
 }) {
   const parts: JSX.Element[] = [];
   const m = ((mood % 4) + 4) % 4;
@@ -278,7 +281,7 @@ export function FaceOverlays({
       break;
     case 'WAITING':
       // Daydreaming about dinner — only while idle, so it never covers an action mark.
-      if (action || m === 2) break;
+      if (action || m === 2 || talking) break;
       parts.push(
         <g key="dream" className="fk-float" stroke={INK} strokeWidth={1.8}>
           <circle cx={170} cy={70} r={3} fill={PAPER} />

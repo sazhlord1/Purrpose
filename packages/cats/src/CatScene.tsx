@@ -433,40 +433,138 @@ function useMinuteClock(enabled: boolean): { hour: number; minute: number } {
 // 4. MAIN CAT SCENE COMPONENT
 // ============================================================================
 
-const LIGHTING: Record<Exclude<DayPeriod, 'day'>, { color: string; opacity: number }> = {
+const LIGHTING: Record<Exclude<DayPeriod, 'day' | 'night'>, { color: string; opacity: number }> = {
   dawn: { color: '#FFC98B', opacity: 0.16 },
   dusk: { color: '#F08A4B', opacity: 0.2 },
-  night: { color: '#1B2550', opacity: 0.4 },
 };
 
-/** Tints the whole scene to match the viewer's local time of day. */
-function SceneLighting({ period, stage, uid }: { period: DayPeriod; stage: number; uid: string }) {
+/** Twinkling four-point star. */
+const starPath = (x: number, y: number, r: number) =>
+  `M${x} ${y - r} L${x + r * 0.28} ${y - r * 0.28} L${x + r} ${y} L${x + r * 0.28} ${y + r * 0.28} L${x} ${y + r} L${x - r * 0.28} ${y + r * 0.28} L${x - r} ${y} L${x - r * 0.28} ${y - r * 0.28} Z`;
+
+/**
+ * Tints the whole scene to match the viewer's local time of day. At night the room goes
+ * dark and cool, and a soft spotlight (moonlight outside, a lamp indoors) falls on the cat.
+ */
+function SceneLighting({
+  period,
+  stage,
+  uid,
+  cat,
+}: {
+  period: DayPeriod;
+  stage: number;
+  uid: string;
+  cat: { x: number; y: number; s: number };
+}) {
   if (period === 'day') return null;
-  const light = LIGHTING[period];
+  if (period !== 'night') {
+    const light = LIGHTING[period];
+    return (
+      <g pointerEvents="none" data-lighting={period}>
+        <rect x={0} y={0} width={SCENE_WIDTH} height={SCENE_HEIGHT} fill={light.color} opacity={light.opacity} style={{ mixBlendMode: 'multiply' }} />
+      </g>
+    );
+  }
   const outdoor = stage <= 2;
+  const hasSky = stage === 2; // the yard; the alley (stage 1) is a wall
+  // The spot is centred on the cat's body, a bit above where it sits.
+  const cx = cat.x;
+  const cy = cat.y - 85 * cat.s;
+  const r = 165 * cat.s;
+  const beam = outdoor ? '#DCE6FF' : '#FFE2A8';
+  const ids = { spot: `nspot-${uid}`, mask: `nmask-${uid}`, beam: `nbeam-${uid}`, moon: `nmoon-${uid}`, halo: `nhalo-${uid}` };
   return (
-    <g pointerEvents="none" data-lighting={period}>
-      <rect x={0} y={0} width={SCENE_WIDTH} height={SCENE_HEIGHT} fill={light.color} opacity={light.opacity} style={{ mixBlendMode: 'multiply' }} />
-      {period === 'night' && outdoor && (
+    <g pointerEvents="none" data-lighting="night">
+      <defs>
+        <radialGradient id={ids.spot} gradientUnits="userSpaceOnUse" cx={cx} cy={cy} r={r}>
+          <stop offset="0%" stopColor="#2a2a2a" />
+          <stop offset="55%" stopColor="#7a7a7a" />
+          <stop offset="100%" stopColor="#ffffff" />
+        </radialGradient>
+        <mask id={ids.mask} maskUnits="userSpaceOnUse" x={0} y={0} width={SCENE_WIDTH} height={SCENE_HEIGHT}>
+          <rect x={0} y={0} width={SCENE_WIDTH} height={SCENE_HEIGHT} fill={`url(#${ids.spot})`} />
+        </mask>
+        <linearGradient id={ids.beam} gradientUnits="userSpaceOnUse" x1={cx} y1={0} x2={cx} y2={cat.y + 10}>
+          <stop offset="0%" stopColor={beam} stopOpacity={0.3} />
+          <stop offset="100%" stopColor={beam} stopOpacity={0.04} />
+        </linearGradient>
+        <radialGradient id={ids.halo} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#FFF6D6" stopOpacity={0.55} />
+          <stop offset="100%" stopColor="#FFF6D6" stopOpacity={0} />
+        </radialGradient>
+        <mask id={ids.moon} maskUnits="userSpaceOnUse" x={290} y={30} width={70} height={70}>
+          <rect x={290} y={30} width={70} height={70} fill="#fff" />
+          <circle cx={331} cy={55} r={15} fill="#000" />
+        </mask>
+      </defs>
+
+      {/* 1. Night everywhere: a cool blue cast… */}
+      <rect x={0} y={0} width={SCENE_WIDTH} height={SCENE_HEIGHT} fill="#7F95D6" opacity={0.3} style={{ mixBlendMode: 'multiply' }} />
+      {/* 2. …and darkness that falls off around the cat. */}
+      <rect
+        x={0}
+        y={0}
+        width={SCENE_WIDTH}
+        height={SCENE_HEIGHT}
+        fill="#141C45"
+        opacity={0.7}
+        mask={`url(#${ids.mask})`}
+        style={{ mixBlendMode: 'multiply' }}
+      />
+
+      {/* 3. The beam and the pool of light it leaves under the cat. */}
+      <path
+        d={`M${cx - 26} 0 L${cx + 26} 0 L${cx + 118 * cat.s} ${cat.y + 6} L${cx - 118 * cat.s} ${cat.y + 6} Z`}
+        fill={`url(#${ids.beam})`}
+        style={{ mixBlendMode: 'screen' }}
+      />
+      <ellipse cx={cx} cy={cat.y + 4} rx={118 * cat.s} ry={20 * cat.s} fill={beam} opacity={0.22} style={{ mixBlendMode: 'screen' }} />
+
+      {/* 4. Outside: a crescent moon with a soft halo, and stars. */}
+      {hasSky && (
         <g>
-          <circle cx={322} cy={62} r={17} fill="#FFF4C9" stroke={INK} strokeWidth={2} />
-          <circle cx={330} cy={56} r={15} fill="#E9E3F2" opacity={0.9} />
-          {[[60, 50], [120, 34], [250, 42], [205, 78], [30, 96]].map(([x, y]) => (
-            <path key={`${x}-${y}`} className="lc-twinkle" d={`M${x} ${y - 5} L${x + 1.4} ${y - 1.4} L${x + 5} ${y} L${x + 1.4} ${y + 1.4} L${x} ${y + 5} L${x - 1.4} ${y + 1.4} L${x - 5} ${y} L${x - 1.4} ${y - 1.4} Z`} fill="#FFF4C9" />
-          ))}
+          <circle cx={322} cy={62} r={38} fill={`url(#${ids.halo})`} style={{ mixBlendMode: 'screen' }} />
+          <circle cx={322} cy={62} r={17} fill="#FFF4C9" mask={`url(#${ids.moon})`} />
         </g>
       )}
-      {period === 'night' && !outdoor && (
-        <>
-          <defs>
-            <radialGradient id={`lamp-${uid}`} cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#FFD58A" stopOpacity={0.55} />
-              <stop offset="100%" stopColor="#FFD58A" stopOpacity={0} />
-            </radialGradient>
-          </defs>
-          <ellipse cx={190} cy={290} rx={170} ry={150} fill={`url(#lamp-${uid})`} style={{ mixBlendMode: 'screen' }} />
-        </>
-      )}
+      {outdoor &&
+        [[60, 50, 5], [120, 34, 4], [250, 42, 5], [205, 78, 3.5], [30, 96, 4]].map(([x, y, sz]) => (
+          <path key={`${x}-${y}`} className="lc-twinkle" d={starPath(x!, y!, sz!)} fill="#FFF4C9" opacity={hasSky ? 1 : 0.7} />
+        ))}
+    </g>
+  );
+}
+
+const heartD = (x: number, y: number, r: number) =>
+  `M${x} ${y + r * 0.9} C${x - r * 1.6} ${y - r * 0.2} ${x - r * 0.9} ${y - r * 1.5} ${x} ${y - r * 0.55} C${x + r * 0.9} ${y - r * 1.5} ${x + r * 1.6} ${y - r * 0.2} ${x} ${y + r * 0.9} Z`;
+
+/** A little burst of hearts that floats up and fades (SVG animation, no CSS needed). */
+function HeartBurst({ x, y, s }: { x: number; y: number; s: number }) {
+  const hearts: Array<[number, number, number, number]> = [
+    // dx, size, rise, delay
+    [-34, 8, 70, 0],
+    [0, 11, 92, 0.08],
+    [32, 8, 76, 0.16],
+    [-16, 6, 58, 0.28],
+    [18, 6.5, 62, 0.36],
+  ];
+  return (
+    <g transform={`translate(${x} ${y}) scale(${s})`} pointerEvents="none" aria-hidden="true">
+      {hearts.map(([dx, r, rise, delay], i) => (
+        <g key={i} opacity={0}>
+          <path d={heartD(dx, 0, r)} fill="#E86A7A" stroke={INK} strokeWidth={1.6} strokeLinejoin="round" />
+          <animateTransform
+            attributeName="transform"
+            type="translate"
+            values={`0 10; ${i % 2 ? 6 : -6} ${-rise / 2}; 0 ${-rise}`}
+            dur="1.3s"
+            begin={`${delay}s`}
+            fill="freeze"
+          />
+          <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.15;0.65;1" dur="1.3s" begin={`${delay}s`} fill="freeze" />
+        </g>
+      ))}
     </g>
   );
 }
@@ -554,6 +652,19 @@ export function CatScene({
     },
     [onSceneEvent]
   );
+
+  // Tap → hearts float up (always) and the cat reacts (when it's animated). The page
+  // gets a 'tap' event to play a meow.
+  const [hearts, setHearts] = useState<number | null>(null);
+  const heartsTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(heartsTimer.current), []);
+  const petCat = useCallback(() => {
+    if (!reduced) innerRef.current?.pet();
+    setHearts(Date.now());
+    window.clearTimeout(heartsTimer.current);
+    heartsTimer.current = window.setTimeout(() => setHearts(null), 1700);
+    onSceneEvent?.('tap');
+  }, [reduced, onSceneEvent]);
 
   const period: DayPeriod = hour === undefined ? 'day' : dayPeriod(hour);
 
@@ -807,11 +918,14 @@ export function CatScene({
         <CushionPlatform stage={effectiveStage} />
       )}
 
-      {/* 3. HERO CAT (tap to pet it where the scene is interactive) */}
+      {/* 2e. TIME-OF-DAY LIGHTING: under the cat, so the cat (and what it says) stays lit. */}
+      <SceneLighting period={period} stage={effectiveStage} uid={uid} cat={{ x: catX, y: catY, s: catScale }} />
+
+      {/* 3. HERO CAT (tap to pet it where the scene is interactive: hearts, a hop, a meow) */}
       <g
         transform={`translate(${catX}, ${catY}) scale(${catScale})`}
-        onClick={interactive && !reduced ? () => innerRef.current?.pet() : undefined}
-        style={interactive && !reduced ? { cursor: 'pointer' } : undefined}
+        onClick={interactive ? petCat : undefined}
+        style={interactive ? { cursor: 'pointer' } : undefined}
       >
         {/* Adding the class (re)starts the hop — no remount, so a running script is never cut off. */}
         <g className={moving ? 'lc-move-hop' : undefined}>
@@ -842,6 +956,9 @@ export function CatScene({
         </g>
       </g>
 
+      {/* 3a. Hearts from a tap. */}
+      {hearts !== null && <HeartBurst key={hearts} x={catX} y={catY - 175 * catScale} s={catScale} />}
+
       {/* 3b. The bed's front rim goes over the cat, so it sits *in* the bed. */}
       {bed && (
         <g transform={`translate(${bed.x} ${bed.y}) scale(${bed.s})`}>
@@ -855,8 +972,6 @@ export function CatScene({
       {/* 4b. FLOOR THINGS IN FRONT OF THE CAT */}
       {floorArt.filter(([k]) => inFront(k)).map(([k, art, sc]) => movable(k, art, sc))}
 
-      {/* 5. TIME-OF-DAY LIGHTING */}
-      <SceneLighting period={period} stage={effectiveStage} uid={uid} />
 
       {/* 6. EMOTIONAL STATUS OVERLAYS */}
       {!reduced && state === 'SLEEPING' && (

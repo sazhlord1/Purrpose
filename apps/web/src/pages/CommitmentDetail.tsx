@@ -319,6 +319,7 @@ export function CommitmentDetail() {
           interactive
           onSceneEvent={e => {
             if (e === 'script:done') setSceneOverride(null);
+            if (e === 'tap') ambient.meowOnTap();
             if (e.startsWith('speech:') || e.startsWith('display:')) ambient.playOccasionalMeow(10000);
           }}
         />

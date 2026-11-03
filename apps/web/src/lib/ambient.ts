@@ -191,6 +191,12 @@ class FocusAudioManager {
     }
   }
 
+  /** Tapping a cat: a meow, but not one per tap when someone taps fast. */
+  public meowOnTap() {
+    if (Date.now() - this.lastMeowTime < 700) return;
+    this.playRandomMeow(0.6 + Math.random() * 0.15);
+  }
+
   public playOccasionalMeow(cooldownMs = 12000) {
     const now = Date.now();
     if (now - this.lastMeowTime < cooldownMs) return;

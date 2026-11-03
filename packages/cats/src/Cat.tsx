@@ -35,6 +35,8 @@ export interface CatProps {
   mood?: number;
   /** Eyes to use when neither `expression` nor the current action decides them. */
   idleExpression?: Expression;
+  /** The cat is saying something (its thought cloud steps aside for the speech bubble). */
+  talking?: boolean;
 }
 
 export function Cat({
@@ -51,6 +53,7 @@ export function Cat({
   noYarn = false,
   mood = 0,
   idleExpression,
+  talking = false,
 }: CatProps) {
   const expr =
     expression ?? (action ? ACTION_EXPRESSION[action] : undefined) ?? idleExpression ?? DEFAULT_EXPRESSION[state];
@@ -285,7 +288,7 @@ export function Cat({
               <line x1="160" y1="127" x2="192" y2="128" />
               <line x1="158" y1="134" x2="186" y2="138" />
             </g>
-            <FaceOverlays state={state} action={action} spec={spec} mood={mood} />
+            <FaceOverlays state={state} action={action} spec={spec} mood={mood} talking={talking} />
             {wear?.detective && <DetectiveGear spec={spec} catId={catId} />}
           </g>
           </g>
@@ -414,7 +417,7 @@ export function Cat({
               <line x1="164" y1="125" x2="202" y2="126" />
               <line x1="162" y1="134" x2="196" y2="140" />
             </g>
-            <FaceOverlays state={state} action={action} spec={spec} mood={mood} />
+            <FaceOverlays state={state} action={action} spec={spec} mood={mood} talking={talking} />
             {wear?.detective && <DetectiveGear spec={spec} catId={catId} />}
           </g>
           </g>
@@ -548,7 +551,7 @@ export function Cat({
               <line x1="166" y1="116" x2="204" y2="116" />
               <line x1="164" y1="124" x2="200" y2="128" />
             </g>
-            <FaceOverlays state={state} action={action} spec={spec} mood={mood} />
+            <FaceOverlays state={state} action={action} spec={spec} mood={mood} talking={talking} />
             {wear?.detective && <DetectiveGear spec={spec} catId={catId} />}
           </g>
           </g>
@@ -682,7 +685,7 @@ export function Cat({
               <line x1="164" y1="125" x2="196" y2="125" />
               <line x1="162" y1="132" x2="192" y2="135" />
             </g>
-            <FaceOverlays state={state} action={action} spec={spec} mood={mood} />
+            <FaceOverlays state={state} action={action} spec={spec} mood={mood} talking={talking} />
             {wear?.detective && <DetectiveGear spec={spec} catId={catId} />}
           </g>
           </g>
@@ -826,7 +829,7 @@ export function Cat({
               <line x1="162" y1="125" x2="200" y2="125" />
               <line x1="160" y1="134" x2="194" y2="138" />
             </g>
-            <FaceOverlays state={state} action={action} spec={spec} mood={mood} />
+            <FaceOverlays state={state} action={action} spec={spec} mood={mood} talking={talking} />
             {wear?.detective && <DetectiveGear spec={spec} catId={catId} />}
           </g>
           </g>
@@ -927,7 +930,7 @@ export function Cat({
               <line x1="158" y1="131" x2="192" y2="132" />
               <line x1="156" y1="138" x2="186" y2="144" />
             </g>
-            <FaceOverlays state={state} action={action} spec={spec} mood={mood} />
+            <FaceOverlays state={state} action={action} spec={spec} mood={mood} talking={talking} />
             {wear?.detective && <DetectiveGear spec={spec} catId={catId} />}
           </g>
           </g>
@@ -1038,7 +1041,7 @@ export function Cat({
               <line x1="162" y1="116" x2="198" y2="114" />
               <line x1="164" y1="125" x2="202" y2="126" />
             </g>
-            <FaceOverlays state={state} action={action} spec={spec} mood={mood} />
+            <FaceOverlays state={state} action={action} spec={spec} mood={mood} talking={talking} />
             {wear?.detective && <DetectiveGear spec={spec} catId={catId} />}
           </g>
           </g>
@@ -1213,7 +1216,7 @@ export function Cat({
               <line x1="164" y1="124" x2="196" y2="124" />
               <line x1="162" y1="132" x2="192" y2="135" />
             </g>
-            <FaceOverlays state={state} action={action} spec={spec} mood={mood} />
+            <FaceOverlays state={state} action={action} spec={spec} mood={mood} talking={talking} />
             {wear?.detective && <DetectiveGear spec={spec} catId={catId} />}
           </g>
           </g>

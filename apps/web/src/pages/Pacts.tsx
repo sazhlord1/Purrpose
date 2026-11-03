@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { ambient } from '../lib/ambient.js';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { AppIcon, CatScene } from '@purrpose/cats';
@@ -145,6 +146,9 @@ export function Pacts() {
                 hour={hour}
                 items={me.data?.loadout}
                 interactive
+                onSceneEvent={e => {
+                  if (e === 'tap') ambient.meowOnTap();
+                }}
               />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginTop: 10 }}>
