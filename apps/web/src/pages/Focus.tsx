@@ -124,8 +124,9 @@ export function Focus() {
     };
   }, [status]);
 
-  // Cleanup audio on unmount
+  // Download the rain/purr loops early so Start plays at once; stop them on the way out.
   useEffect(() => {
+    ambient.preloadFocus();
     return () => {
       ambient.stop();
     };
