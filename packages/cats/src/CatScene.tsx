@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { CatId, ItemId, Loadout } from '@purrpose/shared';
 import { getLocale, t } from '@purrpose/shared';
-import { LivingCat, quirkFor, type LivingCatHandle, type LivingItems } from './LivingCat.js';
+import { BUBBLE_TAIL_Y, LivingCat, quirkFor, type LivingCatHandle, type LivingItems } from './LivingCat.js';
+import { SpeechBubble, overlaps, useBubbleLayout } from './SpeechBubble.js';
 import { IconGlyph } from './icons.js';
 import { useTextWidth } from './textFit.js';
 import { useGazeFollow } from './gaze.js';
@@ -655,6 +656,8 @@ export function CatScene({
 
   // Tap → hearts float up (always) and the cat reacts (when it's animated). The page
   // gets a 'tap' event to play a meow.
+  /** What the cat is saying (reported by LivingCat; drawn here on the top layer). */
+  const [bubble, setBubble] = useState<string | null>(null);
   const [hearts, setHearts] = useState<number | null>(null);
   const heartsTimer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(heartsTimer.current), []);
@@ -857,6 +860,18 @@ export function CatScene({
     ] as Array<[Movable, React.ReactNode, number]>
   ).sort((a, b) => (posOf(a[0])?.y ?? 0) - (posOf(b[0])?.y ?? 0));
   const movingLine = moving ? quirkFor(catId, 'WAITING', moving.to) : null;
+  const badgeBox = { x: 20, y: 20, w: Math.round(badgeW + 44), h: 28 };
+  const bubbleLayout = useBubbleLayout(
+    reduced ? null : bubble,
+    { x: catX, tailY: catY + BUBBLE_TAIL_Y * catScale, s: catScale },
+    { w: SCENE_WIDTH, h: SCENE_HEIGHT },
+    badgeBox,
+  );
+  const talking = Boolean(bubbleLayout);
+  // The badge only gives way when the bubble really has nowhere else to go.
+  const badgeHidden = Boolean(
+    bubbleLayout && overlaps(bubbleLayout.box, badgeBox),
+  );
 
   return (
     <svg
@@ -950,6 +965,7 @@ export function CatScene({
               onEvent={onEvent}
               speech={movingLine}
               items={living}
+              onBubble={setBubble}
               ref={setLivingRef}
             />
           )}
@@ -974,7 +990,7 @@ export function CatScene({
 
 
       {/* 6. EMOTIONAL STATUS OVERLAYS */}
-      {!reduced && state === 'SLEEPING' && (
+      {!reduced && !talking && state === 'SLEEPING' && (
         <g transform="translate(240, 190)">
           <text x={0} y={0} fontSize={20} fill="#5C93C4" style={{ fontFamily: 'var(--font-hand)', fontWeight: 'bold' }} className="lc-zzz">
             z
@@ -988,7 +1004,7 @@ export function CatScene({
         </g>
       )}
 
-      {!reduced && (state === 'SATISFIED' || isFinished) && (
+      {!reduced && !talking && (state === 'SATISFIED' || isFinished) && (
         <g opacity={0.95}>
           <text x={80} y={200} fontSize={26} fill="#E76F51" style={{ fontFamily: 'var(--font-hand)' }} className="lc-zzz">
             ♪
@@ -1000,7 +1016,11 @@ export function CatScene({
       )}
 
       {/* 7. LIFE PROGRESSION BADGE PILL (sized to its text) */}
-      <g transform="translate(20, 20)" pointerEvents="none">
+      <g
+        transform="translate(20, 20)"
+        pointerEvents="none"
+        style={{ opacity: badgeHidden ? 0 : 1, transition: 'opacity 0.25s ease' }}
+      >
         <rect x={0} y={0} rx={13} ry={13} width={Math.round(badgeW + 44)} height={28} fill="#FFFDF8" stroke={INK} strokeWidth={1.8} />
         <g transform="translate(8 4) scale(0.83)">
           <IconGlyph name={info.icon} />
@@ -1034,6 +1054,9 @@ export function CatScene({
           </g>
         </g>
       )}
+
+      {/* 9. WHAT THE CAT SAYS — on top of everything, kept inside the frame. */}
+      {bubbleLayout && <SpeechBubble key={bubble ?? ''} layout={bubbleLayout} />}
     </svg>
   );
 }

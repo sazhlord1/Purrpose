@@ -57,6 +57,8 @@ export type CatAction =
   | 'scratch'
   | 'bat'
   | 'pawUp'
+  /** Paw raised up and out, pads forward: the high-five when a pact is sealed. */
+  | 'highFive'
   | 'sniff'
   | 'curious'
   | 'alert'
@@ -85,6 +87,7 @@ export const ACTION_EXPRESSION: Partial<Record<CatAction, Expression>> = {
   stretch: 'happyShut',
   sniff: 'hopeful',
   pawUp: 'stare',
+  highFive: 'happyShut',
   freeze: 'stare',
   sigh: 'sad',
   feast: 'happyShut',
@@ -203,6 +206,60 @@ function Mark({ kind }: { kind: '!' | '?' | '…' }) {
 }
 
 /**
+ * What the cat daydreams about, drawn inside the thought cloud (centred on 198,36,
+ * about 30×20). 0 fish · 1 fried drumstick · 2 ball of yarn · 3 little yellow chick · 4 milk carton.
+ */
+function DreamSnack({ kind }: { kind: number }) {
+  const k = ((kind % 5) + 5) % 5;
+  const sw = 1.4;
+  if (k === 1)
+    return (
+      <g strokeWidth={sw} strokeLinejoin="round" strokeLinecap="round">
+        {/* bone with two knobs, then the crispy meat */}
+        <path d="M207 30 l5 -2 a2.6 2.6 0 1 1 2.6 3.4 a2.6 2.6 0 1 1 -2 3.6 l-5 1" fill={PAPER} />
+        <path d="M186 40 c-3 -9 6 -16 15 -13 c7 2 9 9 6 13 c-4 5 -14 7 -21 0 Z" fill="#C97B36" />
+        <path d="M192 34 l2 1 M197 31 l1 2 M199 37 l2 0" stroke="#7A4519" strokeWidth={1.2} />
+      </g>
+    );
+  if (k === 2)
+    return (
+      <g strokeWidth={sw} strokeLinecap="round">
+        <circle cx={198} cy={36} r={10} fill="#E8798A" />
+        <path d="M190 31 q8 4 15 -2 M189 37 q9 4 18 -1 M192 43 q6 -2 12 -1 M195 27 q-3 8 0 18" fill="none" stroke="#B4475B" strokeWidth={1.2} />
+        <path d="M208 38 q6 3 9 -2" fill="none" />
+      </g>
+    );
+  if (k === 3)
+    return (
+      <g strokeWidth={sw} strokeLinejoin="round">
+        <ellipse cx={199} cy={39} rx={10} ry={7.5} fill="#F7D046" />
+        <circle cx={192} cy={31} r={6} fill="#F7D046" />
+        <path d="M186 31 l-4 1.5 l4 1.5 Z" fill="#E98B2A" strokeWidth={1.1} />
+        <circle cx={191} cy={30} r={1.1} fill={INK} stroke="none" />
+        <path d="M201 37 q4 -3 6 1" fill="none" strokeWidth={1.2} />
+        <path d="M193 25 q1 -3 3 -2" fill="none" strokeWidth={1.1} />
+      </g>
+    );
+  if (k === 4)
+    return (
+      <g strokeWidth={sw} strokeLinejoin="round">
+        <path d="M191 29 l3 -6 h8 l3 6 Z" fill="#E9EEF5" />
+        <rect x={191} y={29} width={14} height={17} rx={1.5} fill="#FFFFFF" />
+        <rect x={191} y={33} width={14} height={7} fill="#7DB3E3" strokeWidth={1.1} />
+        <path d="M195 37 q1.5 -2 3 0 q1.5 2 3 0" fill="none" stroke="#FFFFFF" strokeWidth={1.1} />
+      </g>
+    );
+  return (
+    <path
+      d="M186 36 q9 -9 18 0 q-9 9 -18 0 Z M204 36 l7 -5.5 v11 Z"
+      fill="#8EC1E8"
+      strokeWidth={sw}
+      strokeLinejoin="round"
+    />
+  );
+}
+
+/**
  * `mood` (0–3) rotates every few seconds in LivingCat so a state never looks
  * frozen: the tongue comes and goes, the mouth opens and closes, marks appear
  * now and then. Static drawings (galleries) use mood 0, the full look.
@@ -213,16 +270,30 @@ export function FaceOverlays({
   spec,
   mood = 0,
   talking = false,
+  gasp,
+  dream = 0,
 }: {
   state: CatState;
   action?: CatAction | null;
   spec: FaceSpec;
   mood?: number;
-  /** A speech bubble is up: skip the thought cloud, which would sit right behind it. */
+  /**
+   * A speech bubble is up: everything that floats above the head (thought cloud,
+   * sparkles, hearts, "!"/"?" marks, sweat) steps aside so the bubble covers nothing.
+   */
   talking?: boolean;
+  /** Mouth open in a gasp right now (VERY_CLOSE / FAILURE). Unset: mood 0 only. */
+  gasp?: boolean;
+  /** Which snack the thought cloud shows (0 fish, 1 drumstick, 2 yarn, 3 chick, 4 milk). */
+  dream?: number;
 }) {
   const parts: JSX.Element[] = [];
   const m = ((mood % 4) + 4) % 4;
+  const gasping = gasp ?? m === 0;
+  /** Things above the head: left out while the cat talks. */
+  const above = (el: JSX.Element) => {
+    if (!talking) parts.push(el);
+  };
   const mouthBusy = action === 'yawn' || action === 'tongue' || action === 'lickPaw' || action === 'feast' || action === 'sniff';
 
   // Per-action details
@@ -247,7 +318,7 @@ export function FaceOverlays({
     );
   }
   if (action === 'loved') {
-    parts.push(
+    above(
       <g key="loved" className="fk-float" fill={HEART} stroke={INK} strokeWidth={1.4}>
         <path d={heart(60, 70, 7)} />
         <path d={heart(184, 56, 9)} />
@@ -255,9 +326,9 @@ export function FaceOverlays({
       </g>,
     );
   }
-  if (action === 'curious') parts.push(<Mark key="q" kind="?" />);
-  if (action === 'alert' || action === 'pawUp') parts.push(<Mark key="x" kind="!" />);
-  if (action === 'freeze') parts.push(<Mark key="d" kind="…" />);
+  if (action === 'curious') above(<Mark key="q" kind="?" />);
+  if (action === 'alert' || action === 'pawUp') above(<Mark key="x" kind="!" />);
+  if (action === 'freeze') above(<Mark key="d" kind="…" />);
   if (action === 'sigh') {
     parts.push(
       <g key="sigh" className="fk-float" fill={PAPER} stroke={INK} strokeWidth={1.8}>
@@ -271,7 +342,7 @@ export function FaceOverlays({
   switch (state) {
     case 'INITIAL':
       if (m >= 2) break;
-      parts.push(
+      above(
         <g key="sp" className="fk-twinkle" fill={GOLD} stroke={INK} strokeWidth={1.2} strokeLinejoin="round">
           <path d={star(56, 60, 7)} />
           <path d={star(186, 50, 9)} />
@@ -281,13 +352,13 @@ export function FaceOverlays({
       break;
     case 'WAITING':
       // Daydreaming about dinner — only while idle, so it never covers an action mark.
-      if (action || m === 2 || talking) break;
-      parts.push(
+      if (action || m === 2) break;
+      above(
         <g key="dream" className="fk-float" stroke={INK} strokeWidth={1.8}>
           <circle cx={170} cy={70} r={3} fill={PAPER} />
           <circle cx={180} cy={58} r={4.5} fill={PAPER} />
-          <ellipse cx={198} cy={38} rx={20} ry={14} fill={PAPER} />
-          <path d="M188 38 q8 -8 16 0 q-8 8 -16 0 Z M204 38 l6 -5 v10 Z" fill="#8EC1E8" strokeWidth={1.4} strokeLinejoin="round" />
+          <ellipse cx={198} cy={36} rx={22} ry={16} fill={PAPER} />
+          <DreamSnack kind={dream} />
         </g>,
       );
       break;
@@ -298,9 +369,9 @@ export function FaceOverlays({
       break;
     case 'VERY_CLOSE':
       // gasping → sweating → trembling with the mouth shut → gasping again
-      if (!mouthBusy && (m === 0 || m === 3)) parts.push(<OpenMouth key="m" spec={spec} />);
-      if (m <= 1) parts.push(<path key="sweat" className="fk-drip" d={drop(176, 78, 5)} fill={WATER} stroke={INK} strokeWidth={1.4} />);
-      if (m === 0 || m === 2) parts.push(
+      if (!mouthBusy && gasping) parts.push(<OpenMouth key="m" spec={spec} />);
+      if (m <= 1) above(<path key="sweat" className="fk-drip" d={drop(176, 78, 5)} fill={WATER} stroke={INK} strokeWidth={1.4} />);
+      if (m === 0 || m === 2) above(
         <g key="fx" className="fk-shake" stroke={INK} strokeWidth={2.4} strokeLinecap="round">
           <path d="M52 64 L42 56" />
           <path d="M48 78 L36 76" />
@@ -320,8 +391,8 @@ export function FaceOverlays({
       parts.push(<path key="tear" d={drop(spec.left[0] - 4, spec.left[1] + 12, 3)} fill={WATER} stroke={INK} strokeWidth={1.1} />);
       break;
     case 'FAILURE':
-      if (!mouthBusy && m !== 1) parts.push(<OpenMouth key="m" spec={spec} />);
-      if (m !== 2) parts.push(
+      if (!mouthBusy && gasping) parts.push(<OpenMouth key="m" spec={spec} />);
+      if (m !== 2) above(
         <g key="sp" className="fk-twinkle" fill={GOLD} stroke={INK} strokeWidth={1.2}>
           <path d={star(52, 70, 8)} />
           <path d={star(190, 60, 8)} />
@@ -330,7 +401,7 @@ export function FaceOverlays({
       break;
     case 'SATISFIED':
       if (!mouthBusy && (m === 0 || m === 2)) parts.push(<Tongue key="t" spec={spec} />);
-      if (m !== 2) parts.push(
+      if (m !== 2) above(
         <g key="hearts" className="fk-float" fill={HEART} stroke={INK} strokeWidth={1.4}>
           <path d={heart(182, 58, 8)} />
           <path d={heart(196, 34, 5.5)} />
@@ -403,7 +474,7 @@ export function FrontPaws({ spec }: { spec: FaceSpec }) {
 }
 
 /** Actions performed with the paw. While one runs, the drawn right leg is hidden (.pcat-leg-r). */
-export const PAW_ACTIONS: ReadonlySet<CatAction> = new Set<CatAction>(['lickPaw', 'scratch', 'bat', 'pawUp', 'knead', 'scratchPost']);
+export const PAW_ACTIONS: ReadonlySet<CatAction> = new Set<CatAction>(['lickPaw', 'scratch', 'bat', 'pawUp', 'knead', 'scratchPost', 'highFive']);
 
 function pawTarget(action: CatAction, spec: FaceSpec): [number, number] {
   const [lx, ly] = spec.leg;
@@ -411,6 +482,7 @@ function pawTarget(action: CatAction, spec: FaceSpec): [number, number] {
   if (action === 'bat') return [lx + 48, ly + 54]; // out to the side at floor level, where the toy lies (rotated back to wind up)
   if (action === 'knead') return [lx + 6, ly + 40]; // pressing down on the blanket in front
   if (action === 'scratchPost') return [lx + 62, ly - 20]; // reaching out sideways to the post
+  if (action === 'highFive') return [lx + 52, ly - 62]; // up and out, pads toward the hand
   return [lx + 30, ly - 58]; // scratch / pawUp: raised high beside the face
 }
 
@@ -421,16 +493,16 @@ export function PawOverlay({ action, spec, noYarn = false }: { action?: CatActio
   const outline = spec.dark ? DARK_OUTLINE : INK;
   const limb = `M${lx} ${ly} Q${(lx + px) / 2 + 6} ${(ly + py) / 2} ${px} ${py}`;
   const origin = { transformOrigin: `${lx}px ${ly}px` };
-  const loop =
-    action === 'lickPaw'
-      ? 'fk-paw-lick'
-      : action === 'bat'
-        ? 'fk-paw-bat'
-        : action === 'pawUp'
-          ? 'fk-paw-tap'
-          : action === 'knead'
-            ? 'fk-paw-knead'
-            : 'fk-paw-scratch'; // scratch + scratchPost
+  // highFive holds still: the paw is up, waiting for the hand.
+  const LOOPS: Partial<Record<CatAction, string>> = {
+    lickPaw: 'fk-paw-lick',
+    bat: 'fk-paw-bat',
+    pawUp: 'fk-paw-tap',
+    knead: 'fk-paw-knead',
+    scratch: 'fk-paw-scratch',
+    scratchPost: 'fk-paw-scratch',
+  };
+  const loop = LOOPS[action];
 
   return (
     <g data-part="paw" className="fk-paw-in" style={origin}>

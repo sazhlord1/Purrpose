@@ -2,9 +2,9 @@ import {
   motion,
   useAnimationControls,
 } from 'framer-motion';
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import type { CatId } from '@purrpose/shared';
-import { CAT_SEED, getLocale } from '@purrpose/shared';
+import { CAT_SEED } from '@purrpose/shared';
 import { Cat } from './Cat.js';
 import type { CatState, Expression } from './poses.js';
 import {
@@ -21,7 +21,6 @@ import {
   type MacroName,
 } from './engine.js';
 import { injectLivingStyle } from './livingCss.js';
-import { cssFontFamily, layoutText, useFontsVersion } from './textFit.js';
 import { catName, resolveCatConfig } from './config.js';
 import type { CatAction, CatWear } from './FaceKit.js';
 
@@ -105,6 +104,11 @@ export interface LivingCatProps {
   onEvent?: (event: string) => void;
   speech?: string | null;
   items?: LivingItems;
+  /**
+   * What the cat is saying right now (null when it's quiet). The scene draws the
+   * bubble on its top layer so nothing covers it and it stays inside the frame.
+   */
+  onBubble?: (text: string | null) => void;
 }
 
 function wait(seconds: number, speed: number): Promise<void> {
@@ -112,7 +116,7 @@ function wait(seconds: number, speed: number): Promise<void> {
 }
 
 export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function LivingCat(
-  { catId, state, seed, speed = 1, paused = false, reduced = false, onEvent, speech, items },
+  { catId, state, seed, speed = 1, paused = false, reduced = false, onEvent, speech, items, onBubble },
   ref,
 ) {
   const config = resolveCatConfig(catId);
@@ -156,7 +160,17 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
   });
 
   const [bubble, setBubble] = useState<string | null>(null);
+  const onBubbleRef = useRef(onBubble);
+  onBubbleRef.current = onBubble;
+  useEffect(() => {
+    onBubbleRef.current?.(bubble);
+  }, [bubble]);
+  useEffect(() => () => onBubbleRef.current?.(null), []);
   const [mood, setMood] = useState(0);
+  /** Which snack the thought cloud shows this time (fish, drumstick, yarn, chick, milk). */
+  const [dream, setDream] = useState(0);
+  /** A short open-mouthed gasp now and then (not all the time). */
+  const [gasp, setGasp] = useState(false);
   const scriptDoneRef = useRef<string>('');
   const firstBeatRef = useRef(true);
 
@@ -595,10 +609,25 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
     const next = () => {
       timer = window.setTimeout(() => {
         setMood(m => (m + 1 + Math.floor(Math.random() * 3)) % 4);
+        setDream(Math.floor(Math.random() * 5));
         next();
       }, (4500 + Math.random() * 4500) / speedRef.current);
     };
     next();
+    return () => window.clearTimeout(timer);
+  }, [reduced, paused]);
+
+  // Gasps (the round open mouth of VERY_CLOSE / FAILURE) come in short bursts with
+  // long pauses, so the face isn't stuck in "shocked".
+  useEffect(() => {
+    if (reduced || paused) return undefined;
+    let timer = 0;
+    const loop = (open: boolean) => {
+      setGasp(open);
+      const ms = open ? 1300 + Math.random() * 900 : 9000 + Math.random() * 10000;
+      timer = window.setTimeout(() => loop(!open), ms / speedRef.current);
+    };
+    loop(false);
     return () => window.clearTimeout(timer);
   }, [reduced, paused]);
 
@@ -812,10 +841,11 @@ export const LivingCat = forwardRef<LivingCatHandle, LivingCatProps>(function Li
             mood={mood}
             idleExpression={IDLE_EYES[displayState]?.[mood]}
             talking={Boolean(bubble)}
+            gasp={gasp}
+            dream={dream}
           />
         </g>
       </g>
-      {bubble && <SpeechBubble text={bubble} />}
     </motion.g>
   );
 });
@@ -826,88 +856,9 @@ LivingCat.displayName = 'LivingCat';
 const QUIET_AFTER_SPEECH_MS = 12_000;
 
 /** Where the bubble's tail points (just above the cat's head), in cat coordinates. */
-const BUBBLE_TAIL_Y = -177;
+export const BUBBLE_TAIL_Y = -177;
 
-/**
- * In a right-to-left line, ASCII faces like ":(" or ">-<" get flipped by the bidi
- * algorithm (brackets mirror, order reverses). Wrapping each one in a left-to-right
- * isolate (U+2066 … U+2069) keeps it exactly as typed.
- */
-export function isolateEmoticons(text: string): string {
-  return text.replace(/[:;=^<>()\-_~*xXoO0-9]{2,}/g, m =>
-    /[:;=^<>()]/.test(m) ? `\u2066${m}\u2069` : m,
-  );
-}
-
-function SpeechBubble({ text: raw }: { text: string }) {
-  const rtl = getLocale() === 'fa';
-  const text = rtl ? isolateEmoticons(raw) : raw;
-  const fontsV = useFontsVersion();
-  // Persian bubbles are Anjoman Black; the English ones keep the hand-drawn font.
-  const size = 15;
-  const weight = rtl ? 900 : 500;
-  const lineH = rtl ? 25 : 20;
-  const family = cssFontFamily('--font-hand', rtl ? 'Anjoman, sans-serif' : "'Gochi Hand', cursive");
-  const block = useMemo(() => {
-    const font = `${weight} ${size}px ${family}`;
-    // Prefer short, balanced lines; widen only when a line would run past three rows.
-    let b = layoutText(text, font, 200, lineH, rtl);
-    if (b.lines.length > 3) b = layoutText(text, font, 250, lineH, rtl);
-    if (b.lines.length > 3) b = layoutText(text, font, 290, lineH, rtl);
-    // Balance the rows: the narrowest width that still needs the same number of lines.
-    for (let maxW = b.width - 6; b.lines.length > 1 && maxW > 60; maxW -= 6) {
-      const tighter = layoutText(text, font, maxW, lineH, rtl);
-      if (tighter.lines.length !== b.lines.length) break;
-      b = tighter;
-    }
-    return b;
-  }, [text, family, fontsV, rtl]);
-
-  const padX = 16;
-  const padY = rtl ? 10 : 9;
-  const w = Math.max(90, Math.ceil(block.width) + padX * 2);
-  // Persian marks (tanvin, kasra…) can sit a hair above the measured ink: a little extra headroom.
-  const padTop = padY + (rtl ? 3 : 0);
-  const h = Math.ceil(block.ascent + block.bottom) + padTop + padY;
-  const mid = w / 2;
-  const baseline = padTop + block.ascent;
-  // Outer <g> positions the bubble; the inner <g> carries the pop-in CSS animation.
-  // (A CSS transform on the same element would override the SVG position attribute.)
-  return (
-    <g transform={`translate(${-mid} ${BUBBLE_TAIL_Y - h})`}>
-      <g className="lc-bubble">
-        <rect x={0} y={0} rx={14} ry={16} width={w} height={h} fill="#FFFDF8" stroke="#2B231F" strokeWidth={2.4} />
-        <path
-          d={`M${mid - 6} ${h - 1} L${mid} ${h + 10} L${mid + 8} ${h - 1} Z`}
-          fill="#FFFDF8"
-          stroke="#2B231F"
-          strokeWidth={2.4}
-          strokeLinejoin="round"
-        />
-        <path d={`M${mid - 8} ${h - 3} h18 v3 h-18 z`} fill="#FFFDF8" stroke="none" />
-        {/* One <text> per line: with several <tspan>s in one right-to-left <text>, some
-            browsers (Android WebView) run the bidi reordering across the lines and swap
-            letters between them ("هستم" ended up split as "ه" + "ستم"). */}
-        {block.lines.map((l, i) => (
-          <text
-            key={i}
-            x={mid}
-            y={baseline + i * lineH}
-            textAnchor="middle"
-            fontSize={size}
-            fontWeight={weight}
-            fill="#2B231F"
-            direction={rtl ? 'rtl' : undefined}
-            unicodeBidi={rtl ? 'isolate' : undefined}
-            style={{ fontFamily: 'var(--font-hand)', letterSpacing: rtl ? 0 : '0.2px' }}
-          >
-            {l}
-          </text>
-        ))}
-      </g>
-    </g>
-  );
-}
+export { isolateEmoticons } from './SpeechBubble.js';
 
 export function quirkFor(catId: CatId, phase: ActivePhase, stage: number = 1): string | null {
   const seed = CAT_SEED.find(c => c.id === catId);

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import type { CatId } from '@purrpose/shared';
 import { getLocale, t } from '../i18n/index.js';
 import { ambient } from '../lib/ambient.js';
-import { PACT_FIGURES } from './pact/figures.js';
+import { HighFiveArt } from './HighFiveArt.js';
 
 interface PawShakeProps {
   open: boolean;
@@ -13,15 +13,6 @@ interface PawShakeProps {
 }
 
 const INK = '#26201D';
-
-function CatHighFiveFigure({ catId }: { catId: CatId }) {
-  const Figure = PACT_FIGURES[catId] ?? PACT_FIGURES.orange;
-  return (
-    <g id={`pact-cat-${catId}`}>
-      <Figure />
-    </g>
-  );
-}
 
 export function PawShake({ open, catId, catName = t('Your Cat'), onComplete }: PawShakeProps) {
   const [clasped, setClasped] = useState(false);
@@ -128,56 +119,13 @@ export function PawShake({ open, catId, catName = t('Your Cat'), onComplete }: P
                 fill={INK}
                 direction={fa ? 'rtl' : undefined}
               >
-                <text x="176" y="26" fontSize="20" letterSpacing={fa ? undefined : '0.5px'}>{t('Pact')}</text>
-                <text x="176" y="45" fontSize="20" letterSpacing={fa ? undefined : '0.5px'}>{t('Sealed')}</text>
+                <text x="176" y="16" fontSize="20" letterSpacing={fa ? undefined : '0.5px'}>{t('Pact')}</text>
+                <text x="176" y="35" fontSize="20" letterSpacing={fa ? undefined : '0.5px'}>{t('Sealed')}</text>
               </motion.g>
             )}
 
-            {/* 3. Left Cat (Slides in smoothly from Left) */}
-            <motion.g
-              initial={{ x: -140, opacity: 0 }}
-              animate={{
-                x: 0,
-                opacity: 1,
-                y: clasped ? [0, -6, 3, -4, 0] : 0,
-              }}
-              transition={{
-                x: { duration: 0.42, ease: [0.16, 1, 0.3, 1] },
-                y: { duration: 0.65, ease: 'easeInOut' },
-              }}
-            >
-              <CatHighFiveFigure catId={catId} />
-            </motion.g>
-
-            {/* 4. Right Human Hand (Slides in smoothly from Right) */}
-            <motion.g
-              initial={{ x: 140, opacity: 0 }}
-              animate={{
-                x: 0,
-                opacity: 1,
-                y: clasped ? [0, -6, 3, -4, 0] : 0,
-              }}
-              transition={{
-                x: { duration: 0.42, ease: [0.16, 1, 0.3, 1] },
-                y: { duration: 0.65, ease: 'easeInOut' },
-              }}
-            >
-              <g stroke={INK} strokeWidth={2.4} strokeLinejoin="round">
-                <path d="M216,134 L258,156 L244,190 L202,168 Z" fill="#EAE2D2" />
-                <line x1="210" y1="141" x2="198" y2="169" strokeWidth={2.2} />
-                <path d="M198,145 L182,125 C176,120 168,118 164,124 C160,130 170,138 184,148 L196,162 Z" fill="#FBE9D2" />
-                <path d="M198,145 
-                         L194,115 L192,86 C192,80 186,80 186,86 L186,108 
-                         L184,76 C184,70 178,70 178,76 L178,102 
-                         L176,68 C176,62 170,62 170,68 L170,98 
-                         L168,75 C168,69 162,69 162,75 L162,112 
-                         C156,110 148,114 150,121 C152,126 160,130 170,135 
-                         L182,148 Z" fill="#FBE9D2" />
-                <line x1="168" y1="84" x2="168" y2="108" strokeWidth={1.6} />
-                <line x1="176" y1="78" x2="176" y2="105" strokeWidth={1.6} />
-                <line x1="184" y1="84" x2="184" y2="108" strokeWidth={1.6} />
-              </g>
-            </motion.g>
+            {/* 3. The cat and your hand meet in a high-five. */}
+            <HighFiveArt catId={catId} clasped={clasped} />
           </svg>
 
           {/* Caption */}

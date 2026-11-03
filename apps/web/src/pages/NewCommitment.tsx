@@ -28,6 +28,7 @@ import { AmountPicker, Chip, DoodleButton, Field, Input, SketchCard, Stepper } f
 import { CanTin, KibbleBag, VetCare } from '../components/doodles/index.js';
 import { BackLink } from '../components/BackLink.js';
 import { PawShake } from '../components/PawShake.js';
+import { DeadlinePicker, ceilToStep } from '../components/DeadlinePicker.js';
 import { PactModeChooser } from '../components/pact/PactModeChooser.js';
 import { useCommitments, useMe } from '../lib/queries.js';
 import { foodName, getLocale, t } from '../i18n/index.js';
@@ -92,11 +93,12 @@ export function NewCommitment() {
   const ownEmail = me.data?.user.email?.toLowerCase() ?? null;
 
   const [title, setTitle] = useState('');
-  const [when, setWhen] = useState(() => localInputValue(now() + 24 * 3_600_000));
-  const [selectedQuick, setSelectedQuick] = useState<'Tonight' | 'Tomorrow' | 'Next week' | null>('Tomorrow');
+  // Default: this time tomorrow, on a 5-minute mark (the picker's grid).
+  const [when, setWhen] = useState(() => localInputValue(ceilToStep(now() + 24 * 3_600_000)));
+  const [selectedQuick, setSelectedQuick] = useState<'Tomorrow' | null>('Tomorrow');
   // The first server reply tells us its clock; re-anchor the default deadline to it.
   useEffect(() => {
-    if (selectedQuick === 'Tomorrow') setWhen(localInputValue(now() + 24 * 3_600_000));
+    if (selectedQuick === 'Tomorrow') setWhen(localInputValue(ceilToStep(now() + 24 * 3_600_000)));
   }, [me.data?.serverTime]);
   const [creditType, setCreditType] = useState<ConsequenceType>('MEALS');
   const [amount, setAmount] = useState(5);
@@ -117,7 +119,6 @@ export function NewCommitment() {
   const [sealedCommitmentId, setSealedCommitmentId] = useState<string | null>(null);
   const [showPawShake, setShowPawShake] = useState(false);
 
-  const minWhen = localInputValue(now() + 6 * 60_000);
   const available = me.data?.balances.find(b => b.creditType === creditType)?.available ?? 0;
   const honorStake = startersLeft > 0 ? HONOR_STARTER_STAKE : purrStake;
   const overstaked = mode === 'HONOR' ? honorStake > purrFree : amount > available;
@@ -145,11 +146,6 @@ export function NewCommitment() {
   const stakeText = mode === 'HONOR' ? t('{n} PURR', { n: honorStake }) : `${amount} ${foodName(creditType)}`;
 
   const currentCat = CAT_SEED.find(c => c.id === catId) ?? CAT_SEED[0];
-
-  const handleQuickDeadline = (label: 'Tonight' | 'Tomorrow' | 'Next week', ms: number) => {
-    setSelectedQuick(label);
-    setWhen(localInputValue(now() + ms));
-  };
 
   async function handleConfirmSubmit() {
     if (!isValid || busy) return;
@@ -377,31 +373,15 @@ export function NewCommitment() {
           <span style={{ display: 'block', fontSize: 13.5, fontWeight: 600, color: 'var(--ink-soft)', marginBottom: 6 }}>
             {t('Deadline:')}
           </span>
-          <div className="chip-row" style={{ marginBottom: 8 }}>
-            {[
-              ['Tonight', 6 * 3_600_000],
-              ['Tomorrow', 24 * 3_600_000],
-              ['Next week', 7 * 24 * 3_600_000],
-            ].map(([label, ms]) => (
-              <Chip
-                key={label as string}
-                active={selectedQuick === label}
-                onClick={() => handleQuickDeadline(label as 'Tonight' | 'Tomorrow' | 'Next week', ms as number)}
-              >
-                {t(label as string)}
-              </Chip>
-            ))}
-          </div>
-          <Input
-            type="datetime-local"
-            min={minWhen}
-            value={when}
-            aria-label={t('Deadline date and time')}
-            onChange={e => {
+          <DeadlinePicker
+            value={new Date(when).getTime()}
+            min={now() + 6 * 60_000}
+            max={now() + 30 * 24 * 3_600_000 - 60_000}
+            now={now()}
+            onChange={ms => {
               setSelectedQuick(null);
-              setWhen(e.target.value);
+              setWhen(localInputValue(ms));
             }}
-            style={{ fontSize: 14 }}
           />
         </div>
 
