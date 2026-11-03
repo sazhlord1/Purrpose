@@ -125,13 +125,6 @@ function Terms() {
         )}
       </p>
 
-      <h2>{t('Credits and PURR')}</h2>
-      <p>
-        {t(
-          'Credits (meals, dry food, vet care) and PURR are in-app items. They have no cash value, can’t be exchanged for money, and aren’t refundable except where the law requires it.',
-        )}
-      </p>
-
       <h2>{t('Ending things')}</h2>
       <p>
         {withMail(
