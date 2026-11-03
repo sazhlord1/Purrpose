@@ -1,3 +1,6 @@
+import { IS_IR_EDITION } from './edition.js';
+import { isNativeApp } from './platform.js';
+
 /** Hands a link to the system share sheet, or copies it. Returns what happened. */
 export async function shareLink(url: string, text: string): Promise<'shared' | 'copied' | 'failed'> {
   const nav = navigator as Navigator & { share?: (d: ShareData) => Promise<void> };
@@ -17,7 +20,12 @@ export async function shareLink(url: string, text: string): Promise<'shared' | '
   }
 }
 
-/** The page a witness opens. Same origin as the app (the Android app uses app.purrpose.space too). */
+
+/**
+ * The page a witness opens. On the web: this site. In the Android app the page's origin
+ * is only an internal label, so the link goes to the real website of the app's edition.
+ */
 export function witnessUrl(token: string): string {
-  return `${window.location.origin}/witness/${token}`;
+  const origin = isNativeApp() ? (IS_IR_EDITION ? 'https://app.purrpose.ir' : 'https://app.purrpose.space') : window.location.origin;
+  return `${origin}/witness/${token}`;
 }

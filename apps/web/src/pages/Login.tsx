@@ -99,7 +99,7 @@ export function Login() {
 
       {phoneFirst && (
         <SketchCard variant="a">
-          <PhoneLogin />
+          <PhoneLogin initialPhone={params.get('phone')?.trim().slice(0, 20) ?? ''} />
           <p style={{ margin: '12px 0 0', textAlign: 'center' }}>
             <button type="button" className="link-button" onClick={() => setUseEmail(true)}>
               {t('Use email instead')}

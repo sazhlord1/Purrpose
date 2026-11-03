@@ -178,4 +178,38 @@ describe.skipIf(!dbReady)('sign in with a phone number', () => {
     await prisma.phoneCode.update({ where: { phone: PHONE }, data: { expiresAt: new Date(Date.now() - 1000) } });
     expect((await call('POST', '/api/v1/auth/phone/verify', undefined, { phone: PHONE, code })).json().error.code).toBe('CODE_INVALID');
   });
+
+  it('a witness can be picked by mobile number and decides after signing in with it', async () => {
+    const WITNESS = '09351234567';
+    const owner = (await call('POST', '/api/v1/auth/phone/verify', undefined, { phone: PHONE, code: await codeFor(PHONE) })).json().token as string;
+    // Persian digits are fine; the owner's own number is refused.
+    const mine = await call('POST', '/api/v1/commitments', owner, {
+      title: 'Ship the report',
+      deadlineISO: new Date(clock.now() + 24 * 3_600_000).toISOString(),
+      catId: 'tuxedo',
+      mode: 'STRICT',
+      consequenceType: 'MEALS',
+      consequenceAmount: 1,
+      witnessEmail: PHONE,
+    });
+    expect(mine.json().error.code).toBe('WITNESS_IS_YOU');
+    const res = await call('POST', '/api/v1/commitments', owner, {
+      title: 'Ship the report',
+      deadlineISO: new Date(clock.now() + 24 * 3_600_000).toISOString(),
+      catId: 'tuxedo',
+      mode: 'STRICT',
+      consequenceType: 'MEALS',
+      consequenceAmount: 1,
+      witnessEmail: '۰۹۳۵ ۱۲۳ ۴۵۶۷',
+    });
+    expect(res.statusCode).toBe(201);
+    const pact = res.json().commitment;
+    expect(pact.witnessEmail).toBe(WITNESS);
+
+    const stranger = (await call('POST', '/api/v1/session')).json().token as string;
+    expect((await call('GET', `/api/v1/witness/${pact.witnessToken}`, stranger)).json().witness.isWitness).toBe(false);
+
+    const friend = (await call('POST', '/api/v1/auth/phone/verify', undefined, { phone: WITNESS, code: await codeFor(WITNESS) })).json().token as string;
+    expect((await call('GET', `/api/v1/witness/${pact.witnessToken}`, friend)).json().witness.isWitness).toBe(true);
+  });
 });

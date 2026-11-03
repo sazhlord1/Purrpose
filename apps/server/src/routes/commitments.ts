@@ -77,7 +77,8 @@ export function registerCommitmentRoutes(
   });
 
   // ─── Witness ───────────────────────────────────────────────────────────────
-  // The link only finds the pact; acting on it needs to be signed in with the witness's email.
+  // The link only finds the pact; acting on it needs to be signed in with the witness's email
+  // (or, when the witness was picked by phone number, with that number).
 
   async function loadByToken(token: string, viewerId: string) {
     const prisma = getPrisma();
@@ -86,11 +87,15 @@ export function registerCommitmentRoutes(
         where: { witnessToken: token },
         include: { proof: { select: { text: true, createdAt: true, imageType: true } }, user: { select: { firstName: true } } },
       }),
-      prisma.user.findUnique({ where: { id: viewerId }, select: { email: true } }),
+      prisma.user.findUnique({ where: { id: viewerId }, select: { email: true, phone: true } }),
     ]);
     if (!c || !c.witnessEmail) throw new AppError('NOT_FOUND', undefined, 'This witness link does not work');
     const isOwner = c.userId === viewerId;
-    const isWitness = !isOwner && Boolean(viewer?.email) && viewer?.email?.toLowerCase() === c.witnessEmail;
+    const contact = c.witnessEmail;
+    const isWitness =
+      !isOwner &&
+      ((Boolean(viewer?.email) && viewer?.email?.toLowerCase() === contact) ||
+        (Boolean(viewer?.phone) && viewer?.phone === contact));
     return { c, isOwner, isWitness };
   }
 

@@ -307,4 +307,9 @@ export const ACCOUNT: Record<string, string> = {
   "Too many wrong tries. Ask for a new code.": "چند بار اشتباه زدی. یه کد جدید بخواه.",
   "That code isn’t right. Check the SMS and try again.": "کد درست نیست. پیامک رو چک کن و دوباره بزن.",
   "Please enter your name": "لطفاً اسمت رو بنویس",
+  // witness by mobile number (Iranian edition)
+  "Your witness needs a number that isn’t yours.": "شاهدت باید شماره‌ای غیر از شماره‌ی خودت داشته باشه.",
+  "Enter a mobile number (09…) or an email.": "یه شماره موبایل (۰۹…) یا یه ایمیل وارد کن.",
+  "their mobile number or email": "شماره موبایل یا ایمیلش",
+  "Send them this link. They sign in with this mobile number to check your proof.": "این لینک رو براش بفرست. با همین شماره موبایل وارد می‌شه و مدرکت رو بررسی می‌کنه.",
 };

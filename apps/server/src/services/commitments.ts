@@ -171,8 +171,11 @@ export function makeCommitmentEngine(prisma: PrismaClient, clock: ClockApi) {
         }
         let witnessEmail: string | null = null;
         if (input.witnessEmail && input.mode === 'STRICT') {
-          const owner = await tx.user.findUnique({ where: { id: userId }, select: { email: true } });
-          if (owner?.email && owner.email.toLowerCase() === input.witnessEmail) {
+          const owner = await tx.user.findUnique({ where: { id: userId }, select: { email: true, phone: true } });
+          if (
+            (owner?.email && owner.email.toLowerCase() === input.witnessEmail) ||
+            (owner?.phone && owner.phone === input.witnessEmail)
+          ) {
             throw new AppError('WITNESS_IS_YOU', undefined, 'Your witness needs an email that is not yours');
           }
           witnessEmail = input.witnessEmail;

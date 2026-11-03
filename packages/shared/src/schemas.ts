@@ -35,8 +35,11 @@ export function createCommitmentSchema(nowMs: number) {
     consequenceAmount: z.number().int().min(1).max(9999).optional(),
     /** HONOR only. The first pacts ignore it and use the starter stake. */
     purrStake: z.number().int().min(HONOR_MIN_STAKE).max(100_000).optional(),
-    /** STRICT only: the friend who reviews the proof. */
-    witnessEmail: z.string().trim().toLowerCase().max(254).email().optional(),
+    /**
+     * STRICT only: the friend who reviews the proof — their email, or (Iranian edition)
+     * their mobile number 09… (kept in the same field).
+     */
+    witnessEmail: witnessContactSchema().optional(),
   }).superRefine((v, ctx) => {
     if (v.mode !== 'HONOR') {
       if (!v.consequenceType) ctx.addIssue({ code: 'custom', path: ['consequenceType'], message: 'Pick what is at stake' });
@@ -313,3 +316,21 @@ export const witnessViewSchema = z.object({
   reviewNote: z.string().nullable(),
 });
 export type WitnessView = z.infer<typeof witnessViewSchema>;
+
+/** A witness is found by email, or by an Iranian mobile number (09… with 11 digits). */
+export function witnessContactSchema() {
+  return z
+    .string()
+    .trim()
+    .max(254)
+    .transform(v => {
+      const digits = normalizeDigits(v);
+      return PHONE_RE.test(digits) ? digits : v.toLowerCase();
+    })
+    .pipe(z.union([z.string().email(), z.string().regex(PHONE_RE)]));
+}
+
+/** True when a witness contact is a phone number rather than an email. */
+export function isPhoneContact(contact: string | null | undefined): boolean {
+  return typeof contact === 'string' && PHONE_RE.test(contact);
+}

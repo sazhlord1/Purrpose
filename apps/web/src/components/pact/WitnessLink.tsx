@@ -3,6 +3,7 @@ import { AppIcon } from '@purrpose/cats';
 import { DoodleButton } from '../ui/index.js';
 import { shareLink, witnessUrl } from '../../lib/shareLink.js';
 import { t } from '../../i18n/index.js';
+import { isPhoneContact } from '@purrpose/shared';
 
 /** The owner's way to get the witness link to their friend (share sheet, copy, or select it). */
 export function WitnessLink({ token, email, title }: { token: string; email: string; title: string }) {
@@ -14,7 +15,9 @@ export function WitnessLink({ token, email, title }: { token: string; email: str
         <AppIcon name="account" size={16} /> {t('Witness:')} <span className="ltr">{email}</span>
       </p>
       <p className="muted" style={{ margin: '0 0 8px', fontSize: 13.5 }}>
-        {t('Send them this link. They sign in with this email to check your proof.')}
+        {isPhoneContact(email)
+          ? t('Send them this link. They sign in with this mobile number to check your proof.')
+          : t('Send them this link. They sign in with this email to check your proof.')}
       </p>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <DoodleButton

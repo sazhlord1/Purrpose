@@ -14,9 +14,9 @@ const describe = (err: unknown): string =>
  * Sign in (or sign up) with a mobile number: 09… → a code by SMS → in. A brand-new
  * account is then asked for a name. Whatever this device did as a guest comes along.
  */
-export function PhoneLogin() {
+export function PhoneLogin({ initialPhone = '' }: { initialPhone?: string }) {
   const [step, setStep] = useState<Step>('phone');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState(initialPhone);
   const [code, setCode] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');

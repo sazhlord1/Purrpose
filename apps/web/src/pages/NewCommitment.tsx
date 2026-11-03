@@ -12,7 +12,9 @@ import {
   HONOR_STARTER_STAKE,
   catOverstake,
   catSubtitle,
+  normalizeDigits,
   now,
+  PHONE_RE,
   type CatId,
   type CommitmentDto,
   type CommitmentMode,
@@ -21,6 +23,7 @@ import {
 import { AppIcon, Cat } from '@purrpose/cats';
 import { api, ApiError } from '../lib/api.js';
 import { requestNotificationPermission } from '../lib/notifications.js';
+import { IS_IR_EDITION } from '../lib/edition.js';
 import { AmountPicker, Chip, DoodleButton, Field, Input, SketchCard, Stepper } from '../components/ui/index.js';
 import { CanTin, KibbleBag, VetCare } from '../components/doodles/index.js';
 import { BackLink } from '../components/BackLink.js';
@@ -118,15 +121,25 @@ export function NewCommitment() {
   const available = me.data?.balances.find(b => b.creditType === creditType)?.available ?? 0;
   const honorStake = startersLeft > 0 ? HONOR_STARTER_STAKE : purrStake;
   const overstaked = mode === 'HONOR' ? honorStake > purrFree : amount > available;
-  const witnessEmail = witness.trim().toLowerCase();
+  // Iranian edition: a witness can be picked by mobile number (09…) as well as by email.
+  const witnessDigits = normalizeDigits(witness.trim());
+  const witnessIsPhone = IS_IR_EDITION && PHONE_RE.test(witnessDigits);
+  const witnessEmail = witnessIsPhone ? witnessDigits : witness.trim().toLowerCase();
+  const ownPhone = me.data?.user.phone ?? null;
   const witnessError =
     witnessEmail === ''
       ? null
-      : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(witnessEmail)
-        ? t('That email doesn’t look right.')
-        : ownEmail && witnessEmail === ownEmail
-          ? t('Your witness needs an email that isn’t yours.')
-          : null;
+      : witnessIsPhone
+        ? ownPhone && witnessEmail === ownPhone
+          ? t('Your witness needs a number that isn’t yours.')
+          : null
+        : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(witnessEmail)
+          ? IS_IR_EDITION
+            ? t('Enter a mobile number (09…) or an email.')
+            : t('That email doesn’t look right.')
+          : ownEmail && witnessEmail === ownEmail
+            ? t('Your witness needs an email that isn’t yours.')
+            : null;
   const catUnlocked = unlocked.includes(catId);
   const isValid = mode !== null && title.trim().length > 0 && !overstaked && catUnlocked && !(mode === 'STRICT' && witnessError);
   const stakeText = mode === 'HONOR' ? t('{n} PURR', { n: honorStake }) : `${amount} ${foodName(creditType)}`;
@@ -479,18 +492,18 @@ export function NewCommitment() {
           <div style={{ marginTop: 14 }} data-tour="pact-witness">
             <Field
               label={t('Witness (optional):')}
-              hint={t('their email')}
+              hint={IS_IR_EDITION ? t('their mobile number or email') : t('their email')}
               error={witnessError ?? undefined}
             >
               <Input
-                type="email"
-                inputMode="email"
+                type={IS_IR_EDITION ? 'text' : 'email'}
+                inputMode={IS_IR_EDITION ? 'text' : 'email'}
                 className="ltr"
                 autoComplete="off"
                 maxLength={254}
                 value={witness}
                 onChange={e => setWitness(e.target.value)}
-                placeholder="friend@email.com"
+                placeholder={IS_IR_EDITION ? '09121234567' : 'friend@email.com'}
               />
             </Field>
             <p className="muted field-note">

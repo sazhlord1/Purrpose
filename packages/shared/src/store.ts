@@ -45,6 +45,14 @@ export const FOOD_PRICES = {
 } as const satisfies Record<'MEALS' | 'DRY_FOOD' | 'VET_CARE', { cents: number; unit: string; maxQty: number }>;
 
 /**
+ * Iranian edition (Cafe Bazaar, not wired up yet). What one unit really costs us
+ * (Aban 1405, the team's numbers), and the in-app price, in toman, that still covers
+ * it after Cafe Bazaar's share if that share is as high as 30%.
+ */
+export const FOOD_COST_IRT = { MEALS: 150_000, DRY_FOOD: 1_500_000, VET_CARE: 1_000_000 } as const;
+export const FOOD_PRICES_IRT = { MEALS: 219_000, DRY_FOOD: 2_190_000, VET_CARE: 1_490_000 } as const;
+
+/**
  * disabled: nothing can be bought · sandbox: free test credits (never in production) ·
  * stripe: real checkout through Stripe (test or live, depending on the key).
  */

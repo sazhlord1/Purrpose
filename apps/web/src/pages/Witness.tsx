@@ -1,3 +1,4 @@
+import { isPhoneContact } from '@purrpose/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -66,7 +67,8 @@ export function Witness() {
 
   const owner = w.ownerName ?? t('Your friend');
   const stake = t('{n} {food}', { n: w.stakeLabel.amount, food: foodName(w.stakeLabel.type) });
-  const signedInEmail = me.data?.user.email ?? null;
+  const signedInEmail = me.data?.user.email || me.data?.user.phone || null;
+  const witnessByPhone = isPhoneContact(w.witnessEmail);
   const decided = w.status !== 'ACTIVE';
 
   return (
@@ -168,7 +170,7 @@ export function Witness() {
           </p>
           <DoodleButton
             variant="primary"
-            href={`/login?email=${encodeURIComponent(w.witnessEmail)}`}
+            href={witnessByPhone ? `/login?phone=${encodeURIComponent(w.witnessEmail)}` : `/login?email=${encodeURIComponent(w.witnessEmail)}`}
             onClick={() => returnAfterLogin(`/witness/${token}`)}
           >
             {t('Sign in as the witness')}
