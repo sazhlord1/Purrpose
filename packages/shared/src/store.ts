@@ -75,7 +75,7 @@ export const NOTIF_COPY_FA: Record<keyof typeof NOTIF_COPY, string> = {
   t24h: '۲۴ ساعت مونده. گربه‌ت داره به کابینت غذا سر می‌زنه.',
   t1h: 'گربه‌ت می‌دونه ساعت چنده.',
   success: 'انجامش دادی. گربه‌ت حسابی پکره.',
-  failure: 'نشد. گربه‌ت داره غذا می‌خوره.',
+  failure: 'نشد که بشه. گربه‌ت داره غذا می‌خوره.',
 };
 
 /** Notification copy in a locale (push is sent in the language of the device). */
