@@ -49,6 +49,17 @@ html = html.replace('"inLanguage": ["en", "fa"]', '"inLanguage": "fa"');
 const ENAMAD_CODE = '4894141';
 html = html.replace('<meta charset="utf-8">', `<meta charset="utf-8">\n<meta name="enamad" content="${ENAMAD_CODE}" />`);
 
+// Enamad trust seal in the footer: small but visible (its markup must stay as Enamad gives it).
+const ENAMAD_SEAL =
+  `<a class="enamad" referrerpolicy='origin' target='_blank' href='https://trustseal.enamad.ir/?id=8506135&Code=HMRsXaxTeW3DlHIkUaJo7KnxhrOlZfae'>` +
+  `<img referrerpolicy='origin' src='https://trustseal.enamad.ir/logo.aspx?id=8506135&Code=HMRsXaxTeW3DlHIkUaJo7KnxhrOlZfae' alt='نماد اعتماد الکترونیکی' style='cursor:pointer' code='HMRsXaxTeW3DlHIkUaJo7KnxhrOlZfae'></a>`;
+must(/<\/span>\s*<\/div>\s*<\/footer>/, 'the footer');
+html = html.replace(/(<\/span>)(\s*<\/div>\s*<\/footer>)/, `$1\n    ${ENAMAD_SEAL}$2`);
+html = html.replace(
+  '</head>',
+  '<style>footer .enamad{display:inline-flex;line-height:0}footer .enamad img{height:56px;width:auto;display:block}</style>\n</head>',
+);
+
 // Persian only: fix the language and hide the switch.
 must(/var LANG=\(function\(\)\{/, 'the language picker script');
 html = html.replace(/var LANG=\(function\(\)\{[\s\S]*?\}\)\(\);/, "var LANG='fa';");

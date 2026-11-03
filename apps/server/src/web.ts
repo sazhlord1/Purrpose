@@ -43,7 +43,11 @@ export const WEB_CSP =
  * The landing page is a single static file with inline scripts (no build step), so it
  * needs 'unsafe-inline' for scripts. It has no sign-in and no user data.
  */
-export const LANDING_CSP = WEB_CSP.replace("script-src 'self'", "script-src 'self' 'unsafe-inline'");
+export const LANDING_CSP = WEB_CSP.replace("script-src 'self'", "script-src 'self' 'unsafe-inline'").replace(
+  "img-src 'self' data: blob:",
+  // The Enamad trust seal image is served by Enamad (an Iranian site, so it still loads in an outage).
+  "img-src 'self' data: blob: https://trustseal.enamad.ir",
+);
 
 /** Replies that are a web page/file rather than the API, with the CSP each one gets. */
 export const webReplies = new WeakMap<FastifyReply, string>();
