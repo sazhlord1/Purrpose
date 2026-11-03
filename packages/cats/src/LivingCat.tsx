@@ -885,22 +885,25 @@ function SpeechBubble({ text: raw }: { text: string }) {
           strokeLinejoin="round"
         />
         <path d={`M${mid - 8} ${h - 3} h18 v3 h-18 z`} fill="#FFFDF8" stroke="none" />
-        <text
-          x={mid}
-          y={baseline}
-          textAnchor="middle"
-          fontSize={size}
-          fontWeight={weight}
-          fill="#2B231F"
-          direction={rtl ? 'rtl' : undefined}
-          style={{ fontFamily: 'var(--font-hand)', letterSpacing: rtl ? 0 : '0.2px' }}
-        >
-          {block.lines.map((l, i) => (
-            <tspan key={i} x={mid} dy={i === 0 ? 0 : lineH}>
-              {l}
-            </tspan>
-          ))}
-        </text>
+        {/* One <text> per line: with several <tspan>s in one right-to-left <text>, some
+            browsers (Android WebView) run the bidi reordering across the lines and swap
+            letters between them ("هستم" ended up split as "ه" + "ستم"). */}
+        {block.lines.map((l, i) => (
+          <text
+            key={i}
+            x={mid}
+            y={baseline + i * lineH}
+            textAnchor="middle"
+            fontSize={size}
+            fontWeight={weight}
+            fill="#2B231F"
+            direction={rtl ? 'rtl' : undefined}
+            unicodeBidi={rtl ? 'isolate' : undefined}
+            style={{ fontFamily: 'var(--font-hand)', letterSpacing: rtl ? 0 : '0.2px' }}
+          >
+            {l}
+          </text>
+        ))}
       </g>
     </g>
   );
