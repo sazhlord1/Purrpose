@@ -40,6 +40,7 @@ const ERROR_FALLBACK: Record<string, string> = {
   SMS_UNAVAILABLE: 'Signing in with a phone number isn’t available yet.',
   SMS_FAILED: 'We couldn’t send the SMS. Try again in a minute.',
   CODE_INVALID: 'That code isn’t right. Check the SMS and try again.',
+  APPEAL_CLOSED: 'The time to appeal has passed, or this one can’t be appealed.',
   INTERNAL: 'Something went wrong on our side. Try again in a bit.',
 };
 

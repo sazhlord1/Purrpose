@@ -40,7 +40,15 @@ export function createCommitmentSchema(nowMs: number) {
      * their mobile number 09… (kept in the same field).
      */
     witnessEmail: witnessContactSchema().optional(),
+    /**
+     * STRICT: the player ticked "if I don't keep this pact, this food is donated to
+     * the cats and can't be returned". Required for strict pacts.
+     */
+    donationConsent: z.boolean().optional(),
   }).superRefine((v, ctx) => {
+    if (v.mode === 'STRICT' && v.donationConsent !== true) {
+      ctx.addIssue({ code: 'custom', path: ['donationConsent'], message: 'Confirm that the food is donated if the pact is not kept' });
+    }
     if (v.mode !== 'HONOR') {
       if (!v.consequenceType) ctx.addIssue({ code: 'custom', path: ['consequenceType'], message: 'Pick what is at stake' });
       if (!v.consequenceAmount) ctx.addIssue({ code: 'custom', path: ['consequenceAmount'], message: 'Stake at least 1' });
@@ -95,9 +103,35 @@ export const commitmentDtoSchema = z.object({
   reviewedAtISO: z.string().nullable().optional(),
   reviewedBy: z.enum(['witness', 'admin', 'auto']).nullable().optional(),
   reviewNote: z.string().nullable().optional(),
+  /** Detail view only: the owner's appeal against a rejected proof, if any. */
+  appeal: z
+    .object({
+      status: z.enum(['pending', 'upheld', 'overturned']),
+      text: z.string(),
+      createdAtISO: z.string(),
+      decidedAtISO: z.string().nullable(),
+      note: z.string().nullable(),
+    })
+    .nullable()
+    .optional(),
+  /** Detail view only: until when the owner may still appeal (null = not appealable). */
+  appealUntilISO: z.string().nullable().optional(),
 });
 
 export type CommitmentDto = z.infer<typeof commitmentDtoSchema>;
+export type AppealView = NonNullable<CommitmentDto['appeal']>;
+
+/** The owner asks for a second look at a rejected proof. */
+export const appealSchema = z.object({
+  text: z.string().trim().min(10, 'Tell us in a sentence or two why the decision was wrong').max(600),
+});
+export type AppealInput = z.infer<typeof appealSchema>;
+
+/** The admin's answer to an appeal: overturn (the pact counts as kept, food back) or uphold. */
+export const appealDecisionSchema = z.object({
+  overturn: z.boolean(),
+  note: z.string().trim().max(300).optional(),
+});
 
 export const userRoleSchema = z.enum(['USER', 'ADMIN']);
 export type UserRole = z.infer<typeof userRoleSchema>;

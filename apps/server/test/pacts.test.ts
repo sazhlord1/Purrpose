@@ -40,6 +40,7 @@ const strict = (witnessEmail?: string) => ({
   mode: 'STRICT',
   consequenceType: 'MEALS',
   consequenceAmount: 3,
+  donationConsent: true,
   ...(witnessEmail ? { witnessEmail } : {}),
 });
 /** 1×1 transparent PNG. */
@@ -177,6 +178,63 @@ describe.skipIf(!dbReady)('Honor and strict pacts', () => {
     const m = await meals(owner);
     expect(m.amount).toBe(7); // 10 − 3 went to the cats
     expect((await call('POST', `/api/v1/witness/${pact.witnessToken}/review`, friend, { approve: true })).json().error.code).toBe('ALREADY_SETTLED');
+  });
+
+  it('a strict pact needs the donation box ticked, and the consent is recorded', async () => {
+    const owner = await register('consent@test.dev');
+    const unticked = { ...strict(), donationConsent: undefined };
+    const refused = await call('POST', '/api/v1/commitments', owner, unticked);
+    expect(refused.statusCode).toBe(400);
+    expect(refused.json().error.details.fieldErrors.donationConsent).toBeTruthy();
+    const ok = await call('POST', '/api/v1/commitments', owner, strict());
+    expect(ok.statusCode).toBe(201);
+    const ev = await prisma.appEvent.findFirst({ where: { name: 'commitment_created', payload: { path: ['commitmentId'], equals: ok.json().commitment.id } } });
+    expect(ev?.payload).toMatchObject({ donationConsent: true, consentText: 'donation-v1' });
+    // Honor pacts don't need it.
+    expect((await call('POST', '/api/v1/commitments', owner, honor())).statusCode).toBe(201);
+  });
+
+  it('a rejected proof can be appealed once within 3 days; the admin can overturn it', async () => {
+    const owner = await register('appeal@test.dev');
+    const friend = await register('judge@test.dev');
+    const make = async () => {
+      const p = (await call('POST', '/api/v1/commitments', owner, strict('judge@test.dev'))).json().commitment;
+      await call('POST', `/api/v1/commitments/${p.id}/proof`, owner, { text: 'Did the whole thing' });
+      await call('POST', `/api/v1/witness/${p.witnessToken}/review`, friend, { approve: false, note: 'Not convinced' });
+      return p.id as string;
+    };
+    const a = await make();
+    const b = await make();
+    expect((await meals(owner)).amount).toBe(4); // 10 − 3 − 3
+
+    const detail = (await call('GET', `/api/v1/commitments/${a}`, owner)).json().commitment;
+    expect(detail.appeal).toBeNull();
+    expect(detail.appealUntilISO).toBeTruthy();
+    expect((await call('POST', `/api/v1/commitments/${a}/appeal`, owner, { text: 'short' })).statusCode).toBe(400);
+    const sent = await call('POST', `/api/v1/commitments/${a}/appeal`, owner, { text: 'I did send it, here is why the witness missed it.' });
+    expect(sent.statusCode).toBe(200);
+    expect(sent.json().appeal.status).toBe('pending');
+    expect((await call('POST', `/api/v1/commitments/${a}/appeal`, owner, { text: 'Once more, please look again.' })).json().error.code).toBe('APPEAL_CLOSED');
+
+    // Too late for the second one.
+    clock.advance(3 * 24 * 3_600_000 + 60_000);
+    expect((await call('POST', `/api/v1/commitments/${b}/appeal`, owner, { text: 'I did send it, honestly I did.' })).json().error.code).toBe('APPEAL_CLOSED');
+    expect((await call('GET', `/api/v1/commitments/${b}`, owner)).json().commitment.appealUntilISO).toBeNull();
+
+    const env = { ...getEnv(), ADMIN_EMAIL: 'boss@test.dev', ADMIN_PASSWORD: 'boss-pass-123' };
+    await ensureAdmin(prisma, env);
+    const admin = (await call('POST', '/api/v1/auth/admin/login', undefined, { email: 'boss@test.dev', password: 'boss-pass-123' })).json().token;
+    expect((await call('GET', '/api/v1/admin/appeals', owner)).statusCode).toBe(403);
+    const list = (await call('GET', '/api/v1/admin/appeals', admin)).json().appeals;
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({ id: a, reviewNote: 'Not convinced', appeal: { status: 'pending' } });
+
+    const decided = await call('POST', `/api/v1/admin/appeals/${a}`, admin, { overturn: true, note: 'Proof was fine' });
+    expect(decided.json().appeal.status).toBe('overturned');
+    const after = (await call('GET', `/api/v1/commitments/${a}`, owner)).json().commitment;
+    expect(after).toMatchObject({ status: 'COMPLETED', appeal: { status: 'overturned', note: 'Proof was fine' } });
+    expect((await meals(owner)).amount).toBe(7); // the 3 meals came back
+    expect((await call('POST', `/api/v1/admin/appeals/${a}`, admin, { overturn: false })).json().error.code).toBe('ALREADY_SETTLED');
   });
 
   it('strict pacts without a witness go to the admin; undecided proofs are approved after 48h', async () => {

@@ -116,6 +116,11 @@ export function NewCommitment() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  /** Strict pacts: "if I don't keep it, this food is donated and can't be returned" must be ticked. */
+  const [consent, setConsent] = useState(false);
+  useEffect(() => {
+    if (!confirming) setConsent(false);
+  }, [confirming]);
   const [sealedCommitmentId, setSealedCommitmentId] = useState<string | null>(null);
   const [showPawShake, setShowPawShake] = useState(false);
 
@@ -148,7 +153,7 @@ export function NewCommitment() {
   const currentCat = CAT_SEED.find(c => c.id === catId) ?? CAT_SEED[0];
 
   async function handleConfirmSubmit() {
-    if (!isValid || busy) return;
+    if (!isValid || busy || (mode === 'STRICT' && !consent)) return;
     setBusy(true);
     setError(null);
     try {
@@ -164,6 +169,7 @@ export function NewCommitment() {
                 mode: 'STRICT',
                 consequenceType: creditType,
                 consequenceAmount: amount,
+                donationConsent: consent,
                 ...(witnessEmail ? { witnessEmail } : {}),
               },
       });
@@ -541,11 +547,22 @@ export function NewCommitment() {
                 },
               )}
             </p>
+            {mode === 'STRICT' && (
+              <label className="consent-box">
+                <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />
+                <span>
+                  {richText(
+                    t('I understand that if I don’t keep this pact, {stake} is donated to shelter cats and can’t be returned. This is not a bet: nobody wins money or prizes.'),
+                    { stake: <strong>{stakeText}</strong> },
+                  )}
+                </span>
+              </label>
+            )}
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <DoodleButton
                 variant="primary"
                 size="big"
-                disabled={busy}
+                disabled={busy || (mode === 'STRICT' && !consent)}
                 onClick={handleConfirmSubmit}
               >
                 {t('Yes, I promise!')}

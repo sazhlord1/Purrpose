@@ -26,6 +26,8 @@ export const HONOR_STARTER_BONUS = 10;
 export const HONOR_MIN_STAKE = 10;
 /** A strict pact's proof is approved automatically if nobody decides within this window. */
 export const REVIEW_WINDOW_MS = 48 * 3_600_000;
+/** After a rejected proof, the owner may appeal for this long. */
+export const APPEAL_WINDOW_MS = 3 * 24 * 3_600_000;
 /** Proof photos are shrunk in the browser; the API refuses anything larger. */
 export const PROOF_MAX_IMAGE_BYTES = 600_000;
 export const PROOF_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;

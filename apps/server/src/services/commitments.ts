@@ -1,5 +1,6 @@
 import type { CatId, ConsequenceType } from '@purrpose/shared';
 import {
+  APPEAL_WINDOW_MS,
   GRACE_WINDOW_MS,
   HONOR_STARTER_BONUS,
   HONOR_STARTER_COUNT,
@@ -8,6 +9,7 @@ import {
   REVIEW_WINDOW_MS,
   buildTimeView,
   canStake,
+  type AppealView,
   type CommitmentDto,
   type CreateCommitmentInput,
   type ProofInput,
@@ -22,6 +24,41 @@ import { honorStaked, lockUser } from './purr.js';
 import { assertCatUsable } from './shop.js';
 
 type Tx = Prisma.TransactionClient;
+type Db = PrismaClient | Tx;
+
+/** Which wording of the donation checkbox the player ticked (bump when the text changes). */
+export const DONATION_CONSENT_VERSION = 'donation-v1';
+
+const forPact = (commitmentId: string) => ({ path: ['commitmentId'], equals: commitmentId });
+
+/** The owner's appeal against a rejected proof, and the admin's answer if there is one. */
+export async function appealOf(db: Db, commitmentId: string): Promise<AppealView | null> {
+  const asked = await db.appEvent.findFirst({
+    where: { name: 'pact_appeal', payload: forPact(commitmentId) },
+    orderBy: { createdAt: 'asc' },
+  });
+  if (!asked) return null;
+  const decided = await db.appEvent.findFirst({
+    where: { name: 'pact_appeal_decided', payload: forPact(commitmentId) },
+    orderBy: { createdAt: 'asc' },
+  });
+  const p = (asked.payload ?? {}) as { text?: string };
+  const d = (decided?.payload ?? {}) as { overturned?: boolean; note?: string | null };
+  return {
+    status: !decided ? 'pending' : d.overturned ? 'overturned' : 'upheld',
+    text: p.text ?? '',
+    createdAtISO: asked.createdAt.toISOString(),
+    decidedAtISO: decided?.createdAt.toISOString() ?? null,
+    note: d.note ?? null,
+  };
+}
+
+/** Only a proof a person rejected (witness or admin) can be appealed, within the window. */
+function appealDeadline(c: Commitment): Date | null {
+  if (c.mode !== 'STRICT' || c.status !== 'FAILED' || !c.reviewedAt) return null;
+  if (c.reviewedBy !== 'witness' && c.reviewedBy !== 'admin') return null;
+  return new Date(c.reviewedAt.getTime() + APPEAL_WINDOW_MS);
+}
 export type Reviewer = 'witness' | 'admin' | 'auto';
 
 /** A strict (food) pact was lost: its food goes to the cats. */
@@ -206,6 +243,10 @@ export function makeCommitmentEngine(prisma: PrismaClient, clock: ClockApi) {
             consequenceAmount: commitment.consequenceAmount,
             purrStake: commitment.purrStake,
             witness: Boolean(commitment.witnessEmail),
+            // What the player agreed to, and when (the event's createdAt): kept as a record.
+            ...(input.donationConsent
+              ? { donationConsent: true, consentText: DONATION_CONSENT_VERSION }
+              : {}),
           },
         },
       });
@@ -453,10 +494,84 @@ export function makeCommitmentEngine(prisma: PrismaClient, clock: ClockApi) {
     await prisma.appEvent.create({
       data: { userId, name: 'detail_opened', payload: { commitmentId: id } },
     });
-    return toDto(row);
+    const appeal = await appealOf(prisma, id);
+    const until = appealDeadline(row);
+    return {
+      ...toDto(row),
+      appeal,
+      appealUntilISO: !appeal && until && until.getTime() > clock.now() ? until.toISOString() : null,
+    };
+  }
+
+  /** "That decision was wrong": one appeal per pact, within the window, for the admin to look at. */
+  async function appeal(userId: string, id: string, text: string): Promise<AppealView> {
+    return prisma.$transaction(async tx => {
+      const c = await tx.commitment.findFirst({ where: { id, userId } });
+      if (!c) throw new AppError('NOT_FOUND', { id }, 'Commitment not found');
+      const until = appealDeadline(c);
+      if (!until) throw new AppError('APPEAL_CLOSED', undefined, 'Only a rejected proof can be appealed');
+      if (until.getTime() <= clock.now()) throw new AppError('APPEAL_CLOSED', undefined, 'The time to appeal has passed');
+      // One per pact: lock the row so two taps can't both get in.
+      await tx.$queryRaw`SELECT "id" FROM "Commitment" WHERE "id" = ${id} FOR UPDATE`;
+      if (await appealOf(tx, id)) throw new AppError('APPEAL_CLOSED', undefined, 'You already appealed this one');
+      await tx.appEvent.create({
+        data: { userId, name: 'pact_appeal', payload: { commitmentId: id, text }, createdAt: new Date(clock.now()) },
+      });
+      return (await appealOf(tx, id))!;
+    });
+  }
+
+  /**
+   * The admin's answer. Overturned: the pact counts as kept and its food comes back
+   * (the deduction is undone). Upheld: nothing changes. Exactly once.
+   */
+  async function decideAppeal(id: string, overturn: boolean, note?: string): Promise<AppealView> {
+    return prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT "id" FROM "Commitment" WHERE "id" = ${id} FOR UPDATE`;
+      const c = await tx.commitment.findUnique({ where: { id } });
+      const current = c ? await appealOf(tx, id) : null;
+      if (!c || !current) throw new AppError('NOT_FOUND', { id }, 'No appeal for this pact');
+      if (current.status !== 'pending') throw new AppError('ALREADY_SETTLED', { finalStatus: current.status });
+      const now = new Date(clock.now());
+      if (overturn) {
+        const flipped = await tx.commitment.updateMany({
+          where: { id, status: 'FAILED' },
+          data: {
+            status: 'COMPLETED',
+            completedAt: c.proofSubmittedAt ?? now,
+            failedAt: null,
+            reviewedAt: now,
+            reviewedBy: 'admin',
+            reviewNote: note ?? c.reviewNote,
+          },
+        });
+        if (flipped.count !== 1) throw new AppError('ALREADY_SETTLED', { finalStatus: c.status });
+        const undone = await tx.creditTransaction.deleteMany({
+          where: { commitmentId: id, type: 'FAILURE_DEDUCTION' },
+        });
+        if (undone.count > 0) {
+          await tx.creditBalance.upsert({
+            where: { userId_creditType: { userId: c.userId, creditType: c.consequenceType } },
+            create: { userId: c.userId, creditType: c.consequenceType, amount: c.consequenceAmount },
+            update: { amount: { increment: c.consequenceAmount } },
+          });
+        }
+      }
+      await tx.appEvent.create({
+        data: {
+          userId: c.userId,
+          name: 'pact_appeal_decided',
+          payload: { commitmentId: id, overturned: overturn, note: note ?? null },
+          createdAt: now,
+        },
+      });
+      return (await appealOf(tx, id))!;
+    });
   }
 
   return {
+    appeal,
+    decideAppeal,
     createCommitment,
     settleDue,
     completeCommitment,

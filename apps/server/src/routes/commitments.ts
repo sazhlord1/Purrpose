@@ -1,6 +1,6 @@
 import { userIdOf } from '../auth.js';
 import type { FastifyInstance, FastifyReply } from 'fastify';
-import { createCommitmentSchema, idParamsSchema, proofSchema, reviewSchema, type WitnessView } from '@purrpose/shared';
+import { appealSchema, createCommitmentSchema, idParamsSchema, proofSchema, reviewSchema, type WitnessView } from '@purrpose/shared';
 import type { CommitmentEngine } from '../services/commitments.js';
 import { getPrisma } from '../db.js';
 import { AppError } from '../errors.js';
@@ -50,6 +50,15 @@ export function registerCommitmentRoutes(
     const { id } = parse(idParamsSchema, request.params);
     const commitment = await engine.completeCommitment(userId, id);
     return { commitment: engine.toDto(commitment), serverTime: clock.now() };
+  });
+
+  /** A rejected proof: the owner asks the Purrpose team for a second look (once, within 3 days). */
+  app.post('/api/v1/commitments/:id/appeal', async request => {
+    const userId = userIdOf(request);
+    const { id } = parse(idParamsSchema, request.params);
+    const { text } = parse(appealSchema, request.body);
+    const appeal = await engine.appeal(userId, id, text);
+    return { appeal, serverTime: clock.now() };
   });
 
   /** Strict pacts: "I did it" with a short note and an optional photo. */

@@ -27,6 +27,7 @@ export type ErrorCode =
   | 'SMS_FAILED'
   | 'CODE_INVALID'
   | 'PHONE_TAKEN'
+  | 'APPEAL_CLOSED'
   | 'INTERNAL';
 
 const STATUS_BY_CODE: Record<ErrorCode, number> = {
@@ -58,6 +59,7 @@ const STATUS_BY_CODE: Record<ErrorCode, number> = {
   SMS_FAILED: 502,
   CODE_INVALID: 400,
   PHONE_TAKEN: 409,
+  APPEAL_CLOSED: 409,
   INTERNAL: 500,
 };
 

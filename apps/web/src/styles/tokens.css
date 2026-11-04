@@ -2004,3 +2004,42 @@ html[lang='fa'] .tour-body { line-height: 1.75; }
   .dlp-time { flex-direction: column; align-items: stretch; }
   .dlp-wheels { justify-content: center; }
 }
+
+/* Strict pact: the donation consent box in the confirm step. */
+.consent-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1.5px dashed var(--ink);
+  border-radius: 12px;
+  background: var(--paper-warm);
+  text-align: start;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ink);
+  cursor: pointer;
+}
+.consent-box input {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  accent-color: var(--ink);
+  cursor: pointer;
+}
+
+/* A rejected proof: appeal to the Purrpose team (AppealBox.tsx). */
+.appeal-box {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1.5px dashed var(--ink);
+  border-radius: 14px;
+  background: var(--paper-raised);
+  text-align: start;
+  color: var(--ink);
+}
+.appeal-box p { margin: 4px 0 0; }
+.appeal-box .field { margin-bottom: 0; }
+.appeal-error { color: var(--stamp-red); font-size: 13px; margin: 0 0 8px; }

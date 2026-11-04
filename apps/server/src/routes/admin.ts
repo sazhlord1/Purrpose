@@ -1,11 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { adminGrantSchema, idParamsSchema, reviewSchema } from '@purrpose/shared';
+import { adminGrantSchema, appealDecisionSchema, idParamsSchema, reviewSchema } from '@purrpose/shared';
 import { requireAdmin } from '../auth.js';
 import { clock } from '../clock.js';
 import { getPrisma } from '../db.js';
 import { AppError } from '../errors.js';
-import { makeCommitmentEngine } from '../services/commitments.js';
+import { appealOf, makeCommitmentEngine } from '../services/commitments.js';
 import { toHabitDto } from '../services/habits.js';
 import { creditPurr } from '../services/shop.js';
 import { walletView } from '../services/wallet.js';
@@ -71,6 +71,50 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       const input = parse(reviewSchema, request.body);
       const c = await engine.reviewProof(id, input.approve, 'admin', input.note);
       return { ok: true, status: c.status };
+    });
+
+    /** Appeals against rejected proofs, oldest first; pending ones on top. */
+    scope.get('/api/v1/admin/appeals', async () => {
+      const prisma = getPrisma();
+      const asked = await prisma.appEvent.findMany({ where: { name: 'pact_appeal' }, orderBy: { createdAt: 'desc' }, take: 200 });
+      const ids = [...new Set(asked.map(e => (e.payload as { commitmentId?: string } | null)?.commitmentId).filter((v): v is string => Boolean(v)))];
+      const pacts = await prisma.commitment.findMany({
+        where: { id: { in: ids } },
+        include: {
+          user: { select: { email: true, phone: true, firstName: true } },
+          proof: { select: { text: true, imageType: true } },
+        },
+      });
+      const appeals = [];
+      for (const c of pacts) {
+        const appeal = await appealOf(prisma, c.id);
+        if (!appeal) continue;
+        appeals.push({
+          id: c.id,
+          title: c.title,
+          owner: { email: c.user.email, phone: c.user.phone, firstName: c.user.firstName },
+          witnessEmail: c.witnessEmail,
+          consequenceType: c.consequenceType,
+          consequenceAmount: c.consequenceAmount,
+          proof: { text: c.proof?.text ?? '', hasImage: Boolean(c.proof?.imageType) },
+          reviewedBy: c.reviewedBy,
+          reviewNote: c.reviewNote,
+          appeal,
+        });
+      }
+      appeals.sort(
+        (a, b) =>
+          Number(a.appeal.status !== 'pending') - Number(b.appeal.status !== 'pending') ||
+          a.appeal.createdAtISO.localeCompare(b.appeal.createdAtISO),
+      );
+      return { appeals };
+    });
+
+    scope.post('/api/v1/admin/appeals/:id', async request => {
+      const { id } = parse(idParamsSchema, request.params);
+      const input = parse(appealDecisionSchema, request.body);
+      const appeal = await engine.decideAppeal(id, input.overturn, input.note);
+      return { ok: true, appeal };
     });
 
     scope.get('/api/v1/admin/stats', async () => {

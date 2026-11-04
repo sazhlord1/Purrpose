@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { AppIcon, CatScene, type CatState, type LivingCatHandle } from '@purrpose/cats';
 import { HONOR_STARTER_BONUS, now, type CommitmentDto } from '@purrpose/shared';
 import { GraceDelete } from '../components/GraceDelete.js';
+import { AppealBox } from '../components/pact/AppealBox.js';
 import { ProofForm } from '../components/pact/ProofForm.js';
 import { WitnessLink } from '../components/pact/WitnessLink.js';
 import { StagePath } from '../components/StagePath.js';
@@ -227,6 +228,7 @@ export function CommitmentDetail() {
           {c.reviewedBy === 'witness' && <p className="muted">{t('Your witness approved your proof.')}</p>}
           {c.reviewedBy === 'admin' && <p className="muted">{t('The Purrpose team approved your proof.')}</p>}
           {c.reviewedBy === 'auto' && <p className="muted">{t('Nobody objected within 48 hours, so it counts.')}</p>}
+          {c.appeal?.status === 'overturned' && <AppealBox c={c} />}
           <div style={{ marginTop: 8 }}>
             <span className="stamp">{t('KEPT')}</span>
           </div>
@@ -248,6 +250,7 @@ export function CommitmentDetail() {
             </p>
           )}
           <span className="stamp stamp-fed">{t('FED')}</span>
+          <AppealBox c={c} />
         </SketchCard>
       )}
 

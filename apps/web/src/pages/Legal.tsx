@@ -5,9 +5,9 @@ import { PrivacyIr, TermsIr } from './LegalIr.js';
 
 /** Where people can reach us about their data. Change it here if the address changes. */
 export const CONTACT_EMAIL = 'support@purrpose.space';
-const EFFECTIVE = 'October 6, 2026';
+const EFFECTIVE = 'November 4, 2026';
 /** Same day as EFFECTIVE, for the Persian (Solar Hijri) date. */
-const EFFECTIVE_DATE = new Date(2026, 9, 6);
+const EFFECTIVE_DATE = new Date(2026, 10, 4);
 
 function Mail() {
   return (
@@ -122,6 +122,18 @@ function Terms() {
       <p>
         {t(
           'Keep your sign-in details to yourself; you’re responsible for what happens in your account. One person per account, please. Don’t misuse the service — no attacking it, scraping it, or trying to get around its limits.',
+        )}
+      </p>
+
+      <h2>{t('Pacts, proofs and appeals')}</h2>
+      <p>
+        {t(
+          'Purrpose is not gambling: nobody ever wins money, prizes or anyone else’s food. Before you seal a strict (food) pact you confirm that, if you don’t keep it, the food you put on it is donated to shelter cats and can’t be returned; we record when you confirmed.',
+        )}
+      </p>
+      <p>
+        {t(
+          'A strict pact needs a proof, checked by your witness or by the Purrpose team; if nobody decides within 48 hours, it counts. If your proof is rejected, you can appeal once from the pact’s page within 3 days. If the appeal is accepted the pact counts as kept and your food comes back. Food from pacts that can still be appealed is not donated yet.',
         )}
       </p>
 

@@ -312,4 +312,9 @@ export const ACCOUNT: Record<string, string> = {
   "Enter a mobile number (09…) or an email.": "یه شماره موبایل (۰۹…) یا یه ایمیل وارد کن.",
   "their mobile number or email": "شماره موبایل یا ایمیلش",
   "Send them this link. They sign in with this mobile number to check your proof.": "این لینک رو براش بفرست. با همین شماره موبایل وارد می‌شه و مدرکت رو بررسی می‌کنه.",
+  "Pacts, proofs and appeals": "قرارها، مدرک و اعتراض",
+  "Purrpose is not gambling: nobody ever wins money, prizes or anyone else’s food. Before you seal a strict (food) pact you confirm that, if you don’t keep it, the food you put on it is donated to shelter cats and can’t be returned; we record when you confirmed.":
+    "پرپس شرط‌بندی نیست: هیچ‌کس هیچ‌وقت پول، جایزه یا غذای کس دیگه‌ای رو به دست نمیاره. پیش از بستن قرار سخت (با غذا) تأیید می‌کنی که اگه سر قرار نمونی، غذایی که در تعهدش گذاشتی به گربه‌های پناهگاه اهدا می‌شه و برگشت‌پذیر نیست؛ زمان این تأیید ثبت می‌شه.",
+  "A strict pact needs a proof, checked by your witness or by the Purrpose team; if nobody decides within 48 hours, it counts. If your proof is rejected, you can appeal once from the pact’s page within 3 days. If the appeal is accepted the pact counts as kept and your food comes back. Food from pacts that can still be appealed is not donated yet.":
+    "قرار سخت مدرک می‌خواد که شاهدت یا تیم پرپس بررسیش می‌کنه؛ اگه تا ۴۸ ساعت کسی تصمیم نگیره، قبول حساب می‌شه. اگه مدرکت رد شد، تا ۳ روز می‌تونی از صفحه‌ی همون قرار یک بار اعتراض بدی. اگه اعتراض قبول بشه، قرار انجام‌شده حساب می‌شه و غذات برمی‌گرده. غذای قرارهایی که هنوز در مهلت اعتراضن، اهدا نمی‌شه.",
 };

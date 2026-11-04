@@ -190,6 +190,7 @@ describe.skipIf(!dbReady)('sign in with a phone number', () => {
       mode: 'STRICT',
       consequenceType: 'MEALS',
       consequenceAmount: 1,
+      donationConsent: true,
       witnessEmail: PHONE,
     });
     expect(mine.json().error.code).toBe('WITNESS_IS_YOU');
@@ -200,6 +201,7 @@ describe.skipIf(!dbReady)('sign in with a phone number', () => {
       mode: 'STRICT',
       consequenceType: 'MEALS',
       consequenceAmount: 1,
+      donationConsent: true,
       witnessEmail: '۰۹۳۵ ۱۲۳ ۴۵۶۷',
     });
     expect(res.statusCode).toBe(201);
