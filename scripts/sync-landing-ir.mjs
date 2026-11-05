@@ -73,7 +73,11 @@ rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 writeFileSync(path.join(out, 'index.html'), html);
 
-for (const dir of ['fonts', 'icons']) cpSync(path.join(src, dir), path.join(out, dir), { recursive: true });
+cpSync(path.join(src, 'fonts'), path.join(out, 'fonts'), { recursive: true });
+// The app's own icons (Mahsham), so the site and the app look the same.
+mkdirSync(path.join(out, 'icons'), { recursive: true });
+for (const f of ['icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'])
+  cpSync(path.join(repoRoot, 'apps', 'web', 'public', 'icons', f), path.join(out, 'icons', f));
 mkdirSync(path.join(out, 'img'), { recursive: true });
 for (const f of readdirSync(path.join(src, 'img'))) {
   if (/-en(-|\.)/.test(f)) continue; // English scene images aren't used here
