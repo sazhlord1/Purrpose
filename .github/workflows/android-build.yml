@@ -17,6 +17,10 @@ on:
         type: choice
         options: [global, ir]
         default: global
+      version:
+        description: "Version name shown to users, e.g. 1.0 (empty = automatic 0.1.<build>). The build number always goes up by itself."
+        type: string
+        default: ""
   # Lets a build be started through the API too: event_type "android-build",
   # client_payload {"release": true, "edition": "ir"}.
   repository_dispatch:
@@ -34,7 +38,7 @@ jobs:
     env:
       VERSION_CODE: ${{ github.run_number }}
       EDITION: ${{ inputs.edition || github.event.client_payload.edition || 'global' }}
-      VERSION_NAME: 0.1.${{ github.run_number }}${{ (inputs.edition || github.event.client_payload.edition) == 'ir' && '-ir' || '' }}
+      VERSION_NAME: ${{ inputs.version || github.event.client_payload.version || format('0.1.{0}{1}', github.run_number, (inputs.edition || github.event.client_payload.edition) == 'ir' && '-ir' || '') }}
       API_URL: ${{ (inputs.edition || github.event.client_payload.edition) == 'ir' && (vars.VITE_API_URL_IR || 'https://app.purrpose.ir') || vars.VITE_API_URL }}
     steps:
       - uses: actions/checkout@v4
@@ -116,8 +120,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ "$EDITION" = ir ]; then TITLE="پرپوز (نسخه‌ی ایران) $VERSION_NAME"; else TITLE="Purrpose for Android $VERSION_NAME"; fi
-          gh release create "android-v$VERSION_NAME" "$APK" \
+          if [ "$EDITION" = ir ]; then TITLE="پرپس (نسخه‌ی ایران) $VERSION_NAME"; else TITLE="Purrpose for Android $VERSION_NAME"; fi
+          gh release create "android-$EDITION-v$VERSION_NAME-b$VERSION_CODE" "$APK" \
             --title "$TITLE" \
             --notes "Purrpose Android app ($EDITION edition, API $API_URL), build $VERSION_CODE." \
             --target "$GITHUB_SHA"
