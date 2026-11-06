@@ -14,6 +14,7 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { seoIr, sitemap } from './landing-ir-seo.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const src = path.resolve(process.argv[2] ?? path.join(repoRoot, '..', 'purrposelanding'), 'public');
@@ -44,6 +45,7 @@ html = html
   .replaceAll('https://purrpose.space/fa/', 'https://purrpose.ir/')
   .replaceAll('https://purrpose.space/', 'https://purrpose.ir/');
 html = html.replace('"inLanguage": ["en", "fa"]', '"inLanguage": "fa"');
+html = seoIr(html);
 
 // Enamad (e-trust seal) site verification: meta tag on the home page + empty file at the root.
 const ENAMAD_CODE = '4894141';
@@ -87,15 +89,4 @@ cpSync(path.join(src, 'og-fa.png'), path.join(out, 'og-fa.png'));
 
 writeFileSync(path.join(out, `${ENAMAD_CODE}.txt`), '');
 writeFileSync(path.join(out, 'robots.txt'), 'User-agent: *\nAllow: /\n\nSitemap: https://purrpose.ir/sitemap.xml\n');
-writeFileSync(
-  path.join(out, 'sitemap.xml'),
-  `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://purrpose.ir/</loc>
-    <changefreq>weekly</changefreq><priority>1.0</priority>
-  </url>
-</urlset>
-`,
-);
-console.log(`Iranian landing written to ${path.relative(repoRoot, out)}/`);
+writeFileSync(path.join(out, 'sitemap.xml'), sitemap());

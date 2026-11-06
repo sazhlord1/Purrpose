@@ -95,7 +95,16 @@ export function makeWebHandler(distDir: string, landing?: { dir: string; hosts: 
     if ((request.method !== 'GET' && request.method !== 'HEAD') || isApiPath(request.url)) return false;
 
     const host = (request.hostname ?? '').toLowerCase().replace(/:\d+$/, '');
+    // One address for the landing: www.purrpose.ir → purrpose.ir (so search engines see one site).
+    if (land && host.startsWith('www.') && landingHosts.has(host) && landingHosts.has(host.slice(4))) {
+      reply.header('Location', `https://${host.slice(4)}${request.url}`);
+      await reply.code(301).send();
+      return true;
+    }
     const site = land && landingHosts.has(host) ? land : app;
+    // The app (pacts, witness links, account pages) is private: keep it out of search results.
+    // The landing page is what should be found.
+    if (site === app) reply.header('X-Robots-Tag', 'noindex, nofollow');
     const root = site.root;
     const file = await fileAt(root, request.url);
     webReplies.set(reply, site.csp);
