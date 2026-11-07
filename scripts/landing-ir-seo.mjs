@@ -6,6 +6,7 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { faqIr } from './landing-ir-faq.mjs';
 
 export const SITE = 'https://purrpose.ir/';
 export const CONTACT_EMAIL = 'info@purrpose.ir';
@@ -49,6 +50,10 @@ export function seoIr(html) {
       return `<script type="application/ld+json">${JSON.stringify(d)}</script>`;
     },
   );
+  // The page script used to set the tab title to just "پرپس" after load; Google reads the
+  // rendered page, so keep the full, descriptive <title>.
+  html = html.replace("if(LANG==='fa')document.title='پرپس';", '');
+  html = faqIr(html);
   if (!html.includes('"@type":"Organization"')) {
     html = html.replace('</head>', `<script type="application/ld+json">${JSON.stringify(ORG)}</script>\n</head>`);
   }
