@@ -6,3 +6,6 @@
  */
 export const IS_IR_EDITION: boolean =
   typeof import.meta !== 'undefined' && (import.meta.env?.VITE_EDITION as string | undefined)?.trim().toLowerCase() === 'ir';
+
+/** Purrpose on Cafe Bazaar (the Iranian Android app). */
+export const BAZAAR_APP_URL = 'https://cafebazaar.ir/app/space.purrpose.app';

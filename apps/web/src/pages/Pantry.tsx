@@ -14,6 +14,7 @@ import { api, ApiError } from '../lib/api.js';
 import { canBuyHere, goToCheckout } from '../lib/payments.js';
 import { bazaarApp, bazaarFailure, buyWithBazaar, restoreBazaarPurchases } from '../lib/bazaar.js';
 import { IS_IR_EDITION } from '../lib/edition.js';
+import { WebPayNote } from '../components/WebPayNote.js';
 import { toman } from '../lib/format.js';
 import { TestCardNote } from '../components/TestCardNote.js';
 import { useMe } from '../lib/queries.js';
@@ -424,11 +425,13 @@ export function Pantry() {
             })()}
             {selectedItem.creditType && !canTopUp && !canBuy && !canBuyBazaar && (
               <div style={{ width: '100%', marginTop: 8 }}>
-                <p className="card card-c" style={{ padding: '10px 12px', fontSize: 14 }} role="status">
-                  {IS_IR_EDITION && !bazaarApp()
-                    ? t('Cat food is bought in the Purrpose Android app (from Cafe Bazaar).')
-                    : t('Buying real cat food opens soon. Until then, “on my word” pacts work with PURR.')}
-                </p>
+                {IS_IR_EDITION && !bazaarApp() ? (
+                  <WebPayNote />
+                ) : (
+                  <p className="card card-c" style={{ padding: '10px 12px', fontSize: 14 }} role="status">
+                    {t('Buying real cat food opens soon. Until then, “on my word” pacts work with PURR.')}
+                  </p>
+                )}
                 <DoodleButton onClick={() => setSelectedItem(null)}>{t('Close')}</DoodleButton>
               </div>
             )}

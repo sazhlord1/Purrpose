@@ -7,6 +7,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { faqIr } from './landing-ir-faq.mjs';
+import { BAZAAR_URL, downloadIr } from './landing-ir-download.mjs';
 
 export const SITE = 'https://purrpose.ir/';
 export const CONTACT_EMAIL = 'info@purrpose.ir';
@@ -30,7 +31,9 @@ export function seoIr(html) {
       const d = JSON.parse(json);
       d.name = 'پرپس';
       d.alternateName = 'Purrpose';
-      d.operatingSystem = 'Android, Web';
+      d.operatingSystem = 'Android, iOS, Web';
+      d.downloadUrl = BAZAAR_URL;
+      d.installUrl = BAZAAR_URL;
       d.applicationCategory = 'ProductivityApplication';
       d.inLanguage = 'fa';
       d.image = `${SITE}icons/icon-512.png`;
@@ -54,6 +57,7 @@ export function seoIr(html) {
   // rendered page, so keep the full, descriptive <title>.
   html = html.replace("if(LANG==='fa')document.title='پرپس';", '');
   html = faqIr(html);
+  html = downloadIr(html);
   if (!html.includes('"@type":"Organization"')) {
     html = html.replace('</head>', `<script type="application/ld+json">${JSON.stringify(ORG)}</script>\n</head>`);
   }

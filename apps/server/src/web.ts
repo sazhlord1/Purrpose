@@ -1,3 +1,4 @@
+import { APK_PATH, serveApk } from './apk.js';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -93,6 +94,10 @@ export function makeWebHandler(distDir: string, landing?: { dir: string; hosts: 
 
   return async function serveWeb(request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
     if ((request.method !== 'GET' && request.method !== 'HEAD') || isApiPath(request.url)) return false;
+    if ((request.url.split('?')[0] ?? '') === APK_PATH) {
+      await serveApk(reply, request.method === 'HEAD');
+      return true;
+    }
 
     const host = (request.hostname ?? '').toLowerCase().replace(/:\d+$/, '');
     // One address for the landing: www.purrpose.ir → purrpose.ir (so search engines see one site).

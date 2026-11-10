@@ -26,6 +26,8 @@ import { canBuyHere, goToCheckout } from '../lib/payments.js';
 import { bazaarApp, bazaarFailure, buyWithBazaar, restoreBazaarPurchases } from '../lib/bazaar.js';
 import { toman } from '../lib/format.js';
 import { TestCardNote } from '../components/TestCardNote.js';
+import { WebPayNote } from '../components/WebPayNote.js';
+import { IS_IR_EDITION } from '../lib/edition.js';
 
 interface ShopResponse {
   /** PURR locked in open honor pacts (part of `purr`, not spendable). */
@@ -62,7 +64,9 @@ function previewRatio(category: ItemCategory): number {
 }
 
 /** "Get PURR" (buying with money): Stripe in the English version, Cafe Bazaar in the Iranian Android app. */
-const canGetPurr = (): boolean => canBuyHere() || bazaarApp();
+/** The Iranian website / PWA: shows the packs and points to the Android app until a gateway lands. */
+const irWeb = (): boolean => IS_IR_EDITION && !bazaarApp();
+const canGetPurr = (): boolean => canBuyHere() || bazaarApp() || irWeb();
 const visibleSections = (): Section[] => (canGetPurr() ? SECTION_ORDER : SECTION_ORDER.filter(s => s !== 'purr'));
 
 function isSection(v: string | null): v is Section {
@@ -286,9 +290,10 @@ export function Shop() {
     return (
       <main>
         {header}
-        {bazaarApp() && (
+        {(bazaarApp() || irWeb()) && (
           <>
-            {!bazaarOn && <p className="muted">{t('Buying PURR is coming soon.')}</p>}
+            {irWeb() && <WebPayNote />}
+            {bazaarApp() && !bazaarOn && <p className="muted">{t('Buying PURR is coming soon.')}</p>}
             {bazaarOn && <p className="muted" style={{ fontSize: 13 }}>{t('Paid securely through Cafe Bazaar.')}</p>}
             <div className="shop-grid">
               {packs.map(pack => (
@@ -307,11 +312,11 @@ export function Shop() {
             </div>
           </>
         )}
-        {!bazaarApp() && paymentsMode === 'disabled' && <p className="muted">{t('Buying PURR is coming soon.')}</p>}
+        {!bazaarApp() && !irWeb() && paymentsMode === 'disabled' && <p className="muted">{t('Buying PURR is coming soon.')}</p>}
         {paymentsMode === 'sandbox' && <p className="muted">{t('Test mode: purchases are free and nothing is charged.')}</p>}
         {paymentsMode === 'stripe' && shop.data.paymentsTest && <TestCardNote />}
         {paymentsMode === 'stripe' && <p className="muted" style={{ fontSize: 13 }}>{t('Secure checkout by Stripe. Prices in US dollars.')}</p>}
-        {!bazaarApp() && <div className="shop-grid">
+        {!bazaarApp() && !irWeb() && <div className="shop-grid">
           {packs.map(pack => (
             <div key={pack.id} className="shop-cat">
               <div className="purr-balance" style={{ fontSize: 26 }}><AppIcon name="purr" size={26} /> {pack.purr}</div>
