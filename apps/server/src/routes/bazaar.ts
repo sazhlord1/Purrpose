@@ -5,13 +5,16 @@ import { getPrisma } from '../db.js';
 import { getEnv } from '../env.js';
 import { AppError } from '../errors.js';
 import { isGuestUser } from '../services/accounts.js';
-import { bazaarEnabled, finishBazaarConnect, verifyBazaarPurchase } from '../services/bazaar.js';
+import { bazaarEnabled, bazaarPayload, finishBazaarConnect, verifyBazaarPurchase } from '../services/bazaar.js';
 import { parse } from '../validate.js';
 
 /** Cafe Bazaar purchases from the Iranian Android app (signed-in routes). */
 export function registerBazaarRoutes(app: FastifyInstance): void {
-  /** Is buying through Bazaar switched on? */
-  app.get('/api/v1/bazaar', async () => ({ enabled: await bazaarEnabled(getPrisma(), getEnv()) }));
+  /** Is buying through Bazaar switched on? And the payload this account sends with its purchases. */
+  app.get('/api/v1/bazaar', async request => ({
+    enabled: await bazaarEnabled(getPrisma(), getEnv()),
+    payload: bazaarPayload(userIdOf(request)),
+  }));
 
   app.post('/api/v1/bazaar/verify', async request => {
     const userId = userIdOf(request);

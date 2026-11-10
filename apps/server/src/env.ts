@@ -57,8 +57,9 @@ const envSchema = z.object({
    */
   STARTER_FOOD: bool,
   /**
-   * Cafe Bazaar (Iranian edition): the developer-API secret from the Bazaar panel
-   * ("API توسعه‌دهنده", sent as the CAFEBAZAAR-PISHKHAN-API-SECRET header). With it set,
+   * Cafe Bazaar (Iranian edition): the panel API token (Bazaar's current method: app page →
+   * "API پیشخان بازار" → "دریافت توکن جدید"; sent as the CAFEBAZAAR-PISHKHAN-API-SECRET
+   * header). Preferred over the OAuth client below, which is the older method. With it set,
    * the Android app can buy food and PURR through Bazaar. Never commit it.
    */
   BAZAAR_API_SECRET: opt(z.string().min(8)),

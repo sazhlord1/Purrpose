@@ -91,10 +91,13 @@ export async function buyWithBazaar(sku: BazaarSku): Promise<BazaarCredit> {
     e.cause = new ApiError(403, 'ACCOUNT_REQUIRED', 'Sign in first');
     throw e;
   }
+  // The payload ties the purchase to this account (Bazaar hands it back to our server).
+  const status = await api<{ enabled: boolean; payload?: string }>('/bazaar');
+  if (!status.enabled) throw new BazaarError('failed', 'Bazaar billing is off on the server');
   await connect();
   let purchase: BazaarPurchase;
   try {
-    purchase = await Bazaar.purchase({ productId: sku, payload: sku });
+    purchase = await Bazaar.purchase({ productId: sku, payload: status.payload ?? sku });
   } catch (err) {
     if (codeOf(err) === 'CANCELLED') throw new BazaarError('cancelled', 'cancelled');
     if (codeOf(err) === 'NOT_CONNECTED') throw new BazaarError('no-bazaar', 'not connected');

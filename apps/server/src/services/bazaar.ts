@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { Prisma, type PrismaClient } from '@prisma/client';
 import { BAZAAR_PRODUCTS, type BazaarSku } from '@purrpose/shared';
 import type { Env } from '../env.js';
@@ -17,6 +17,15 @@ import { creditPurchase } from './payments.js';
 
 export const BAZAAR_BASE = 'https://pardakht.cafebazaar.ir/devapi/v2';
 export const BAZAAR_API = `${BAZAAR_BASE}/api`;
+
+/**
+ * The "developer payload" the app sends with each purchase (Bazaar's security guide: use one
+ * that identifies your own user, and check it on the server). Bazaar hands it back when we
+ * validate the token, so a token bought by one account can't be claimed by another.
+ */
+export function bazaarPayload(userId: string): string {
+  return `p1.${createHash('sha256').update(`purrpose-bazaar:${userId}`).digest('base64url').slice(0, 22)}`;
+}
 
 /** How we sign in to Bazaar's developer API: a panel API secret, or an OAuth client. */
 export function bazaarAuthMode(env: Env): 'secret' | 'oauth' | 'none' {
@@ -143,6 +152,26 @@ async function accessToken(prisma: PrismaClient, env: Env, fetchImpl: FetchLike)
   return accessCache.token;
 }
 
+/** URL + headers for a developer-API call, signed in the way the server is set up. */
+async function signed(prisma: PrismaClient, env: Env, url: string, fetchImpl: FetchLike) {
+  const mode = bazaarAuthMode(env);
+  if (mode === 'none') throw new AppError('PAYMENTS_UNAVAILABLE', undefined, 'Purchases are not available yet');
+  const headers: Record<string, string> = { accept: 'application/json' };
+  // The current method (Bazaar docs, "راه اندازی API (روش جدید)"): the panel token in this header.
+  if (mode === 'secret') headers['CAFEBAZAAR-PISHKHAN-API-SECRET'] = env.BAZAAR_API_SECRET!;
+  else url += `?access_token=${encodeURIComponent(await accessToken(prisma, env, fetchImpl))}`;
+  return { url, headers, mode };
+}
+
+function parseJson(text: string): Record<string, unknown> | null {
+  try {
+    const v = JSON.parse(text) as unknown;
+    return v && typeof v === 'object' ? (v as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
 /** What Bazaar says about a purchase token. */
 export interface BazaarPurchase {
   /** 0 = bought, 1 = refunded. */
@@ -150,6 +179,8 @@ export interface BazaarPurchase {
   /** 0 = consumed, 1 = not consumed yet. */
   consumptionState: number;
   purchaseTime?: number;
+  /** The payload the app sent when buying ('' when none). */
+  developerPayload: string;
 }
 
 /** Looks the purchase up with Bazaar. null = Bazaar doesn't know this token for this product. */
@@ -160,39 +191,100 @@ export async function lookUpPurchase(
   token: string,
   fetchImpl: FetchLike = defaultFetch(),
 ): Promise<BazaarPurchase | null> {
-  const mode = bazaarAuthMode(env);
-  if (mode === 'none') throw new AppError('PAYMENTS_UNAVAILABLE', undefined, 'Purchases are not available yet');
-  let url = `${BAZAAR_API}/validate/${encodeURIComponent(env.BAZAAR_PACKAGE_NAME)}/inapp/${encodeURIComponent(sku)}/purchases/${encodeURIComponent(token)}/`;
-  const headers: Record<string, string> = { accept: 'application/json' };
-  if (mode === 'secret') headers['CAFEBAZAAR-PISHKHAN-API-SECRET'] = env.BAZAAR_API_SECRET!;
-  else url += `?access_token=${encodeURIComponent(await accessToken(prisma, env, fetchImpl))}`;
-
+  const req = await signed(
+    prisma,
+    env,
+    `${BAZAAR_API}/validate/${encodeURIComponent(env.BAZAAR_PACKAGE_NAME)}/inapp/${encodeURIComponent(sku)}/purchases/${encodeURIComponent(token)}/`,
+    fetchImpl,
+  );
   let res: Awaited<ReturnType<FetchLike>>;
   try {
-    res = await fetchImpl(url, { method: 'GET', headers });
+    res = await fetchImpl(req.url, { method: 'GET', headers: req.headers });
   } catch (err) {
     console.error('[bazaar] validate unreachable', err instanceof Error ? err.message : err);
     throw new AppError('PAYMENT_PROVIDER', undefined, 'Could not reach Cafe Bazaar. Try again in a moment.');
   }
   const text = await res.text();
-  if (res.status === 404) return null;
-  if (res.status === 401 && mode === 'oauth') accessCache = null; // next try fetches a fresh access token
+  const body = parseJson(text);
+  if (res.status === 404) {
+    // Bazaar: only error "not_found" means the purchase never happened. "invalid_value"
+    // (wrong package name or product id) is our set-up, not the buyer: keep the purchase
+    // unconsumed so it is credited once the set-up is fixed.
+    if (!body || body.error === 'not_found') return null;
+    console.error(`[bazaar] validate set-up error: ${String(body.error)} ${String(body.error_description ?? '').slice(0, 120)}`);
+    throw new AppError('PAYMENT_PROVIDER', undefined, 'Cafe Bazaar could not check this purchase. Try again in a moment.');
+  }
+  if (res.status === 401 && req.mode === 'oauth') accessCache = null; // next try fetches a fresh access token
   if (!res.ok) {
     console.error(`[bazaar] validate failed: HTTP ${res.status} ${text.slice(0, 200)}`);
     throw new AppError('PAYMENT_PROVIDER', undefined, 'Cafe Bazaar could not check this purchase. Try again in a moment.');
   }
-  let body: Partial<BazaarPurchase> & { error?: unknown };
-  try {
-    body = JSON.parse(text) as typeof body;
-  } catch {
-    throw new AppError('PAYMENT_PROVIDER', undefined, 'Cafe Bazaar sent an unreadable answer');
-  }
-  if (body.error || typeof body.purchaseState !== 'number') return null;
+  if (!body) throw new AppError('PAYMENT_PROVIDER', undefined, 'Cafe Bazaar sent an unreadable answer');
+  const state = body.purchaseState;
+  if (body.error || typeof state !== 'number') return null;
+  const time = body.purchaseTime;
+  const payload = body.developerPayload;
   return {
-    purchaseState: body.purchaseState,
+    purchaseState: state,
     consumptionState: Number(body.consumptionState ?? 1),
-    purchaseTime: typeof body.purchaseTime === 'number' ? body.purchaseTime : undefined,
+    purchaseTime: typeof time === 'number' ? time : undefined,
+    developerPayload: typeof payload === 'string' ? payload : '',
   };
+}
+
+/**
+ * Consumes the purchase on Bazaar's side too (POST /api/consume/<package>/purchases/), so it
+ * can be bought again even if the app closes before its own consume. Best effort: the app
+ * consumes as well, and "already_consumed" is fine.
+ */
+export async function consumeOnBazaar(prisma: PrismaClient, env: Env, token: string, fetchImpl: FetchLike = defaultFetch()): Promise<boolean> {
+  try {
+    const req = await signed(prisma, env, `${BAZAAR_API}/consume/${encodeURIComponent(env.BAZAAR_PACKAGE_NAME)}/purchases/`, fetchImpl);
+    const res = await fetchImpl(req.url, {
+      method: 'POST',
+      headers: { ...req.headers, 'content-type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    const text = await res.text();
+    if (res.ok) return true;
+    const body = parseJson(text);
+    if (body?.error === 'already_consumed') return true;
+    console.warn(`[bazaar] consume: HTTP ${res.status} ${String(body?.error ?? '').slice(0, 60)}`);
+    return false;
+  } catch (err) {
+    console.warn('[bazaar] consume failed', err instanceof Error ? err.message : err);
+    return false;
+  }
+}
+
+/**
+ * Admin self-test without spending money: ask Bazaar about a made-up token. With the right
+ * key, package and product Bazaar answers 404 "not_found"; a wrong key gets 401/403, a
+ * wrong package or product id gets "invalid_value".
+ */
+export async function checkBazaarSetup(
+  prisma: PrismaClient,
+  env: Env,
+  fetchImpl: FetchLike = defaultFetch(),
+): Promise<{ ok: boolean; problem?: 'off' | 'unreachable' | 'key' | 'package' | 'product' | 'unknown'; status?: number }> {
+  if (!(await bazaarEnabled(prisma, env))) return { ok: false, problem: 'off' };
+  let res: Awaited<ReturnType<FetchLike>>;
+  try {
+    const sku: BazaarSku = 'purr_150';
+    const req = await signed(prisma, env, `${BAZAAR_API}/validate/${encodeURIComponent(env.BAZAAR_PACKAGE_NAME)}/inapp/${sku}/purchases/purrpose-setup-check/`, fetchImpl);
+    res = await fetchImpl(req.url, { method: 'GET', headers: req.headers });
+  } catch (err) {
+    if (err instanceof AppError) return { ok: false, problem: 'key' };
+    return { ok: false, problem: 'unreachable' };
+  }
+  const body = parseJson(await res.text());
+  if (res.status === 404 && body?.error === 'not_found') return { ok: true, status: 404 };
+  if (res.status === 401 || res.status === 403) return { ok: false, problem: 'key', status: res.status };
+  if (res.status === 404 && body?.error === 'invalid_value') {
+    const d = String(body.error_description ?? '').toLowerCase();
+    return { ok: false, problem: d.includes('package') ? 'package' : 'product', status: 404 };
+  }
+  return { ok: false, problem: 'unknown', status: res.status };
 }
 
 export interface BazaarResult {
@@ -226,12 +318,18 @@ export async function verifyBazaarPurchase(
   const known = await prisma.payment.findUnique({ where: { id } });
   if (known) {
     if (known.userId !== userId) throw new AppError('CONFLICT', undefined, 'This purchase belongs to another account');
+    await consumeOnBazaar(prisma, env, token, fetchImpl);
     return result(false);
   }
 
   const purchase = await lookUpPurchase(prisma, env, sku, token, fetchImpl);
   if (!purchase) throw new AppError('NOT_FOUND', undefined, 'Cafe Bazaar does not know this purchase');
   if (purchase.purchaseState !== 0) throw new AppError('CONFLICT', undefined, 'This purchase was refunded');
+  // Bought by another of our accounts (its payload names that account). Older or empty
+  // payloads carry no account, so the first signed-in claim keeps them.
+  if (purchase.developerPayload.startsWith('p1.') && purchase.developerPayload !== bazaarPayload(userId)) {
+    throw new AppError('CONFLICT', undefined, 'This purchase belongs to another account');
+  }
 
   try {
     await prisma.$transaction(async tx => {
@@ -264,5 +362,6 @@ export async function verifyBazaarPurchase(
     }
     throw err;
   }
+  await consumeOnBazaar(prisma, env, token, fetchImpl);
   return result(true);
 }

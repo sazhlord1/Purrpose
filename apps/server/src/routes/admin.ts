@@ -8,7 +8,7 @@ import { AppError } from '../errors.js';
 import { appealOf, makeCommitmentEngine } from '../services/commitments.js';
 import { toHabitDto } from '../services/habits.js';
 import { creditPurr } from '../services/shop.js';
-import { bazaarAuthMode, bazaarEnabled, startBazaarConnect } from '../services/bazaar.js';
+import { bazaarAuthMode, bazaarEnabled, checkBazaarSetup, startBazaarConnect } from '../services/bazaar.js';
 import { getEnv } from '../env.js';
 import { walletView } from '../services/wallet.js';
 import { parse } from '../validate.js';
@@ -130,6 +130,9 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       const url = await startBazaarConnect(getPrisma(), getEnv(), userIdOf(request));
       return { url };
     });
+
+    /** Tests the Bazaar key, package name and a product id with a made-up token (no money involved). */
+    scope.post('/api/v1/admin/bazaar/check', async () => checkBazaarSetup(getPrisma(), getEnv()));
 
     scope.get('/api/v1/admin/stats', async () => {
       const prisma = getPrisma();
