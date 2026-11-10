@@ -172,7 +172,7 @@ Server (`apps/server/src/env.ts`): `NODE_ENV` (default production), `PORT`, `HOS
 `GOOGLE_CLIENT_ID`, `PAYMENTS_MODE` (disabled|sandbox|stripe|live), `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STARTER_FOOD`,
 `SMS_PROVIDER`, `SMS_API_KEY`, `SMS_TEMPLATE`, `SMS_CODE_PARAM` (default CODE), `SMS_FROM`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`,
 `VAPID_SUBJECT`. Tests: `DATABASE_URL_TEST`.
-Planned (not in code yet): `BAZAAR_CLIENT_ID`, `BAZAAR_CLIENT_SECRET` (Cafe Bazaar developer API) *(session record)*.
+Cafe Bazaar: `BAZAAR_API_SECRET` (developer-API secret, sent as `CAFEBAZAAR-PISHKHAN-API-SECRET`), `BAZAAR_PACKAGE_NAME` (default `space.purrpose.app`).
 
 Iranian Liara values set by the owner *(session record)*: `SMS_PROVIDER=ippanel`, `SMS_API_KEY`, `SMS_TEMPLATE` (pattern code),
 `SMS_FROM` (sender line), `SMS_CODE_PARAM=code`, `PAYMENTS_MODE=disabled`, `NODE_ENV=production`, `DATABASE_URL`, admin vars.
