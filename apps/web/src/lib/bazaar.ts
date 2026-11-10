@@ -30,11 +30,12 @@ interface BazaarBillingPlugin {
 const Bazaar = registerPlugin<BazaarBillingPlugin>('BazaarBilling');
 
 /**
- * Bazaar's RSA public key for an extra signature check on the phone. Left empty on purpose:
- * Poolakey recommends checking purchases with Bazaar's REST API instead, which our server
- * does for every purchase. (The key is public; paste it here exactly if you want both.)
+ * Bazaar's RSA public key for this app (public, from the panel's in-app billing tab).
+ * Poolakey uses it to check Bazaar's signature on the phone; the server also checks
+ * every purchase with Bazaar's developer API before crediting it.
  */
-const RSA_PUBLIC_KEY = '';
+const RSA_PUBLIC_KEY =
+  'MIHNMA0GCSqGSIb3DQEBAQUAA4G7ADCBtwKBrwDD2F0SGfWkULjed061dyOFjPELR3pPyNvKwOoBP9IHcF/E1CwA817+jwvzDPiQmLYqSRe/XuijMrlQoeGXxta6rLorNY9U/AHYammt6dUx7HrWJRDfF0iqr2WbR4Ov/o3VPAtfY/J9DS/4y7eKH0iQa53x2ia2tDobDrg1gu2nrfV3qN7OunxMQeai9SDHJF1GpF7xww92SpTPZU+Up97skoKCzL+jHUFK1a+fRyECAwEAAQ==';
 
 /** Only the Iranian Android app can buy through Bazaar (not the website, not the global app). */
 export function bazaarApp(): boolean {

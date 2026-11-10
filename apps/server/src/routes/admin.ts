@@ -1,13 +1,15 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { adminGrantSchema, appealDecisionSchema, idParamsSchema, reviewSchema } from '@purrpose/shared';
-import { requireAdmin } from '../auth.js';
+import { requireAdmin, userIdOf } from '../auth.js';
 import { clock } from '../clock.js';
 import { getPrisma } from '../db.js';
 import { AppError } from '../errors.js';
 import { appealOf, makeCommitmentEngine } from '../services/commitments.js';
 import { toHabitDto } from '../services/habits.js';
 import { creditPurr } from '../services/shop.js';
+import { bazaarAuthMode, bazaarEnabled, startBazaarConnect } from '../services/bazaar.js';
+import { getEnv } from '../env.js';
 import { walletView } from '../services/wallet.js';
 import { parse } from '../validate.js';
 
@@ -115,6 +117,18 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       const input = parse(appealDecisionSchema, request.body);
       const appeal = await engine.decideAppeal(id, input.overturn, input.note);
       return { ok: true, appeal };
+    });
+
+    /** Cafe Bazaar billing: how the server signs in to Bazaar, and whether purchases can be checked. */
+    scope.get('/api/v1/admin/bazaar', async () => {
+      const env = getEnv();
+      return { mode: bazaarAuthMode(env), enabled: await bazaarEnabled(getPrisma(), env) };
+    });
+
+    /** OAuth client: the URL of Bazaar's consent page; the admin opens it, Bazaar comes back to our callback. */
+    scope.post('/api/v1/admin/bazaar/connect', async request => {
+      const url = await startBazaarConnect(getPrisma(), getEnv(), userIdOf(request));
+      return { url };
     });
 
     scope.get('/api/v1/admin/stats', async () => {

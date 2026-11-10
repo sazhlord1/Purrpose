@@ -3,7 +3,9 @@ import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { clock } from '../src/clock.js';
 import { checkDatabase, getPrisma } from '../src/db.js';
-import { resetEnvCache } from '../src/env.js';
+import { getEnv, resetEnvCache } from '../src/env.js';
+import { ensureAdmin } from '../src/services/accounts.js';
+import { resetBazaarTokenCache } from '../src/services/bazaar.js';
 import { wipeDatabase } from './helpers.js';
 
 const prisma = getPrisma();
@@ -25,13 +27,22 @@ const me = async (token: string) => (await call('GET', '/api/v1/me', token)).jso
 /** A pretend Cafe Bazaar developer API: knows some tokens, one of them refunded. */
 const purchases = new Map<string, { sku: string; purchaseState: number }>();
 const seen: Array<{ url: string; secret?: string }> = [];
+const tokenCalls: URLSearchParams[] = [];
 const fakeFetch = vi.fn(async (url: string | URL, init?: RequestInit) => {
   const u = String(url);
   const headers = (init?.headers ?? {}) as Record<string, string>;
   seen.push({ url: u, secret: headers['CAFEBAZAAR-PISHKHAN-API-SECRET'] });
-  const m = u.match(/^https:\/\/pardakht\.cafebazaar\.ir\/devapi\/v2\/api\/validate\/space\.purrpose\.app\/inapp\/([^/]+)\/purchases\/([^/]+)\/$/);
+  if (u === 'https://pardakht.cafebazaar.ir/devapi/v2/auth/token/') {
+    const form = new URLSearchParams(String(init?.body));
+    tokenCalls.push(form);
+    if (form.get('client_secret') !== 'client-secret-xyz') return new Response(JSON.stringify({ error: 'invalid_client' }), { status: 401 });
+    const refresh = form.get('grant_type') === 'authorization_code' ? { refresh_token: 'refresh-abc' } : {};
+    return new Response(JSON.stringify({ access_token: `access-${tokenCalls.length}`, token_type: 'Bearer', expires_in: 3600, ...refresh }), { status: 200 });
+  }
+  const m = u.match(/^https:\/\/pardakht\.cafebazaar\.ir\/devapi\/v2\/api\/validate\/space\.purrpose\.app\/inapp\/([^/]+)\/purchases\/([^/?]+)\/(\?access_token=access-\d+)?$/);
   const p = m ? purchases.get(decodeURIComponent(m[2]!)) : undefined;
-  if (!m || headers['CAFEBAZAAR-PISHKHAN-API-SECRET'] !== SECRET || !p || p.sku !== m[1]) {
+  const authed = headers['CAFEBAZAAR-PISHKHAN-API-SECRET'] === SECRET || Boolean(m?.[3]);
+  if (!m || !authed || !p || p.sku !== m[1]) {
     return new Response(JSON.stringify({ error: 'not_found', error_description: 'The requested purchase is not found!' }), { status: 404 });
   }
   return new Response(JSON.stringify({ consumptionState: 1, purchaseState: p.purchaseState, kind: 'androidpublisher#inappPurchase', developerPayload: '', purchaseTime: 1_700_000_000_000 }), { status: 200 });
@@ -105,6 +116,65 @@ describe.skipIf(!dbReady)('Cafe Bazaar purchases', () => {
     expect((await call('POST', '/api/v1/bazaar/verify', buyer, { productId: 'food_dry', purchaseToken: 'tok-refund' })).json().error.code).toBe('CONFLICT');
     expect((await call('POST', '/api/v1/bazaar/verify', buyer, { productId: 'gold_bar', purchaseToken: 'tok-can' })).statusCode).toBe(400);
     expect(await meals()).toBe(start + 1);
+  });
+
+  it('works with an OAuth client the admin connects once', async () => {
+    delete process.env.BAZAAR_API_SECRET;
+    process.env.BAZAAR_CLIENT_ID = 'client-id-123';
+    process.env.BAZAAR_CLIENT_SECRET = 'client-secret-xyz';
+    process.env.ADMIN_EMAIL = 'boss@test.dev';
+    process.env.ADMIN_PASSWORD = 'boss-pass-123';
+    resetEnvCache();
+    resetBazaarTokenCache();
+    tokenCalls.length = 0;
+    try {
+      await ensureAdmin(prisma, getEnv());
+      const admin = (await call('POST', '/api/v1/auth/admin/login', undefined, { email: 'boss@test.dev', password: 'boss-pass-123' })).json().token;
+      const buyer = await register('oauth@test.dev');
+      // Not connected yet: off.
+      expect((await call('GET', '/api/v1/bazaar', buyer)).json()).toEqual({ enabled: false });
+      expect((await call('GET', '/api/v1/admin/bazaar', admin)).json()).toEqual({ mode: 'oauth', enabled: false });
+      expect((await call('POST', '/api/v1/admin/bazaar/connect', buyer)).statusCode).toBe(403);
+
+      const { url } = (await call('POST', '/api/v1/admin/bazaar/connect', admin)).json();
+      const auth = new URL(url);
+      expect(auth.origin + auth.pathname).toBe('https://pardakht.cafebazaar.ir/devapi/v2/auth/authorize/');
+      expect(auth.searchParams.get('client_id')).toBe('client-id-123');
+      expect(auth.searchParams.get('access_type')).toBe('offline');
+      expect(auth.searchParams.get('redirect_uri')).toBe('https://app.purrpose.ir/api/v1/bazaar/oauth/callback');
+      const state = auth.searchParams.get('state')!;
+
+      // A made-up state doesn't connect anything.
+      const forged = await app.inject({ method: 'GET', url: '/api/v1/bazaar/oauth/callback?code=c1&state=forged' });
+      expect(forged.headers.location).toBe('/admin?bazaar=expired');
+
+      const back = await app.inject({ method: 'GET', url: `/api/v1/bazaar/oauth/callback?code=c1&state=${state}` });
+      expect(back.statusCode).toBe(302);
+      expect(back.headers.location).toBe('/admin?bazaar=ok');
+      expect(tokenCalls[0]!.get('grant_type')).toBe('authorization_code');
+      expect(tokenCalls[0]!.get('code')).toBe('c1');
+      expect((await call('GET', '/api/v1/bazaar', buyer)).json()).toEqual({ enabled: true });
+
+      purchases.set('tok-oauth', { sku: 'purr_500', purchaseState: 0 });
+      const res = await call('POST', '/api/v1/bazaar/verify', buyer, { productId: 'purr_500', purchaseToken: 'tok-oauth' });
+      expect(res.json()).toMatchObject({ credited: true, item: 'purr_500' });
+      expect(seen.at(-1)!.url).toMatch(/\/purchases\/tok-oauth\/\?access_token=access-1$/);
+
+      // After a restart (no cached access token) the stored refresh token gets a new one.
+      resetBazaarTokenCache();
+      purchases.set('tok-oauth2', { sku: 'purr_150', purchaseState: 0 });
+      expect((await call('POST', '/api/v1/bazaar/verify', buyer, { productId: 'purr_150', purchaseToken: 'tok-oauth2' })).json().credited).toBe(true);
+      expect(tokenCalls.at(-1)!.get('grant_type')).toBe('refresh_token');
+      expect(tokenCalls.at(-1)!.get('refresh_token')).toBe('refresh-abc');
+    } finally {
+      delete process.env.BAZAAR_CLIENT_ID;
+      delete process.env.BAZAAR_CLIENT_SECRET;
+      delete process.env.ADMIN_EMAIL;
+      delete process.env.ADMIN_PASSWORD;
+      process.env.BAZAAR_API_SECRET = SECRET;
+      resetEnvCache();
+      resetBazaarTokenCache();
+    }
   });
 
   it('is off without the Bazaar secret', async () => {

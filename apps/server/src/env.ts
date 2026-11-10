@@ -62,6 +62,15 @@ const envSchema = z.object({
    * the Android app can buy food and PURR through Bazaar. Never commit it.
    */
   BAZAAR_API_SECRET: opt(z.string().min(8)),
+  /**
+   * Or the developer-API *client* (OAuth): id and secret from the panel, redirect URL
+   * https://app.purrpose.ir/api/v1/bazaar/oauth/callback. The admin connects it once from
+   * the admin page; the refresh token Bazaar returns is kept in the database.
+   */
+  BAZAAR_CLIENT_ID: opt(z.string().min(8)),
+  BAZAAR_CLIENT_SECRET: opt(z.string().min(8)),
+  /** Where Bazaar sends the admin back after connecting the client (must match the panel). */
+  BAZAAR_REDIRECT_URI: z.string().url().default('https://app.purrpose.ir/api/v1/bazaar/oauth/callback'),
   /** The Android package the purchases belong to. */
   BAZAAR_PACKAGE_NAME: z.string().default('space.purrpose.app'),
 

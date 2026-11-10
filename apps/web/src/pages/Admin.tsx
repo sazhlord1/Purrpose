@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { BackLink } from '../components/BackLink.js';
 import { AppealQueue } from '../components/AppealQueue.js';
+import { BazaarPanel } from '../components/BazaarPanel.js';
 import { ReviewQueue } from '../components/ReviewQueue.js';
 import { DoodleButton, SketchCard } from '../components/ui/index.js';
 import { api, ApiError } from '../lib/api.js';
@@ -130,6 +131,7 @@ export function Admin() {
       <h1>{t('Admin')}</h1>
       <p className="muted">{t('Signed in as {email}. Every cat and tool is unlocked for you.', { email: me.data?.user.email })}</p>
 
+      <BazaarPanel />
       <ReviewQueue />
       <AppealQueue />
 
