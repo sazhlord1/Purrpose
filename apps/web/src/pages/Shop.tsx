@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AppIcon, Cat, CatScene, ItemIcon, type IconName } from '@purrpose/cats';
 import {
@@ -12,6 +12,8 @@ import {
   type PaymentsMode,
   type PurrPack,
   type ShopItem,
+  PURR_PACK_PRICES_IRT,
+  type BazaarSku,
   catSubtitle,
 } from '@purrpose/shared';
 import { DoodleButton, SketchCard } from '../components/ui/index.js';
@@ -21,6 +23,8 @@ import { catNameOf } from '../lib/labels.js';
 import { Tour } from '../components/Tour.js';
 import { shopTour } from '../lib/tours.js';
 import { canBuyHere, goToCheckout } from '../lib/payments.js';
+import { bazaarApp, bazaarFailure, buyWithBazaar, restoreBazaarPurchases } from '../lib/bazaar.js';
+import { toman } from '../lib/format.js';
 import { TestCardNote } from '../components/TestCardNote.js';
 
 interface ShopResponse {
@@ -57,8 +61,9 @@ function previewRatio(category: ItemCategory): number {
   return stage === 3 ? 0.5 : 0.7;
 }
 
-/** "Get PURR" (buying with money) only exists in the English version. */
-const visibleSections = (): Section[] => (canBuyHere() ? SECTION_ORDER : SECTION_ORDER.filter(s => s !== 'purr'));
+/** "Get PURR" (buying with money): Stripe in the English version, Cafe Bazaar in the Iranian Android app. */
+const canGetPurr = (): boolean => canBuyHere() || bazaarApp();
+const visibleSections = (): Section[] => (canGetPurr() ? SECTION_ORDER : SECTION_ORDER.filter(s => s !== 'purr'));
 
 function isSection(v: string | null): v is Section {
   return v !== null && (visibleSections() as string[]).includes(v);
@@ -73,6 +78,9 @@ export function Shop() {
   const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string; needsAccount?: boolean } | null>(null);
   const [trying, setTrying] = useState<ShopItem | null>(null);
   const shop = useQuery({ queryKey: ['shop'], queryFn: () => api<ShopResponse>('/shop') });
+  // Iranian Android app: is Cafe Bazaar billing switched on on the server?
+  const bazaar = useQuery({ queryKey: ['bazaar'], queryFn: () => api<{ enabled: boolean }>('/bazaar'), enabled: bazaarApp() });
+  const bazaarOn = bazaarApp() && bazaar.data?.enabled === true;
 
   const open = (s: Section | null) => {
     setMessage(null);
@@ -86,6 +94,23 @@ export function Shop() {
     void qc.invalidateQueries({ queryKey: ['me'] });
   };
   const fail = (e: unknown) => setMessage({ kind: 'err', text: e instanceof ApiError ? e.message : t('Something went wrong.') });
+
+  // A Bazaar purchase that was paid but never credited (the app closed): finish it now.
+  useEffect(() => {
+    if (!bazaarOn) return;
+    void restoreBazaarPurchases().then(done => {
+      if (done.some(d => d.credited)) refresh();
+    });
+  }, [bazaarOn]);
+
+  const buyBazaarPack = useMutation({
+    mutationFn: (sku: BazaarSku) => buyWithBazaar(sku),
+    onSuccess: res => {
+      setMessage({ kind: 'ok', text: t('Done! You now have {n} PURR.', { n: res.purr }) });
+      refresh();
+    },
+    onError: e => setMessage(bazaarFailure(e)),
+  });
 
   const unlock = useMutation({
     mutationFn: (catId: CatId) => api<{ catId: CatId; purr: number }>('/shop/unlock', { method: 'POST', body: { catId } }),
@@ -148,7 +173,7 @@ export function Shop() {
       <span className="purr-balance"><AppIcon name="purr" size={28} /> {purr}</span>
       <span className="muted">{t('PURR')}</span>
       {purrStaked > 0 && <span className="muted" style={{ fontSize: 12.5 }}>{t('({n} in open pacts)', { n: purrStaked })}</span>}
-      {section !== 'purr' && canBuyHere() && (
+      {section !== 'purr' && canGetPurr() && (
         <button type="button" className="chip chip-purr" onClick={() => open('purr')}>
           + {t('Get PURR')}
         </button>
@@ -261,11 +286,32 @@ export function Shop() {
     return (
       <main>
         {header}
-        {paymentsMode === 'disabled' && <p className="muted">{t('Buying PURR is coming soon.')}</p>}
+        {bazaarApp() && (
+          <>
+            {!bazaarOn && <p className="muted">{t('Buying PURR is coming soon.')}</p>}
+            {bazaarOn && <p className="muted" style={{ fontSize: 13 }}>{t('Paid securely through Cafe Bazaar.')}</p>}
+            <div className="shop-grid">
+              {packs.map(pack => (
+                <div key={pack.id} className="shop-cat">
+                  <div className="purr-balance" style={{ fontSize: 26 }}><AppIcon name="purr" size={26} /> {pack.purr}</div>
+                  {pack.bonusLabel && <span className="chip">{t(pack.bonusLabel)}</span>}
+                  <DoodleButton
+                    variant="primary"
+                    disabled={!bazaarOn || buyBazaarPack.isPending || !PURR_PACK_PRICES_IRT[pack.id]}
+                    onClick={() => buyBazaarPack.mutate(pack.id as BazaarSku)}
+                  >
+                    {buyBazaarPack.isPending && buyBazaarPack.variables === pack.id ? '…' : toman(PURR_PACK_PRICES_IRT[pack.id] ?? 0)}
+                  </DoodleButton>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+        {!bazaarApp() && paymentsMode === 'disabled' && <p className="muted">{t('Buying PURR is coming soon.')}</p>}
         {paymentsMode === 'sandbox' && <p className="muted">{t('Test mode: purchases are free and nothing is charged.')}</p>}
         {paymentsMode === 'stripe' && shop.data.paymentsTest && <TestCardNote />}
         {paymentsMode === 'stripe' && <p className="muted" style={{ fontSize: 13 }}>{t('Secure checkout by Stripe. Prices in US dollars.')}</p>}
-        <div className="shop-grid">
+        {!bazaarApp() && <div className="shop-grid">
           {packs.map(pack => (
             <div key={pack.id} className="shop-cat">
               <div className="purr-balance" style={{ fontSize: 26 }}><AppIcon name="purr" size={26} /> {pack.purr}</div>
@@ -275,7 +321,7 @@ export function Shop() {
               </DoodleButton>
             </div>
           ))}
-        </div>
+        </div>}
       </main>
     );
   }
@@ -350,3 +396,4 @@ export function Shop() {
     </main>
   );
 }
+

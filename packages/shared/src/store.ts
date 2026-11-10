@@ -45,12 +45,48 @@ export const FOOD_PRICES = {
 } as const satisfies Record<'MEALS' | 'DRY_FOOD' | 'VET_CARE', { cents: number; unit: string; maxQty: number }>;
 
 /**
- * Iranian edition (Cafe Bazaar, not wired up yet). What one unit really costs us
- * (Aban 1405, the team's numbers), and the in-app price, in toman, that still covers
- * it after Cafe Bazaar's share if that share is as high as 30%.
+ * Iranian edition, sold through Cafe Bazaar. What one unit really costs us (Aban 1405,
+ * the team's numbers) and the price in the Bazaar panel, in toman. The owner chose
+ * these prices; at a 30% Bazaar share a can and a kilo of dry food sell below cost.
  */
-export const FOOD_COST_IRT = { MEALS: 150_000, DRY_FOOD: 1_500_000, VET_CARE: 1_000_000 } as const;
-export const FOOD_PRICES_IRT = { MEALS: 219_000, DRY_FOOD: 2_190_000, VET_CARE: 1_490_000 } as const;
+export const FOOD_PRICES_IRT = { MEALS: 189_000, DRY_FOOD: 749_000, VET_CARE: 1_490_000 } as const;
+
+/** PURR packs in the Iranian edition (toman, Cafe Bazaar). Same pack ids as the global edition. */
+export const PURR_PACK_PRICES_IRT: Readonly<Record<string, number>> = {
+  purr_150: 39_000,
+  purr_250: 59_000,
+  purr_500: 99_000,
+  purr_1000: 169_000,
+};
+
+/**
+ * The Cafe Bazaar products (one-time, consumable), exactly as defined in the Bazaar
+ * panel. The SKU decides what gets credited; the price shown is ours (Bazaar charges
+ * what its panel says, in rials including tax: toman × 10).
+ */
+export type BazaarProduct =
+  | { kind: 'food'; item: 'MEALS' | 'DRY_FOOD' | 'VET_CARE'; quantity: 1; toman: number }
+  | { kind: 'purr'; item: string; quantity: 1; toman: number };
+
+export const BAZAAR_PRODUCTS = {
+  food_meals: { kind: 'food', item: 'MEALS', quantity: 1, toman: FOOD_PRICES_IRT.MEALS },
+  food_dry: { kind: 'food', item: 'DRY_FOOD', quantity: 1, toman: FOOD_PRICES_IRT.DRY_FOOD },
+  food_vet: { kind: 'food', item: 'VET_CARE', quantity: 1, toman: FOOD_PRICES_IRT.VET_CARE },
+  purr_150: { kind: 'purr', item: 'purr_150', quantity: 1, toman: 39_000 },
+  purr_250: { kind: 'purr', item: 'purr_250', quantity: 1, toman: 59_000 },
+  purr_500: { kind: 'purr', item: 'purr_500', quantity: 1, toman: 99_000 },
+  purr_1000: { kind: 'purr', item: 'purr_1000', quantity: 1, toman: 169_000 },
+} as const satisfies Record<string, BazaarProduct>;
+
+export type BazaarSku = keyof typeof BAZAAR_PRODUCTS;
+export const BAZAAR_SKUS = Object.keys(BAZAAR_PRODUCTS) as BazaarSku[];
+
+/** The Bazaar SKU that sells one unit of this food. */
+export const BAZAAR_FOOD_SKU: Record<'MEALS' | 'DRY_FOOD' | 'VET_CARE', BazaarSku> = {
+  MEALS: 'food_meals',
+  DRY_FOOD: 'food_dry',
+  VET_CARE: 'food_vet',
+};
 
 /**
  * disabled: nothing can be bought · sandbox: free test credits (never in production) ·

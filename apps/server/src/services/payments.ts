@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient } from '@prisma/client';
 import {
   FOOD_PRICES,
   PAYMENT_CURRENCY,
@@ -128,6 +128,37 @@ export function startFoodCheckout(
   });
 }
 
+type Tx = Prisma.TransactionClient;
+
+/**
+ * Adds what was bought (a PURR pack or pantry food) to the buyer's balance. Callers make
+ * sure it runs once per payment (Stripe: pending → paid; Bazaar: one row per purchase token).
+ */
+export async function creditPurchase(
+  tx: Tx,
+  payment: { userId: string; kind: string; item: string; quantity: number },
+  reference: string,
+): Promise<void> {
+  if (payment.kind === 'purr') {
+    const pack = purrPackById(payment.item);
+    if (!pack) throw new AppError('NOT_FOUND', { packId: payment.item }, 'Unknown pack');
+    await tx.purrTransaction.create({
+      data: { userId: payment.userId, type: 'PURCHASE', amount: pack.purr, itemId: `pack:${pack.id}`, reference },
+    });
+    await tx.user.update({ where: { id: payment.userId }, data: { purrBalance: { increment: pack.purr } } });
+  } else {
+    const creditType = payment.item as ConsequenceType;
+    await tx.creditBalance.upsert({
+      where: { userId_creditType: { userId: payment.userId, creditType } },
+      update: { amount: { increment: payment.quantity } },
+      create: { userId: payment.userId, creditType, amount: payment.quantity },
+    });
+    await tx.creditTransaction.create({
+      data: { userId: payment.userId, type: 'TOPUP', creditType, amount: payment.quantity },
+    });
+  }
+}
+
 export type PaymentResult =
   | { status: 'paid'; kind: 'purr' | 'food'; item: string; quantity: number; credited: boolean }
   | { status: 'pending' };
@@ -161,24 +192,7 @@ export async function settleSession(prisma: PrismaClient, session: CheckoutSessi
       data: { status: 'paid', paidAt: new Date() },
     });
     if (moved.count !== 1) return false; // already credited (webhook and return raced)
-    if (payment.kind === 'purr') {
-      const pack = purrPackById(payment.item);
-      if (!pack) throw new AppError('NOT_FOUND', { packId: payment.item }, 'Unknown pack');
-      await tx.purrTransaction.create({
-        data: { userId: payment.userId, type: 'PURCHASE', amount: pack.purr, itemId: `pack:${pack.id}`, reference: `stripe:${payment.id}` },
-      });
-      await tx.user.update({ where: { id: payment.userId }, data: { purrBalance: { increment: pack.purr } } });
-    } else {
-      const creditType = payment.item as ConsequenceType;
-      await tx.creditBalance.upsert({
-        where: { userId_creditType: { userId: payment.userId, creditType } },
-        update: { amount: { increment: payment.quantity } },
-        create: { userId: payment.userId, creditType, amount: payment.quantity },
-      });
-      await tx.creditTransaction.create({
-        data: { userId: payment.userId, type: 'TOPUP', creditType, amount: payment.quantity },
-      });
-    }
+    await creditPurchase(tx, payment, `stripe:${payment.id}`);
     await tx.appEvent.create({
       data: {
         userId: payment.userId,

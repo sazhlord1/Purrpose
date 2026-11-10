@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type FC } from 'react';
 import {
+  BAZAAR_FOOD_SKU,
   FOOD_PRICES,
+  FOOD_PRICES_IRT,
   usd,
   type ConsequenceType,
   type HistoryResponse,
@@ -10,6 +12,9 @@ import { Link } from 'react-router-dom';
 import { AppIcon, type IconName } from '@purrpose/cats';
 import { api, ApiError } from '../lib/api.js';
 import { canBuyHere, goToCheckout } from '../lib/payments.js';
+import { bazaarApp, bazaarFailure, buyWithBazaar, restoreBazaarPurchases } from '../lib/bazaar.js';
+import { IS_IR_EDITION } from '../lib/edition.js';
+import { toman } from '../lib/format.js';
 import { TestCardNote } from '../components/TestCardNote.js';
 import { useMe } from '../lib/queries.js';
 import { fmtDate } from '../lib/format.js';
@@ -72,7 +77,10 @@ export function Pantry() {
   const isAdmin = me.data?.user.role === 'ADMIN';
   // Real food for real money: Stripe, English version only.
   const canBuy = shop.data?.paymentsMode === 'stripe' && canBuyHere();
-  const canTopUp = !canBuy && (shop.data?.paymentsMode === 'sandbox' || isAdmin);
+  // Iranian Android app: real food through Cafe Bazaar, one unit per purchase.
+  const bazaar = useQuery({ queryKey: ['bazaar'], queryFn: () => api<{ enabled: boolean }>('/bazaar'), enabled: bazaarApp() });
+  const canBuyBazaar = bazaarApp() && bazaar.data?.enabled === true;
+  const canTopUp = !canBuy && !canBuyBazaar && (shop.data?.paymentsMode === 'sandbox' || isAdmin);
 
   const [selectedItem, setSelectedItem] = useState<PantryItemMeta | null>(null);
   const [amount, setAmount] = useState(10);
@@ -117,6 +125,30 @@ export function Pantry() {
         return;
       }
       setNote(e instanceof ApiError ? e.message : t('Purchase failed.'));
+    },
+  });
+
+  const refreshFood = () => {
+    void qc.invalidateQueries({ queryKey: ['me'] });
+    void qc.invalidateQueries({ queryKey: ['history'] });
+  };
+  // A Bazaar purchase that was paid but never credited (the app closed): finish it now.
+  useEffect(() => {
+    if (!canBuyBazaar) return;
+    void restoreBazaarPurchases().then(done => {
+      if (done.some(d => d.credited)) refreshFood();
+    });
+  }, [canBuyBazaar]);
+  const buyBazaarFood = useMutation({
+    mutationFn: (creditType: ConsequenceType) => buyWithBazaar(BAZAAR_FOOD_SKU[creditType]),
+    onSuccess: (_res, creditType) => {
+      setNote(t('{food}: one more in your pantry. Thank you!', { food: foodName(creditType) }));
+      refreshFood();
+    },
+    onError: e => {
+      const f = bazaarFailure(e);
+      setNeedsAccount(Boolean(f.needsAccount));
+      setNote(f.text);
     },
   });
 
@@ -367,10 +399,35 @@ export function Pantry() {
                 </div>
               );
             })()}
-            {selectedItem.creditType && !canTopUp && !canBuy && (
+            {selectedItem.creditType && canBuyBazaar && (() => {
+              const creditType = selectedItem.creditType as ConsequenceType;
+              const unit = { can: t('per can'), kg: t('per kg'), visit: t('per visit') }[FOOD_PRICES[creditType].unit];
+              return (
+                <div style={{ width: '100%', marginTop: 8 }}>
+                  <p style={{ margin: '0 0 8px', fontWeight: 700 }}>
+                    {toman(FOOD_PRICES_IRT[creditType])} {unit}
+                  </p>
+                  {note && (
+                    <p className="form-error" role="status" style={{ marginTop: 10 }}>
+                      {note} {needsAccount && <Link to="/login">{t('Create account / Sign in')}</Link>}
+                    </p>
+                  )}
+                  <div style={{ marginTop: 14, display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <DoodleButton variant="primary" size="big" disabled={buyBazaarFood.isPending} onClick={() => buyBazaarFood.mutate(creditType)}>
+                      {buyBazaarFood.isPending ? '…' : t('Buy one · {price}', { price: toman(FOOD_PRICES_IRT[creditType]) })}
+                    </DoodleButton>
+                    <DoodleButton onClick={() => setSelectedItem(null)}>{t('Close')}</DoodleButton>
+                  </div>
+                  <p className="muted" style={{ fontSize: 12.5, marginTop: 10 }}>{t('Paid securely through Cafe Bazaar.')}</p>
+                </div>
+              );
+            })()}
+            {selectedItem.creditType && !canTopUp && !canBuy && !canBuyBazaar && (
               <div style={{ width: '100%', marginTop: 8 }}>
                 <p className="card card-c" style={{ padding: '10px 12px', fontSize: 14 }} role="status">
-                  {t('Buying real cat food opens soon. Until then, “on my word” pacts work with PURR.')}
+                  {IS_IR_EDITION && !bazaarApp()
+                    ? t('Cat food is bought in the Purrpose Android app (from Cafe Bazaar).')
+                    : t('Buying real cat food opens soon. Until then, “on my word” pacts work with PURR.')}
                 </p>
                 <DoodleButton onClick={() => setSelectedItem(null)}>{t('Close')}</DoodleButton>
               </div>

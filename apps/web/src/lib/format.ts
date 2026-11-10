@@ -23,3 +23,8 @@ export function fmtDate(iso: string): string {
     minute: '2-digit',
   });
 }
+
+/** A price in toman for the Iranian edition: "۱۸۹٬۰۰۰ تومان". */
+export function toman(n: number): string {
+  return t('{n} toman', { n: new Intl.NumberFormat(dateLocale()).format(n) });
+}

@@ -25,6 +25,8 @@ android {
 }
 
 repositories {
+    // Cafe Bazaar's billing library (Poolakey) is published on JitPack.
+    maven { url 'https://jitpack.io' }
     flatDir{
         dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
     }
@@ -40,6 +42,10 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+    // Cafe Bazaar in-app billing (BazaarBillingPlugin.java). Kotlin's stdlib is listed so the
+    // Java plugin can see kotlin.Unit for Poolakey's callbacks.
+    implementation 'com.github.cafebazaar.Poolakey:poolakey:2.2.0'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.24'
 }
 
 apply from: 'capacitor.build.gradle'

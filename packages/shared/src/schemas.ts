@@ -277,6 +277,12 @@ export const foodCheckoutSchema = z.object({
 });
 /** Back from Stripe Checkout: settle that session. */
 export const confirmPaymentSchema = z.object({ sessionId: z.string().regex(/^cs_(test|live)_[A-Za-z0-9]+$/) });
+/** The Android app bought something through Cafe Bazaar: the server checks it with Bazaar and credits it once. */
+export const bazaarVerifySchema = z.object({
+  productId: z.enum(['food_meals', 'food_dry', 'food_vet', 'purr_150', 'purr_250', 'purr_500', 'purr_1000']),
+  purchaseToken: z.string().trim().min(4).max(512).regex(/^\S+$/),
+});
+export type BazaarVerifyInput = z.infer<typeof bazaarVerifySchema>;
 export const adminGrantSchema = z.object({
   email: emailSchema,
   amount: z.number().int().min(1).max(100_000),

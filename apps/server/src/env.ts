@@ -56,6 +56,14 @@ const envSchema = z.object({
    * Off by default: new players get welcome PURR only, and food is bought. Tests turn it on.
    */
   STARTER_FOOD: bool,
+  /**
+   * Cafe Bazaar (Iranian edition): the developer-API secret from the Bazaar panel
+   * ("API توسعه‌دهنده", sent as the CAFEBAZAAR-PISHKHAN-API-SECRET header). With it set,
+   * the Android app can buy food and PURR through Bazaar. Never commit it.
+   */
+  BAZAAR_API_SECRET: opt(z.string().min(8)),
+  /** The Android package the purchases belong to. */
+  BAZAAR_PACKAGE_NAME: z.string().default('space.purrpose.app'),
 
   /**
    * Sign-in with a mobile number + SMS code (Iranian edition). Provider 'kavenegar', 'smsir'
