@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { markTourSeen, tourSeen, useToursAllowed } from '../lib/tour.js';
+import { useScrollLock } from '../lib/scrollLock.js';
 import { isRtlUi, num, t } from '../i18n/index.js';
 
 export interface TourStep {
@@ -126,6 +127,9 @@ export function Tour({ id, steps, delayMs = 700 }: { id: string; steps: TourStep
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [active, next, back, finish]);
+
+  // The page stays put while a guide is showing; the guide itself still brings each lit thing into view.
+  useScrollLock(Boolean(active && step));
 
   if (!active || !step) return null;
 
