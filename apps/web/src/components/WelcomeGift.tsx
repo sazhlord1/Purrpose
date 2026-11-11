@@ -6,6 +6,7 @@ import { DoodleButton } from './ui/index.js';
 import { api } from '../lib/api.js';
 import { useMe } from '../lib/queries.js';
 import { useBlockTours } from '../lib/tour.js';
+import { useScrollLock } from '../lib/scrollLock.js';
 import { useReducedMotion } from '../lib/useReducedMotion.js';
 import { t } from '../i18n/index.js';
 
@@ -18,6 +19,7 @@ export function WelcomeGift() {
   const amount = me.data?.welcomePurr ?? null;
   const open = amount !== null && !closed;
   useBlockTours('welcome-gift', open);
+  useScrollLock(open);
 
   const close = () => {
     setClosed(true);

@@ -7,6 +7,7 @@ import { BowlEmpty, BowlFull } from './doodles/index.js';
 import { useReducedMotion } from '../lib/useReducedMotion.js';
 import { isRtlUi, t } from '../i18n/index.js';
 import { useBlockTours } from '../lib/tour.js';
+import { useScrollLock } from '../lib/scrollLock.js';
 
 interface Panel {
   headline: string;
@@ -41,6 +42,7 @@ function Chevron({ dir }: { dir: 'left' | 'right' }) {
 }
 
 export function Onboarding({ onDone }: { onDone: () => void }) {
+  useScrollLock(true);
   const [step, setStep] = useState(0);
   const reduced = useReducedMotion();
   useBlockTours('onboarding', true);

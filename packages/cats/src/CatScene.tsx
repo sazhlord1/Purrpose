@@ -597,6 +597,16 @@ function assignRef<T>(ref: React.Ref<T> | undefined, value: T | null): void {
   else (ref as React.MutableRefObject<T | null>).current = value;
 }
 
+/** Tapping the cat shouldn't flash the phone's blue tap box or select it like text. */
+const PETTABLE = {
+  cursor: 'pointer',
+  outline: 'none',
+  WebkitTapHighlightColor: 'transparent',
+  WebkitUserSelect: 'none',
+  userSelect: 'none',
+  WebkitTouchCallout: 'none',
+} as const;
+
 export function CatScene({
   catId,
   state,
@@ -940,7 +950,7 @@ export function CatScene({
       <g
         transform={`translate(${catX}, ${catY}) scale(${catScale})`}
         onClick={interactive ? petCat : undefined}
-        style={interactive ? { cursor: 'pointer' } : undefined}
+        style={interactive ? PETTABLE : undefined}
       >
         {/* Adding the class (re)starts the hop — no remount, so a running script is never cut off. */}
         <g className={moving ? 'lc-move-hop' : undefined}>

@@ -5,6 +5,7 @@ import { HONOR_STARTER_BONUS, HONOR_STARTER_COUNT, HONOR_STARTER_STAKE, type Com
 import { CanTin } from '../doodles/index.js';
 import { t } from '../../i18n/index.js';
 import { useBlockTours } from '../../lib/tour.js';
+import { useScrollLock } from '../../lib/scrollLock.js';
 
 interface Props {
   open: boolean;
@@ -25,6 +26,7 @@ interface Props {
 export function PactModeChooser({ open, startersLeft, pantryEmpty, current, onPick, onClose }: Props) {
   const first = useRef<HTMLButtonElement>(null);
   useBlockTours('mode-chooser', open);
+  useScrollLock(open);
   useEffect(() => {
     if (!open) return undefined;
     first.current?.focus();

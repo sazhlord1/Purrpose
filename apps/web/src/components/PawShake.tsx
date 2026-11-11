@@ -4,6 +4,7 @@ import type { CatId } from '@purrpose/shared';
 import { getLocale, t } from '../i18n/index.js';
 import { ambient } from '../lib/ambient.js';
 import { HighFiveArt } from './HighFiveArt.js';
+import { useScrollLock } from '../lib/scrollLock.js';
 
 interface PawShakeProps {
   open: boolean;
@@ -15,6 +16,7 @@ interface PawShakeProps {
 const INK = '#26201D';
 
 export function PawShake({ open, catId, catName = t('Your Cat'), onComplete }: PawShakeProps) {
+  useScrollLock(open);
   const [clasped, setClasped] = useState(false);
   const fa = getLocale() === 'fa';
 

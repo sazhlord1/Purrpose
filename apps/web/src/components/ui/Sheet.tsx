@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { sheetSpring } from '../../lib/motion.js';
+import { useScrollLock } from '../../lib/scrollLock.js';
 import { t } from '../../i18n/index.js';
 
 interface SheetProps {
@@ -11,6 +12,7 @@ interface SheetProps {
 }
 
 export function Sheet({ open, onClose, title, children }: SheetProps) {
+  useScrollLock(open);
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

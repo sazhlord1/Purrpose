@@ -68,6 +68,15 @@
 
 * {
   box-sizing: border-box;
+  /* No blue flash box when tapping on phones (keyboard focus rings still show). */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The cat scenes and doodles are pictures: a tap pets the cat, it doesn't select it. */
+svg {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 html,
