@@ -115,6 +115,9 @@ describe.skipIf(!dbReady)('Cafe Bazaar purchases', () => {
 
     const payment = await prisma.payment.findUnique({ where: { id: 'bazaar:tok-150' } });
     expect(payment).toMatchObject({ kind: 'purr', item: 'purr_150', amountCents: 390_000, currency: 'irr', status: 'paid' });
+    // "My purchases" lists it for the buyer only.
+    expect((await call('GET', '/api/v1/purchases', buyer)).json().purchases).toMatchObject([{ kind: 'purr', item: 'purr_150', quantity: 1, amountCents: 390_000, currency: 'irr' }]);
+    expect((await call('GET', '/api/v1/purchases', thief)).json().purchases).toEqual([]);
   });
 
   it('food goes to the pantry; unknown, mismatched and refunded purchases are refused', async () => {

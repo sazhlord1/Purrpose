@@ -86,20 +86,17 @@ export const ROOMS: Record<string, string> = {
   CASE: 'پرونده',
 
   // Pantry (pages/Pantry.tsx)
-  'Gourmet wet food feast — your prime currency staked against procrastination.':
-    "عشق و حال با کنسرو‌های درجه‌یک، اصلی‌ترین چیزی که جلوی اهمال‌کاری رو می‌گیره.",
   'Primary Stake': 'گروی اصلی',
-  'Crispy crunchy kibble that keeps feline energy steady for long stakeouts.':
-    "غذای خشکِ قرچ‌قروچی که  گربه رو برای کشیک‌های طولانی سرپا نگه می‌داره.",
   'Daily Ration': 'جیره‌ی روزانه',
-  'Comprehensive medical wellness and checkups for absolute peace of mind.':
-    "چکاپ و مراقبت کامل پزشکی، که خیالمون از همه‌چی راحت بشه.",
   'High Stakes': 'گروی سنگین',
   '{food} topped up to {n}.': 'موجودی {food} شد {n}.',
   'Top-up failed. Even imaginary economies have banks.': 'شارژ نشد. حتی اقتصادهای خیالی هم بانک دارن.',
   'Your Pantry': 'انبارِ تو',
   '{n} PURR · Cat Shop': '{n} میو · مغازه‌ی گربه',
-  'click any item to inspect': 'رو هر کدوم بزنی، جزئیاتش رو می‌بینی',
+  'My purchases': 'خریدهای من',
+  'Could not load your purchases. Try again.': 'خریدهات بارگذاری نشد. دوباره امتحان کن.',
+  'You haven’t bought anything yet.': 'هنوز چیزی نخریدی.',
+  '{food} × {n}': '{food} × {n}',
   'Consequence Supplies': 'آذوقه‌ی گروگذاری',
   'Items staked in your commitments. When you procrastinate, your cat feasts on these.':
     'چیزایی که سر قرارهات گرو می‌ذاری. اگه بپیچونی، گربه‌ت اینا رو نوش جان می‌کنه.',
@@ -108,9 +105,6 @@ export const ROOMS: Record<string, string> = {
   'Top up {food}': 'شارژ {food}',
   'at stake:': 'گرو:',
   'available:': "در دسترس:",
-  'tap to top up': "بزن تا شارژ بشه.",
-  "Available = balance − active stakes. That's the part you can still promise to cats.":
-    'آزاد = موجودی − گروهای فعال. یعنی همون مقداری که هنوز می‌تونی به گربه‌ها قولش رو بدی.',
   'Recent activity': 'فعالیت‌های اخیر',
   'Nothing yet.': 'هنوز هیچی.',
   'fed a cat': 'یه گربه سیر شد',
@@ -137,10 +131,10 @@ export const ROOMS: Record<string, string> = {
   STARTER: 'هدیه‌ی شروع',
   'counting kibble…': 'دارم دونه‌های غذا رو می‌شمرم…',
   'The ledger wandered off.': 'دفتر حساب‌ها گم و گور شده.',
-  'commitments kept': 'قرارهایی که انجامش دادی',
-  'times the cat won': "دفعه‌هایی که به گربه باختی",
+  'commitments kept': 'قرارهایی که بردی',
+  'times the cat won': 'دفعاتی که به گربه غذا باختی',
   "No cats fed yet. Keep procrastinating — this section fills up when you don't.":
-    "هنوز دعای هیچ گربه‌ای پشت سرت نیست. هر وقت پیچوندی اینجا کارنامه‌ اعلامت نشون داده میشه.",
+    "هنوز دعای هیچ گربه‌ای پشت سرت نیست. هر وقت پیچوندی، اینجا کارنامه‌ی اعمالت نشون داده میشه.",
   'Filter history': 'فیلتر سابقه',
   '"{title}"': '«{title}»',
   'Load more ({n} left)': 'بیشتر ({n} تای دیگه)',

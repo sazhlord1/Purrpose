@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Cat } from '@purrpose/cats';
+import { AppIcon, Cat } from '@purrpose/cats';
 import { DoodleButton } from './ui/index.js';
 import { BowlEmpty, BowlFull } from './doodles/index.js';
 import { useReducedMotion } from '../lib/useReducedMotion.js';
@@ -21,7 +21,7 @@ const PANELS: Panel[] = [
   {
     headline: '\u2026your cat wins.',
     sub: 'Miss your deadline, your stake feeds a cat.',
-    chip: '\u{1F96B} 5 Cat Meals',
+    chip: '5 Cat Meals',
   },
   { headline: 'Make your first commitment.', sub: 'Your cat is ready. Are you?' },
 ];
@@ -158,7 +158,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           <p className="muted">{t(panel.sub)}</p>
           {panel.chip && (
             <p>
-              <span className="chip">{t(panel.chip)}</span>
+              <span className="chip"><AppIcon name="meals" size={16} /> {t(panel.chip)}</span>
             </p>
           )}
           {step === 3 && (

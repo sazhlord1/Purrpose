@@ -8,7 +8,7 @@ import {
 import { api } from '../lib/api.js';
 import { fmtDate } from '../lib/format.js';
 import { foodName, t } from '../i18n/index.js';
-import { Chip, SketchCard, Stamp, Skeleton } from '../components/ui/index.js';
+import { AnimatedNumber, Chip, SketchCard, Stamp, Skeleton } from '../components/ui/index.js';
 import { CanTin, CatFace, KibbleBag, VetCare } from '../components/doodles/index.js';
 import { Tour } from '../components/Tour.js';
 import { impactTour } from '../lib/tours.js';
@@ -94,21 +94,23 @@ export function Impact() {
 
       <Tour id="impact" steps={impactTour()} />
       <div data-tour="impact-totals">
-      <SketchCard variant="a">
-        <div className="row">
-          <strong style={{ fontSize: 20 }}>{totals.completed}</strong>
+      <div className="score-pair">
+        <div className="score-box score-won">
+          <AnimatedNumber value={totals.completed} className="hand score-num" />
           <span>{t('commitments kept')}</span>
         </div>
-        <div className="row">
-          <strong style={{ fontSize: 20, color: 'var(--stamp-red)' }}>{totals.failed}</strong>
+        <div className="score-box score-lost">
+          <AnimatedNumber value={totals.failed} className="hand score-num" />
           <span>{t('times the cat won')}</span>
         </div>
-        {donatedLines.length === 0 ? (
-          <p className="muted" style={{ marginTop: 8 }}>
-            {t("No cats fed yet. Keep procrastinating — this section fills up when you don't.")}
-          </p>
-        ) : (
-          donatedLines.map(([type, amount]) => {
+      </div>
+      {donatedLines.length === 0 ? (
+        <p className="muted" style={{ textAlign: 'center', margin: '4px 0 0' }}>
+          {t("No cats fed yet. Keep procrastinating — this section fills up when you don't.")}
+        </p>
+      ) : (
+        <SketchCard variant="a">
+          {donatedLines.map(([type, amount]) => {
             const Icon = DOODLE_BY_TYPE[type as ConsequenceType] ?? CanTin;
             return (
               <div className="row" key={type}>
@@ -119,9 +121,9 @@ export function Impact() {
                 <Stamp kind="fed" />
               </div>
             );
-          })
-        )}
-      </SketchCard>
+          })}
+        </SketchCard>
+      )}
       </div>
 
       <div className="chip-row" role="group" aria-label={t('Filter history')} style={{ marginTop: 16 }} data-tour="impact-filters">

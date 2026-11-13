@@ -285,7 +285,7 @@ export function CommitmentDetail() {
 
       {c.status === 'ACTIVE' && !pending && justMade && (
         <SketchCard variant="b" className="share-new-card">
-          <h3 style={{ marginTop: 0 }}>{t('Your pact card is ready 😼')}</h3>
+          <h3 style={{ marginTop: 0 }}>{t('Your pact card is ready')}</h3>
           <p className="muted" style={{ margin: '0 0 10px' }}>
             {t('Tell your friends you made a pact with {name}. Saying it out loud makes it harder to skip.', { name: catName })}
           </p>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { CAT_SEED, FREE_CAT_IDS, type CatId } from '@purrpose/shared';
+import { CAT_SEED, FOCUS_ROOM_CAT, FREE_CAT_IDS, type CatId } from '@purrpose/shared';
 import { api } from '../lib/api.js';
 import { useCommitments, useMe } from '../lib/queries.js';
 import { ambient } from '../lib/ambient.js';
@@ -60,19 +60,20 @@ export function Focus() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const me = useMe();
-  const unlocked: readonly string[] = me.data?.unlockedCatIds ?? FREE_CAT_IDS;
+  // Yuki is the Focus Room's own cat, open to everyone.
+  const unlocked: readonly string[] = [FOCUS_ROOM_CAT, ...(me.data?.unlockedCatIds ?? FREE_CAT_IDS)];
   const [status, setStatus] = useState<FocusStatus>('idle');
   const [seconds, setSeconds] = useState(0);
   const [selectedCat, setSelectedCat] = useState<CatId>(() => {
-    if (typeof localStorage === 'undefined') return 'orange';
-    const saved = localStorage.getItem('purrpose.focus_cat') as CatId;
-    return (FREE_CAT_IDS as readonly string[]).includes(saved) ? saved : 'orange';
+    if (typeof localStorage === 'undefined') return FOCUS_ROOM_CAT;
+    const saved = localStorage.getItem('purrpose.focus_cat.v2') as CatId;
+    return (FREE_CAT_IDS as readonly string[]).includes(saved) ? saved : FOCUS_ROOM_CAT;
   });
   const [selectedCommitmentId, setSelectedCommitmentId] = useState<string>(() => params.get('commitment') ?? '');
   const [saveError, setSaveError] = useState<string | null>(null);
   const startedAtRef = useRef<number | null>(null);
   const savedCatRef = useRef<string | null>(
-    typeof localStorage !== 'undefined' ? localStorage.getItem('purrpose.focus_cat') : null,
+    typeof localStorage !== 'undefined' ? localStorage.getItem('purrpose.focus_cat.v2') : null,
   );
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [zenMode, setZenMode] = useState(false);
@@ -97,7 +98,7 @@ export function Focus() {
 
   // Persist selected cat
   useEffect(() => {
-    localStorage.setItem('purrpose.focus_cat', selectedCat);
+    localStorage.setItem('purrpose.focus_cat.v2', selectedCat);
   }, [selectedCat]);
 
   // Zen Mode toggle class on body
@@ -344,7 +345,7 @@ export function Focus() {
           {saveError && <p className="form-error">{saveError}</p>}
           {selectedCommitmentId && (
             <p className="chip" style={{ display: 'inline-block', background: 'var(--paper-warm)', fontSize: 12 }}>
-              ⏱ {t('Time added to: {title}', { title: activeCommitments.find(c => c.id === selectedCommitmentId)?.title ?? '' })}
+              {t('Time added to: {title}', { title: activeCommitments.find(c => c.id === selectedCommitmentId)?.title ?? '' })}
             </p>
           )}
         </SketchCard>
@@ -366,7 +367,7 @@ export function Focus() {
                   </Chip>
                 ) : (
                   <Chip key={c.id} onClick={() => navigate(`/shop?cat=${c.id}`)}>
-                    🔒 {c.name} · {c.pricePurr}
+                    <AppIcon name="lock" size={14} /> {c.name} · {c.pricePurr}
                   </Chip>
                 ),
               )}

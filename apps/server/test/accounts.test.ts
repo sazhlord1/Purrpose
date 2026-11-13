@@ -175,8 +175,15 @@ describe.skipIf(!dbReady)('accounts, admin, PURR shop, focus, push', () => {
     expect(summary.byCommitment[c.id]).toBe(1500);
     expect(summary.totalSec).toBe(1500 + capped.json().durationSec);
 
-    const locked = await call('POST', '/api/v1/focus/sessions', token, {
+    // Yuki is the Focus Room's own cat: anyone can focus with her.
+    const withYuki = await call('POST', '/api/v1/focus/sessions', token, {
       catId: 'yuki',
+      durationSec: 60,
+      startedAtISO: new Date(clock.now() - 60_000).toISOString(),
+    });
+    expect(withYuki.json().error).toBeUndefined();
+    const locked = await call('POST', '/api/v1/focus/sessions', token, {
+      catId: 'pepper',
       durationSec: 60,
       startedAtISO: new Date(clock.now() - 60_000).toISOString(),
     });

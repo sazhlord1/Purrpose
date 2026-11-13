@@ -45,29 +45,41 @@ interface PantryItemMeta {
   id: string;
   name: string;
   badge: string;
-  description: string;
   icon: FC<DoodleProps>;
   creditType?: ConsequenceType;
   stock?: number;
 }
 
-const CONSEQUENCE_META: Record<ConsequenceType, { description: string; badge: string; icon: FC<DoodleProps> }> = {
-  MEALS: {
-    description: 'Gourmet wet food feast — your prime currency staked against procrastination.',
-    badge: 'Primary Stake',
-    icon: MealsIcon,
-  },
-  DRY_FOOD: {
-    description: 'Crispy crunchy kibble that keeps feline energy steady for long stakeouts.',
-    badge: 'Daily Ration',
-    icon: DryFoodIcon,
-  },
-  VET_CARE: {
-    description: 'Comprehensive medical wellness and checkups for absolute peace of mind.',
-    badge: 'High Stakes',
-    icon: VetCareIcon,
-  },
+/** Each item wears its icon's colour: the can's orange, the kibble bag's blue, the vet kit's red. */
+const CONSEQUENCE_META: Record<ConsequenceType, { badge: string; icon: FC<DoodleProps>; accent: string; tint: string }> = {
+  MEALS: { badge: 'Primary Stake', icon: MealsIcon, accent: '#E86A3A', tint: 'rgba(232, 106, 58, 0.10)' },
+  DRY_FOOD: { badge: 'Daily Ration', icon: DryFoodIcon, accent: '#5B8FD6', tint: 'rgba(91, 143, 214, 0.12)' },
+  VET_CARE: { badge: 'High Stakes', icon: VetCareIcon, accent: '#E0533C', tint: 'rgba(224, 83, 60, 0.10)' },
 };
+
+interface Purchase {
+  n: number;
+  kind: string;
+  item: string;
+  quantity: number;
+  amountCents: number;
+  currency: string;
+  atISO: string;
+}
+
+const purchaseIcon = (p: Purchase): IconName =>
+  p.kind === 'food' ? (CREDIT_ICON[p.item as ConsequenceType] ?? 'meals') : 'purr';
+function purchaseName(p: Purchase): string {
+  if (p.kind === 'food') {
+    const name = foodName(p.item as ConsequenceType);
+    return p.quantity > 1 ? t('{food} × {n}', { food: name, n: p.quantity }) : name;
+  }
+  return t('{n} PURR', { n: Number(p.item.replace('purr_', '')) || 0 });
+}
+function purchasePrice(p: Purchase): string {
+  if (p.currency === 'irr') return toman(Math.round(p.amountCents / 10));
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: p.currency.toUpperCase() }).format(p.amountCents / 100);
+}
 
 export function Pantry() {
   const qc = useQueryClient();
@@ -84,6 +96,12 @@ export function Pantry() {
   const canTopUp = !canBuy && !canBuyBazaar && (shop.data?.paymentsMode === 'sandbox' || isAdmin);
 
   const [selectedItem, setSelectedItem] = useState<PantryItemMeta | null>(null);
+  const [showPurchases, setShowPurchases] = useState(false);
+  const purchases = useQuery({
+    queryKey: ['purchases'],
+    queryFn: () => api<{ purchases: Purchase[] }>('/purchases'),
+    enabled: showPurchases,
+  });
   const [amount, setAmount] = useState(10);
   const [note, setNote] = useState<string | null>(null);
   const [fallKey, setFallKey] = useState(0);
@@ -167,7 +185,6 @@ export function Pantry() {
       id: creditType,
       name: foodName(creditType),
       badge: t(meta.badge),
-      description: t(meta.description),
       icon: meta.icon,
       creditType,
       stock: balance?.amount ?? 0,
@@ -190,7 +207,7 @@ export function Pantry() {
         <DoodleButton href="/shop" variant="primary">
           <AppIcon name="purr" size={18} /> {t('{n} PURR · Cat Shop', { n: me.data?.purr ?? 0 })} {fwdArrow()}
         </DoodleButton>
-        <span className="chip">{t('click any item to inspect')}</span>
+        <DoodleButton onClick={() => setShowPurchases(true)}>{t('My purchases')}</DoodleButton>
       </div>
 
       <Tour id="pantry" steps={pantryTour()} />
@@ -228,31 +245,47 @@ export function Pantry() {
             style={{
               padding: '14px 16px',
               cursor: 'pointer',
+              backgroundImage: `linear-gradient(${meta.tint}, ${meta.tint})`,
               transition: 'transform 110ms ease-out, box-shadow 110ms ease-out',
             }}
             onClick={() => openCreditSheet(b.creditType)}
           >
-            <div className="row" style={{ borderBottom: 'none', padding: '2px 0', alignItems: 'center' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span
-                  style={{
-                    display: 'grid',
-                    placeItems: 'center',
-                    width: 38,
-                    height: 38,
-                    borderRadius: '50% 45% 55% 50%',
-                    border: '1.5px solid var(--ink)',
-                    background: 'var(--paper)',
-                  }}
-                >
-                  <Icon size={22} strokeWidth={2.2} />
-                </span>
-                <span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span
+                style={{
+                  display: 'grid',
+                  placeItems: 'center',
+                  flex: 'none',
+                  width: 44,
+                  height: 44,
+                  borderRadius: '50%',
+                  border: `2px solid ${meta.accent}`,
+                  background: 'var(--paper)',
+                }}
+              >
+                <Icon size={24} strokeWidth={2.2} />
+              </span>
+              <span style={{ flex: 1, minWidth: 0, display: 'grid', gap: 4 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <strong style={{ fontSize: 17 }}>{foodName(b.creditType)}</strong>
+                  <span
+                    className="chip"
+                    style={{ fontSize: 12, padding: '1px 9px', borderColor: meta.accent, color: meta.accent, background: 'transparent' }}
+                  >
+                    {t(meta.badge)}
+                  </span>
+                </span>
+                <span style={{ fontSize: 14, color: 'var(--ink-soft, inherit)', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                  <span>
+                    {t('at stake:')} <strong>{b.stakedActive}</strong>
+                  </span>
+                  <span>
+                    {t('available:')} <strong>{b.available}</strong>
+                  </span>
                 </span>
               </span>
-              <span style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                <AnimatedNumber value={b.amount} className="hand" style={{ fontSize: 24 }} />
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 'none' }}>
+                <AnimatedNumber value={b.amount} className="hand" style={{ fontSize: 26, color: meta.accent }} />
                 <button
                   className="chip chip-active"
                   aria-label={t('Top up {food}', { food: foodName(b.creditType) })}
@@ -260,47 +293,16 @@ export function Pantry() {
                     e.stopPropagation();
                     openCreditSheet(b.creditType);
                   }}
-                  style={{ fontWeight: 'bold', fontSize: 15, padding: '2px 10px' }}
+                  style={{ fontWeight: 'bold', fontSize: 15, padding: '2px 10px', background: meta.accent, borderColor: meta.accent, color: '#fff' }}
                 >
                   +
                 </button>
-              </span>
-            </div>
-            <div style={{ margin: '4px 0 8px', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span className="chip" style={{ fontSize: 11, padding: '1px 8px' }}>
-                {t(meta.badge)}
-              </span>
-              <span className="muted" style={{ fontSize: 13, lineHeight: 1.35 }}>
-                {t(meta.description)}
-              </span>
-            </div>
-            <div
-              className="muted"
-              style={{
-                fontSize: 12.5,
-                display: 'flex',
-                gap: 16,
-                borderTop: '1px dashed rgba(26,26,26,0.2)',
-                paddingTop: 6,
-              }}
-            >
-              <span>
-                {t('at stake:')} <strong>{b.stakedActive}</strong>
-              </span>
-              <span>
-                {t('available:')} <strong>{b.available}</strong>
-              </span>
-              <span style={{ marginInlineStart: 'auto', textDecoration: 'underline' }}>
-                {t('tap to top up')} {fwdArrow()}
               </span>
             </div>
           </div>
         );
       })}
 
-      <p className="muted" style={{ fontSize: 13 }}>
-        {t("Available = balance − active stakes. That's the part you can still promise to cats.")}
-      </p>
 
       <SketchCard variant="a">
         <h2>{t('Recent activity')}</h2>
@@ -348,26 +350,12 @@ export function Pantry() {
               <selectedItem.icon size={68} strokeWidth={2.4} />
             </div>
 
-            <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
               <span className="chip chip-active">{selectedItem.badge}</span>
               {selectedItem.stock !== undefined && (
                 <span className="chip">{t('In Pantry: {n}', { n: selectedItem.stock })}</span>
               )}
             </div>
-
-            <p
-              style={{
-                fontSize: 15,
-                lineHeight: 1.45,
-                color: 'var(--ink)',
-                maxWidth: 380,
-                margin: '4px 0 16px',
-                fontWeight: 500,
-              }}
-            >
-              {selectedItem.description}
-            </p>
-
             {selectedItem.creditType && canBuy && (() => {
               const price = FOOD_PRICES[selectedItem.creditType as ConsequenceType];
               const unit = { can: t('per can'), kg: t('per kg'), visit: t('per visit') }[price.unit];
@@ -455,6 +443,26 @@ export function Pantry() {
             )}
           </div>
         )}
+      </Sheet>
+
+      <Sheet open={showPurchases} onClose={() => setShowPurchases(false)} title={t('My purchases')}>
+        {purchases.isLoading && <Skeleton h={40} />}
+        {purchases.isError && <p className="form-error">{t('Could not load your purchases. Try again.')}</p>}
+        {purchases.data?.purchases.length === 0 && <p className="muted">{t('You haven’t bought anything yet.')}</p>}
+        {purchases.data?.purchases.map(p => (
+          <div className="row" key={p.n}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <AppIcon name={purchaseIcon(p)} size={20} />
+              <span>
+                <strong>{purchaseName(p)}</strong>
+                <span className="muted" style={{ display: 'block', fontSize: 12.5 }}>
+                  {fmtDate(p.atISO)}
+                </span>
+              </span>
+            </span>
+            <span style={{ fontWeight: 600 }}>{purchasePrice(p)}</span>
+          </div>
+        ))}
       </Sheet>
     </main>
   );

@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { focusSessionSchema } from '@purrpose/shared';
+import { FOCUS_ROOM_CAT, focusSessionSchema } from '@purrpose/shared';
 import { userIdOf } from '../auth.js';
 import { clock } from '../clock.js';
 import { getPrisma } from '../db.js';
@@ -12,7 +12,7 @@ export function registerFocusRoutes(app: FastifyInstance): void {
     const userId = userIdOf(request);
     const input = parse(focusSessionSchema, request.body);
     const prisma = getPrisma();
-    await assertCatUsable(prisma, userId, request.role, input.catId);
+    if (input.catId !== FOCUS_ROOM_CAT) await assertCatUsable(prisma, userId, request.role, input.catId);
 
     if (input.commitmentId) {
       const owned = await prisma.commitment.findFirst({

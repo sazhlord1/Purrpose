@@ -27,9 +27,9 @@ export interface ShareCardInput {
 
 /** The big line at the top of the card. */
 export function cardHeadline(input: Pick<ShareCardInput, 'outcome' | 'catName'>): string {
-  if (input.outcome === 'started') return t('I made a pact with {name} 😼', { name: input.catName });
-  if (input.outcome === 'success') return t('I beat {name} 😸', { name: input.catName });
-  return t('I lost my pact to {name} 😿', { name: input.catName });
+  if (input.outcome === 'started') return t('I made a pact with {name}', { name: input.catName });
+  if (input.outcome === 'success') return t('I beat {name}', { name: input.catName });
+  return t('I lost my pact to {name}', { name: input.catName });
 }
 
 function svgToImage(svg: SVGSVGElement): Promise<HTMLImageElement> {
@@ -182,10 +182,10 @@ export async function shareResult(input: ShareCardInput): Promise<'shared' | 'do
   const file = new File([blob], 'purrpose.png', { type: 'image/png' });
   const text =
     input.outcome === 'started'
-      ? t('I made a pact with {name}: “{title}”. Wish me luck 🐾', { name: input.catName, title: input.title })
+      ? t('I made a pact with {name}: “{title}”. Wish me luck', { name: input.catName, title: input.title })
       : input.outcome === 'success'
-        ? t('I beat {name} and finished “{title}” 🐾', { name: input.catName, title: input.title })
-        : t('{name} won this round — my stake feeds a cat 🐾', { name: input.catName });
+        ? t('I beat {name} and finished “{title}”', { name: input.catName, title: input.title })
+        : t('{name} won this round — my stake feeds a cat', { name: input.catName });
   if (navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({ files: [file], text });

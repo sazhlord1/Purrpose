@@ -22,49 +22,61 @@ export const FAQ = [
     'تا ۳ روز بعد از رد شدن، از صفحه‌ی همون قرار می‌تونی یک بار اعتراض بدی. تیم پرپس مدرک رو دوباره بررسی می‌کنه و اگه اعتراضت قبول بشه، قرار انجام‌شده حساب میشه و غذات برمی‌گرده.'],
   ['کارآگاه چیت به چه دردی می‌خوره؟',
     'برای ترک یه عادت بده. یه مدت (۷ تا ۶۰ روز) و تعداد چیت مجاز رو انتخاب می‌کنی و غذا گرو می‌ذاری. هر بار چیت کردی اعتراف می‌کنی و یه سهم از گرو قفل میشه؛ تا آخر دووم بیاری، بقیه‌ش برمی‌گرده.'],
-  ['باید چیزی نصب کنم؟',
-    'لازم نیست. اپ اندروید پرپس توی کافه‌بازاره و فایلش رو مستقیم هم می‌تونی دانلود کنی. روی آیفون و کامپیوتر، نسخه‌ی وب توی مرورگر کار می‌کنه و می‌تونی به صفحه‌ی اصلی گوشیت اضافه‌ش کنی.'],
   ['چطوری وارد بشم؟ اطلاعاتم امنه؟',
     'با شماره موبایل و کد پیامکی وارد میشی. اطلاعات روی سرورهای داخل ایران نگه داشته میشه، به کسی فروخته نمیشه و هر وقت بخوای می‌تونی پاک شدن حسابت رو بخوای.'],
-  ['اگه اینترنت بین‌الملل قطع بشه کار می‌کنه؟',
-    'بله. سرورهای پرپس داخل ایرانن و با اینترنت داخلی هم کار می‌کنه.'],
 ];
 
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 const CSS = `<style>
-#faq .faq{display:grid;gap:12px;max-width:820px}
-#faq details{border:2px solid var(--ink);border-radius:var(--r-card);background:var(--paper-raised);box-shadow:var(--shadow-sm)}
-#faq summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 20px;font-weight:700;font-size:17px}
+#faq{padding-block:28px}
+#faq .faq-all{max-width:820px;margin-inline:auto;border:2px solid var(--ink);border-radius:var(--r-card);background:var(--paper-raised)}
+#faq .faq-all>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 20px;font-weight:800;font-size:19px}
 #faq summary::-webkit-details-marker{display:none}
-#faq summary::after{content:'+';flex:0 0 auto;width:28px;height:28px;display:grid;place-items:center;border:2px solid var(--ink);border-radius:50%;font-size:18px;line-height:1;transition:transform .2s ease}
-#faq details[open] summary::after{transform:rotate(45deg);background:var(--gold)}
-#faq details p{padding:0 20px 18px;color:var(--ink-soft);font-size:16px;line-height:1.9;max-width:70ch}
+#faq .faq-all>summary small{font-weight:500;font-size:14px;color:var(--ink-soft);margin-inline-start:8px}
+#faq summary::after{content:'+';flex:0 0 auto;width:26px;height:26px;display:grid;place-items:center;border:2px solid var(--ink);border-radius:50%;font-size:17px;line-height:1;transition:transform .2s ease}
+#faq details[open]>summary::after{transform:rotate(45deg);background:var(--gold)}
+#faq .faq{display:grid;padding:0 12px 12px}
+#faq .faq details{border-top:1.5px dashed rgba(42,35,32,.2)}
+#faq .faq summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 8px;font-weight:700;font-size:16px}
+#faq .faq summary::after{width:22px;height:22px;font-size:15px;border-width:1.5px}
+#faq .faq details p{margin:0;padding:0 8px 14px;color:var(--ink-soft);font-size:15px;line-height:1.9;max-width:70ch}
 </style>`;
 
+const FA_DIGITS = n => String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+
+/**
+ * One closed box: "سؤال‌های پرتکرار" opens to the list, and each question opens to its
+ * answer. Rebuilt on every run, so changes to FAQ above always land.
+ */
 export function faqIr(html) {
-  if (html.includes('id="faq"')) return html;
+  // Drop an earlier copy (section, styles, structured data) before adding the current one.
+  html = html.replace(/  <section id="faq" class="wrap">[\s\S]*?<\/section>\n\n?/, '');
+  html = html.replace(/<style>\n#faq[\s\S]*?<\/style>\n?/, '');
+  html = html.replace(/<script type="application\/ld\+json">\{"@context":"https:\/\/schema\.org","@type":"FAQPage"[\s\S]*?<\/script>\n?/, '');
+
   const items = FAQ.map(
-    ([q, a]) => `      <details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`,
+    ([q, a]) => `        <details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`,
   ).join('\n');
   const section = `  <section id="faq" class="wrap">
-    <div class="sec-head">
-      <span class="eyebrow">سؤال‌های پرتکرار</span>
-      <h2>هرچی می‌خوای بدونی.</h2>
-      <p>جواب سؤال‌هایی که بیشتر از همه درباره‌ی پرپس، قرارها و غذای گربه‌ها می‌پرسن.</p>
-    </div>
-    <div class="faq">
+    <details class="faq-all">
+      <summary><span>سؤال‌های پرتکرار<small>${FA_DIGITS(FAQ.length)} سؤال</small></span></summary>
+      <div class="faq">
 ${items}
-    </div>
+      </div>
+    </details>
   </section>
 
 `;
-  if (!html.includes('<section id="enter"')) throw new Error('Landing changed: no #enter section for the FAQ.');
-  html = html.replace('  <section id="enter"', section + '  <section id="enter"');
-  html = html.replace(
-    /(<nav aria-label="Footer">[\s\S]*?)(<a href="https:\/\/app\.purrpose\.ir">)/,
-    '$1<a href="#faq">سؤال‌های پرتکرار</a>$2',
-  );
+  if (html.includes('<section id="enter"')) html = html.replace('  <section id="enter"', section + '  <section id="enter"');
+  else if (html.includes('</main>')) html = html.replace('</main>', section + '</main>');
+  else throw new Error('Landing changed: nowhere to put the FAQ.');
+  if (!html.includes('<a href="#faq">')) {
+    html = html.replace(
+      /(<nav aria-label="Footer">[\s\S]*?)(<a href="https:\/\/app\.purrpose\.ir">)/,
+      '$1<a href="#faq">سؤال‌های پرتکرار</a>$2',
+    );
+  }
   const ld = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',

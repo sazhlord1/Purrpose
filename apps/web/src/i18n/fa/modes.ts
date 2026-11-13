@@ -6,7 +6,7 @@
  */
 export const MODES: Record<string, string> = {
   // pact type popup
-  'Do you want this pact strict, or on your word?': 'می‌خوای قرارت خیلی سفت و سخت باشه یا مرامی جلو بره؟',
+  'Do you want this pact strict, or on your word?': 'قولت مرامیه یا سفت و سخت؟',
   'On my word': 'مرامی',
   'with PURR': 'با میو',
   Strict: 'سفت و سخت',
@@ -135,9 +135,7 @@ export const MODES: Record<string, string> = {
 
   // welcome gift
   'You got {n} free PURR!': '{n} میو رایگان گیرت اومد!',
-  'Put them on the line in “on my word” pacts. Keep your first three and you’ll have enough for a new cat.':
-    "توی قرارهای مرامی گروشون بذار. سه قرار اولت رو ببری، میوت برای گرفتن گربه‌ی جدید کافی می‌شه.",
-  'Nice!': 'ایول!',
+  'Stake them in “on my word” pacts.': 'توی قرارهای مرامی گروشون بذار.',
 
   // intro slides
   Previous: 'قبلی',

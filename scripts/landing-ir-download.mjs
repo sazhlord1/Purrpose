@@ -27,6 +27,7 @@ const CSS = `<style>
 @media (min-width:821px){.nav-dl{display:none}}
 @media (max-width:420px){.nav-right{gap:10px}}
 @media (max-width:340px){.nav-dl span{display:none}}
+.hero h1,.hero h1 .feed{line-height:1.2}
 </style>`;
 
 const DL_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 20h16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
@@ -64,6 +65,14 @@ function dropEnter(html) {
   return html;
 }
 
+/** The hero line, shorter: "انجامش بده، / یا یه گربه رو سیر کن." with the lines a bit closer. */
+function headlineIr(html) {
+  html = html.replace('<h1>کارتو انجام بده.<br><span class="feed">وگرنه یه گربه رو سیر کن.', '<h1>انجامش بده،<br><span class="feed">یا یه گربه رو سیر کن.');
+  html = html.replace('"Get your stuff done.": "کارتو انجام بده."', '"Get your stuff done.": "انجامش بده،"');
+  html = html.replace('"Or feed a cat.": "وگرنه یه گربه رو سیر کن."', '"Or feed a cat.": "یا یه گربه رو سیر کن."');
+  return html;
+}
+
 /** Our styles, always the current ones (an older copy from a previous run is swapped out). */
 function withCss(html) {
   html = html.replace(/<style>\n\.get(\{display:grid|-btn\{)[\s\S]*?<\/style>\n?/, '');
@@ -71,5 +80,5 @@ function withCss(html) {
 }
 
 export function downloadIr(html) {
-  return withCss(dropEnter(heroIr(html)));
+  return withCss(dropEnter(headlineIr(heroIr(html))));
 }

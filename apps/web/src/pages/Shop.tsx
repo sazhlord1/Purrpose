@@ -274,7 +274,7 @@ export function Shop() {
                     onClick={() => unlock.mutate(cat.id)}
                     ariaLabel={t('Unlock {name} for {n} PURR', { name: catNameOf(cat.id), n: cat.pricePurr })}
                   >
-                    🔓 {cat.pricePurr}
+                    <AppIcon name="lock" size={16} /> {cat.pricePurr}
                   </DoodleButton>
                 )}
               </div>

@@ -1,49 +1,16 @@
-import { HONOR_STARTER_BONUS, HONOR_STARTER_COUNT, HONOR_STARTER_STAKE, PURR_WELCOME } from '@purrpose/shared';
+import { HONOR_STARTER_BONUS, HONOR_STARTER_COUNT, HONOR_STARTER_STAKE } from '@purrpose/shared';
 import type { TourStep } from '../components/Tour.js';
 import { num, t } from '../i18n/index.js';
 
 /** Every screen's guided tour, written for someone who has never seen the app. */
 
+/** Home: just the + (everything else on the screen speaks for itself). */
 export function homeTour(): TourStep[] {
   return [
-    {
-      title: t('Welcome to Purrpose'),
-      body: t('A quick look around, about a minute. Skip it any time — you can bring it back from Settings.'),
-    },
-    {
-      target: '[data-tour="home-wallet"]',
-      title: t('Your pantry and your PURR'),
-      body: t('Pantry is real cat food you can put on the line in strict pacts. PURR is the app’s coin: you stake it in “on my word” pacts, and spend it on new cats and toys. You start with {n} PURR.', { n: num(PURR_WELCOME) }),
-    },
-    {
-      target: '[data-tour="hub-pacts"]',
-      title: t('Make a commitment'),
-      body: t('The heart of Purrpose. Pick a task and a deadline, put something on the line, and a cat waits with you — getting hungrier as the deadline gets close.'),
-    },
-    {
-      target: '[data-tour="hub-focus"]',
-      title: t('Focus Room'),
-      body: t('A quiet room for deep work: start the timer and your cat curls up beside you. Press and hold any room to read what it’s for.'),
-    },
-    {
-      target: '[data-tour="hub-detective"]',
-      title: t('Detective Cheat'),
-      body: t('For quitting a habit. You confess every slip to the detective, and each slip locks part of what you staked.'),
-    },
     {
       target: '.nav-new',
       title: t('The + button'),
       body: t('The quickest way to a new pact, from any screen.'),
-    },
-    {
-      target: '[data-tour="nav"]',
-      title: t('Shop, Pantry, Impact'),
-      body: t('Shop: new cats and toys for PURR. Pantry: your food and what’s on the line. Impact: everything you kept or lost, and the meals that went to real cats.'),
-    },
-    {
-      target: '[data-tour="home-settings"]',
-      title: t('Settings'),
-      body: t('Language, reminders, and this guide whenever you want it again.'),
     },
   ];
 }

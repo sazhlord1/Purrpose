@@ -404,6 +404,9 @@ export const CAT_SEED: CatSeed[] = [
 
 export const FREE_CAT_IDS: readonly CatId[] = CAT_SEED.filter(c => c.pricePurr === 0).map(c => c.id);
 
+/** Yuki lives in the Focus Room: everyone can focus with her, bought or not. */
+export const FOCUS_ROOM_CAT: CatId = 'yuki';
+
 export function catById(id: string): CatSeed | undefined {
   return CAT_SEED.find(c => c.id === id);
 }

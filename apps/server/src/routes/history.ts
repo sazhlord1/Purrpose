@@ -45,4 +45,26 @@ export function registerHistoryRoutes(app: FastifyInstance): void {
       })),
     });
   });
+
+  /** What this account bought (paid only), newest first, for "My purchases". */
+  app.get('/api/v1/purchases', async request => {
+    const userId = userIdOf(request);
+    const rows = await getPrisma().payment.findMany({
+      where: { userId, status: 'paid' },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      select: { kind: true, item: true, quantity: true, amountCents: true, currency: true, createdAt: true, paidAt: true },
+    });
+    return {
+      purchases: rows.map((r, i) => ({
+        n: i,
+        kind: r.kind,
+        item: r.item,
+        quantity: r.quantity,
+        amountCents: r.amountCents,
+        currency: r.currency,
+        atISO: (r.paidAt ?? r.createdAt).toISOString(),
+      })),
+    };
+  });
 }

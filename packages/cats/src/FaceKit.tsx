@@ -355,10 +355,13 @@ export function FaceOverlays({
       if (action || m === 2) break;
       above(
         <g key="dream" className="fk-float" stroke={INK} strokeWidth={1.8}>
-          <circle cx={170} cy={70} r={3} fill={PAPER} />
-          <circle cx={180} cy={58} r={4.5} fill={PAPER} />
-          <ellipse cx={198} cy={36} rx={22} ry={16} fill={PAPER} />
-          <DreamSnack kind={dream} />
+          {/* Pulled in from the edge so a turned or tilted head never pushes it out of the scene. */}
+          <circle cx={164} cy={72} r={3} fill={PAPER} />
+          <circle cx={170} cy={60} r={4.5} fill={PAPER} />
+          <g transform="translate(-16 4)">
+            <ellipse cx={198} cy={36} rx={22} ry={16} fill={PAPER} />
+            <DreamSnack kind={dream} />
+          </g>
         </g>,
       );
       break;

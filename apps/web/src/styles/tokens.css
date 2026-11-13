@@ -1159,8 +1159,18 @@ select {
 .home-links {
   display: flex;
   gap: 14px;
-  align-items: baseline;
+  align-items: center;
   white-space: nowrap;
+}
+/* Icon and word on one line, every link on the same line as the others. */
+.home-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1;
+}
+.home-links a svg {
+  flex: none;
 }
 .name-row {
   display: grid;
@@ -1495,10 +1505,31 @@ html[dir='rtl'] svg { direction: ltr; }
 /* Banners keep their art (title on the dark left side); in RTL the title block hugs that side too. */
 html[dir='rtl'] .hub-banner-text { justify-items: end; }
 
-/* ── The + in the nav: a true circle with a drawn plus, so it sits dead centre ── */
+/* ── The + in the nav: a clean circle set into the bar (a paper ring, a soft glow,
+   no hard offset shadow), with a drawn plus so it sits dead centre ── */
 .nav .nav-new {
   padding: 0;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: linear-gradient(160deg, #eea267 0%, var(--accent-orange) 70%);
+  box-shadow:
+    0 0 0 5px var(--paper-raised),
+    0 6px 14px rgba(226, 135, 67, 0.35);
+  margin-top: -28px;
+}
+.nav .nav-new:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 5px var(--paper-raised),
+    0 9px 18px rgba(226, 135, 67, 0.42);
+}
+.nav .nav-new:active {
+  transform: translateY(1px) scale(0.97);
+  box-shadow:
+    0 0 0 5px var(--paper-raised),
+    0 3px 8px rgba(226, 135, 67, 0.3);
 }
 .nav .nav-new svg {
   display: block;
@@ -1734,18 +1765,38 @@ html[dir='rtl'] .onboarding-arrow-next { animation-name: arrow-nudge-rtl; }
   margin: 12px 0;
 }
 
-/* ── Welcome gift ── */
-.welcome-gift-art {
-  position: relative;
+/* ── Welcome gift: a note at the top that leaves on its own ── */
+.welcome-toast {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  inset-inline: 0;
+  margin-inline: auto;
+  z-index: 95;
+  width: min(92vw, 380px);
   display: flex;
-  justify-content: center;
-  margin-bottom: 4px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  background: var(--paper-raised);
+  color: var(--ink);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.14);
 }
-.welcome-gift-coin {
-  position: absolute;
-  top: 6px;
-  inset-inline-end: calc(50% - 86px);
-  filter: drop-shadow(2px 2px 0 var(--ink));
+.welcome-toast > :first-child {
+  flex: none;
+}
+.welcome-toast strong {
+  display: block;
+  font-size: 15px;
+}
+.welcome-toast-sub {
+  display: block;
+  font-size: 13px;
+  color: var(--ink-soft, #555);
 }
 
 /* ── Guided tour: everything dims except the thing being explained ── */
@@ -2052,3 +2103,46 @@ html[lang='fa'] .tour-body { line-height: 1.75; }
 .appeal-box p { margin: 4px 0 0; }
 .appeal-box .field { margin-bottom: 0; }
 .appeal-error { color: var(--stamp-red); font-size: 13px; margin: 0 0 8px; }
+
+/* Report card: wins and losses, side by side (pages/Impact.tsx). */
+.score-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.score-box {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  text-align: center;
+  padding: 16px 10px 14px;
+  border: 2px solid currentColor;
+  border-radius: 18px;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.score-box > span:last-child {
+  color: var(--ink);
+}
+.score-won {
+  color: var(--stamp-green);
+  background: rgba(78, 135, 82, 0.1);
+}
+.score-lost {
+  color: var(--stamp-red);
+  background: rgba(184, 59, 50, 0.08);
+}
+.score-num {
+  font-size: 40px;
+  line-height: 1.1;
+}
+
+/* Pact kinds, centred: title, tag and the explanation lines read down the middle. */
+.mode-option { text-align: center; }
+.mode-option-head { justify-content: center; }
+.mode-option-lines {
+  list-style: none;
+  padding-inline-start: 0;
+}
