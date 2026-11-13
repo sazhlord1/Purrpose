@@ -151,9 +151,9 @@ export function impactTour(): TourStep[] {
       body: t('Pacts you kept, pacts the cat won, and how much food went to real cats because of them.'),
     },
     {
-      target: '[data-tour="impact-filters"]',
-      title: t('The full history'),
-      body: t('Filter to see only what the cats ate, or only what you added to the pantry.'),
+      target: '[data-tour="rank-card"]',
+      title: t('Your rank card'),
+      body: t('Every pact you keep moves you up. Share the card when you climb.'),
     },
   ];
 }

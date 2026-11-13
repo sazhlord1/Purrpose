@@ -2146,3 +2146,16 @@ html[lang='fa'] .tour-body { line-height: 1.75; }
   list-style: none;
   padding-inline-start: 0;
 }
+
+/* Rank card on the report card (pages/Impact.tsx). */
+.rank-section {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+.rank-card {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 10px 18px rgba(38, 32, 29, 0.18));
+}

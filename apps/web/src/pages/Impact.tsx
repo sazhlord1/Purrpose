@@ -1,25 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
-import {
-  type ConsequenceType,
-  type HistoryEntry,
-  type HistoryResponse,
-} from '@purrpose/shared';
+import { useRef, useState } from 'react';
+import { type ConsequenceType, type HistoryResponse } from '@purrpose/shared';
+import { catName } from '@purrpose/cats';
 import { api } from '../lib/api.js';
-import { fmtDate } from '../lib/format.js';
 import { foodName, t } from '../i18n/index.js';
-import { AnimatedNumber, Chip, SketchCard, Stamp, Skeleton } from '../components/ui/index.js';
-import { CanTin, CatFace, KibbleBag, VetCare } from '../components/doodles/index.js';
+import { AnimatedNumber, DoodleButton, SketchCard, Stamp, Skeleton } from '../components/ui/index.js';
+import { CanTin, KibbleBag, VetCare } from '../components/doodles/index.js';
+import { RankCard } from '../components/RankCard.js';
 import { Tour } from '../components/Tour.js';
+import { rankFor } from '../lib/ranks.js';
+import { shareRankCard } from '../lib/rankShare.js';
 import { impactTour } from '../lib/tours.js';
-
-type FilterType = 'all' | 'fed' | 'topup';
-
-const FILTERS: Array<{ id: FilterType; label: string }> = [
-  { id: 'all', label: 'All Receipts' },
-  { id: 'fed', label: 'Feast Receipts (Fed)' },
-  { id: 'topup', label: 'Top-up History' },
-];
 
 const DOODLE_BY_TYPE = {
   MEALS: CanTin,
@@ -27,29 +18,9 @@ const DOODLE_BY_TYPE = {
   VET_CARE: VetCare,
 };
 
-const PAGE_SIZE = 15;
-
-function filterEntries(entries: HistoryEntry[], filter: FilterType): HistoryEntry[] {
-  if (filter === 'fed') return entries.filter(e => e.type === 'FAILURE_DEDUCTION');
-  if (filter === 'topup') return entries.filter(e => e.type === 'TOPUP' || e.type === 'STARTER_GRANT');
-  return entries;
-}
-
-const EMPTY_COPY: Record<FilterType, string> = {
-  all: 'Nothing here yet. Your first receipt appears when a cat eats or you top up.',
-  fed: 'No fed receipts yet. Miss a deadline and your cat will leave one.',
-  topup: 'No top-ups yet. Your pantry is waiting.',
-};
-
-const ENTRY_STAMP: Partial<Record<HistoryEntry['type'], { label: string; kind: 'fed' | 'kept'; bg: string }>> = {
-  FAILURE_DEDUCTION: { label: 'FED', kind: 'fed', bg: '#FFFDF8' },
-  TOPUP: { label: 'TOP-UP', kind: 'kept', bg: '#FFF8E7' },
-  STARTER_GRANT: { label: 'STARTER', kind: 'kept', bg: '#FFF8E7' },
-};
-
 export function Impact() {
-  const [filter, setFilter] = useState<FilterType>('all');
-  const [page, setPage] = useState(0);
+  const cardRef = useRef<SVGSVGElement>(null);
+  const [sharing, setSharing] = useState<'idle' | 'busy' | 'downloaded' | 'error'>('idle');
 
   const history = useQuery({
     queryKey: ['history'],
@@ -84,9 +55,17 @@ export function Impact() {
 
   const { totals } = data;
   const donatedLines = Object.entries(totals.donatedByType).filter(([, v]) => v > 0);
-  const filtered = filterEntries(data.entries, filter);
-  const paged = filtered.slice(0, (page + 1) * PAGE_SIZE);
-  const hasMore = paged.length < filtered.length;
+  const rank = rankFor(totals.completed);
+  const share = async () => {
+    if (!cardRef.current) return;
+    setSharing('busy');
+    try {
+      const how = await shareRankCard(cardRef.current, rank, totals.completed, catName(rank.cat));
+      setSharing(how === 'downloaded' ? 'downloaded' : 'idle');
+    } catch {
+      setSharing('error');
+    }
+  };
 
   return (
     <main>
@@ -126,93 +105,20 @@ export function Impact() {
       )}
       </div>
 
-      <div className="chip-row" role="group" aria-label={t('Filter history')} style={{ marginTop: 16 }} data-tour="impact-filters">
-        {FILTERS.map(f => (
-          <Chip
-            key={f.id}
-            active={filter === f.id}
-            onClick={() => {
-              setFilter(f.id);
-              setPage(0);
-            }}
-          >
-            {t(f.label)}
-          </Chip>
-        ))}
-      </div>
-
-      <section>
-        {paged.length === 0 ? (
-          <SketchCard variant="b" style={{ textAlign: 'center', padding: 32 }}>
-            <CatFace size={48} />
-            <p className="muted" style={{ marginTop: 12 }}>
-              {t(EMPTY_COPY[filter])}
-            </p>
-          </SketchCard>
-        ) : (
-          <>
-            {paged.map(e => {
-              const stamp = ENTRY_STAMP[e.type];
-              const Icon = DOODLE_BY_TYPE[e.creditType] ?? CanTin;
-              return (
-                <article
-                  key={e.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: 12,
-                    padding: '14px 0',
-                    borderBottom: '1px dashed rgba(26,26,26,0.15)',
-                  }}
-                >
-                  <div
-                    aria-hidden
-                    style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: '50% 45% 55% 50%',
-                      background: stamp?.bg ?? '#FFFDF8',
-                      border: '2px solid var(--ink)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Icon size={24} strokeWidth={2.2} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-                      <strong style={{ fontSize: 16 }}>
-                        {e.amount} {foodName(e.creditType)}
-                      </strong>
-                      {stamp && (
-                        <Stamp kind={stamp.kind} style={{ fontSize: 11, padding: '2px 8px' }}>
-                          {t(stamp.label)}
-                        </Stamp>
-                      )}
-                    </div>
-                    {e.title && (
-                      <p style={{ margin: '4px 0 0', color: 'var(--ink-soft)', fontSize: 14 }}>
-                        {t('"{title}"', { title: e.title })}
-                      </p>
-                    )}
-                    <p className="muted" style={{ marginTop: 4, fontSize: 13 }}>
-                      {fmtDate(e.atISO)}
-                    </p>
-                  </div>
-                </article>
-              );
-            })}
-
-            {hasMore && (
-              <div style={{ textAlign: 'center', marginTop: 16 }}>
-                <button className="btn" onClick={() => setPage(p => p + 1)}>
-                  {t('Load more ({n} left)', { n: filtered.length - paged.length })}
-                </button>
-              </div>
-            )}
-          </>
+      <section className="rank-section" data-tour="rank-card">
+        <RankCard ref={cardRef} rank={rank} wins={totals.completed} catName={catName(rank.cat)} className="rank-card" />
+        <DoodleButton variant="primary" onClick={() => void share()} disabled={sharing === 'busy'} style={{ width: '100%' }}>
+          {sharing === 'busy' ? t('Making your card…') : t('Share my card')}
+        </DoodleButton>
+        {sharing === 'downloaded' && (
+          <p className="muted" role="status" style={{ textAlign: 'center', margin: 0 }}>
+            {t('Saved the image. Post it wherever you like.')}
+          </p>
+        )}
+        {sharing === 'error' && (
+          <p className="form-error" role="status" style={{ textAlign: 'center', margin: 0 }}>
+            {t('Could not make the image. Try again.')}
+          </p>
         )}
       </section>
     </main>
