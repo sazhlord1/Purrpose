@@ -2159,3 +2159,6 @@ html[lang='fa'] .tour-body { line-height: 1.75; }
   height: auto;
   filter: drop-shadow(0 10px 18px rgba(38, 32, 29, 0.18));
 }
+
+/* Get PURR page (Iranian edition): the cat food price list under the PURR packs. */
+.shop-food-title { margin: 22px 0 6px; font-size: 20px; }

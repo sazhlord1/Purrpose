@@ -13,11 +13,14 @@ import {
   type PurrPack,
   type ShopItem,
   PURR_PACK_PRICES_IRT,
+  FOOD_PRICES_IRT,
+  BAZAAR_FOOD_SKU,
   type BazaarSku,
   catSubtitle,
 } from '@purrpose/shared';
 import { DoodleButton, SketchCard } from '../components/ui/index.js';
-import { backArrow, getLocale, t } from '../i18n/index.js';
+import { backArrow, foodName, getLocale, t } from '../i18n/index.js';
+import { CanTin, KibbleBag, VetCare } from '../components/doodles/index.js';
 import { api, ApiError } from '../lib/api.js';
 import { catNameOf } from '../lib/labels.js';
 import { Tour } from '../components/Tour.js';
@@ -43,6 +46,14 @@ interface ShopResponse {
 }
 
 type Section = 'cats' | ItemCategory | 'purr';
+
+type FoodKind = 'MEALS' | 'DRY_FOOD' | 'VET_CARE';
+/** Real cat food (Iranian edition): what one unit is, and its picture. */
+const FOODS: Array<{ kind: FoodKind; unit: string; Pic: typeof CanTin }> = [
+  { kind: 'MEALS', unit: 'per can', Pic: CanTin },
+  { kind: 'DRY_FOOD', unit: 'per kg', Pic: KibbleBag },
+  { kind: 'VET_CARE', unit: 'per visit', Pic: VetCare },
+];
 
 /** Each section has its own colour, taken from its icon; Get PURR is always purple. */
 const SECTION_META: Record<Section, { icon: IconName; title: string; hint: string; bg: string }> = {
@@ -112,6 +123,16 @@ export function Shop() {
     onSuccess: res => {
       setMessage({ kind: 'ok', text: t('Done! You now have {n} PURR.', { n: res.purr }) });
       refresh();
+    },
+    onError: e => setMessage(bazaarFailure(e)),
+  });
+
+  const buyBazaarFood = useMutation({
+    mutationFn: (food: FoodKind) => buyWithBazaar(BAZAAR_FOOD_SKU[food]),
+    onSuccess: (_res, food) => {
+      setMessage({ kind: 'ok', text: t('{food}: one more in your pantry. Thank you!', { food: foodName(food) }) });
+      refresh();
+      void qc.invalidateQueries({ queryKey: ['me'] });
     },
     onError: e => setMessage(bazaarFailure(e)),
   });
@@ -306,6 +327,28 @@ export function Shop() {
                     onClick={() => buyBazaarPack.mutate(pack.id as BazaarSku)}
                   >
                     {buyBazaarPack.isPending && buyBazaarPack.variables === pack.id ? '…' : toman(PURR_PACK_PRICES_IRT[pack.id] ?? 0)}
+                  </DoodleButton>
+                </div>
+              ))}
+            </div>
+
+            {/* Real cat food for strict pacts, priced the same way as the PURR packs. */}
+            <h2 className="shop-food-title">{t('Cat food for strict pacts')}</h2>
+            <p className="muted" style={{ fontSize: 13, marginTop: -4 }}>
+              {t('Put it on a strict pact: keep your word and it stays yours; if not, it goes to shelter cats.')}
+            </p>
+            <div className="shop-grid">
+              {FOODS.map(({ kind, unit, Pic }) => (
+                <div key={kind} className="shop-cat">
+                  <Pic size={56} />
+                  <strong>{foodName(kind)}</strong>
+                  <span className="muted" style={{ fontSize: 12 }}>{t(unit)}</span>
+                  <DoodleButton
+                    variant="primary"
+                    disabled={!bazaarOn || buyBazaarFood.isPending}
+                    onClick={() => buyBazaarFood.mutate(kind)}
+                  >
+                    {buyBazaarFood.isPending && buyBazaarFood.variables === kind ? '…' : toman(FOOD_PRICES_IRT[kind])}
                   </DoodleButton>
                 </div>
               ))}
