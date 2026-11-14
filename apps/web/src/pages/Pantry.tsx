@@ -274,6 +274,12 @@ export function Pantry() {
                   >
                     {t(meta.badge)}
                   </span>
+                  {IS_IR_EDITION && (
+                    <span className="pantry-price">
+                      <strong>{toman(FOOD_PRICES_IRT[b.creditType])}</strong>{' '}
+                      <span>{{ can: t('per can'), kg: t('per kg'), visit: t('per visit') }[FOOD_PRICES[b.creditType].unit]}</span>
+                    </span>
+                  )}
                 </span>
                 <span style={{ fontSize: 14, color: 'var(--ink-soft, inherit)', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
                   <span>

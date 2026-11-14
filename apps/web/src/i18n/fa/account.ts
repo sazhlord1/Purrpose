@@ -361,6 +361,4 @@ export const ACCOUNT: Record<string, string> = {
   "Start the connection from the admin page first": "اول از صفحه‌ی ادمین اتصال رو شروع کن",
   "Bazaar client is not set up": "کلاینت بازار تنظیم نشده",
   "Set BAZAAR_CLIENT_ID and BAZAAR_CLIENT_SECRET first": "اول BAZAAR_CLIENT_ID و BAZAAR_CLIENT_SECRET رو تنظیم کن",
-  "Cat food for strict pacts": "غذای گربه برای قرارهای سخت",
-  "Put it on a strict pact: keep your word and it stays yours; if not, it goes to shelter cats.": "توی قرار سخت در تعهد بذارش: اگه سر قولت بمونی مال خودت می‌مونه، اگه نه به گربه‌های پناهگاه می‌رسه.",
 };
