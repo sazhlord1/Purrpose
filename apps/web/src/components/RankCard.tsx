@@ -70,7 +70,7 @@ export function rankCardTexts(rank: Rank, wins: number, catName: string, photo =
         text: next ? t('{n} more to {rank}', { n: num(next.minWins - wins), rank: t(next.name) }) : t('The top rank!'),
         fill: INK,
       },
-      { x: 200, y: 466, size: 11, weight: 700, text: `${t('purrpose')} · ${IS_IR_EDITION ? 'purrpose.ir' : 'purrpose.space'}`, fill: rank.dark },
+      { x: 200, y: 473, size: 8, weight: 700, text: `${t('purrpose')} · ${IS_IR_EDITION ? 'purrpose.ir' : 'purrpose.space'}`, fill: rank.dark },
     ];
   }
   return [

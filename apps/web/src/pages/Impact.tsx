@@ -6,7 +6,7 @@ import { api } from '../lib/api.js';
 import { foodName, t } from '../i18n/index.js';
 import { AnimatedNumber, DoodleButton, SketchCard, Stamp, Skeleton } from '../components/ui/index.js';
 import { CanTin, KibbleBag, VetCare } from '../components/doodles/index.js';
-import { RankCard } from '../components/RankCard.js';
+import { RankDeck } from '../components/RankDeck.js';
 import { Tour } from '../components/Tour.js';
 import { rankFor } from '../lib/ranks.js';
 import { shareRankCard } from '../lib/rankShare.js';
@@ -106,7 +106,7 @@ export function Impact() {
       </div>
 
       <section className="rank-section" data-tour="rank-card">
-        <RankCard ref={cardRef} rank={rank} wins={totals.completed} catName={catName(rank.cat)} className="rank-card" />
+        <RankDeck rank={rank} wins={totals.completed} catName={r => catName(r.cat)} cardRef={cardRef} />
         <DoodleButton variant="primary" onClick={() => void share()} disabled={sharing === 'busy'} style={{ width: '100%' }}>
           {sharing === 'busy' ? t('Making your card…') : t('Share my card')}
         </DoodleButton>

@@ -158,4 +158,7 @@ export const ROOMS: Record<string, string> = {
   'My Purrpose rank: {rank}': 'رنک من توی پرپس: {rank}',
   'Your rank card': 'کارت رنکت',
   'Every pact you keep moves you up. Share the card when you climb.': 'هر قراری که می‌بری یه قدم بالاترت می‌بره. هر بار رنکت بالا رفت، کارتت رو به اشتراک بذار.',
+  'All ranks': 'همه‌ی رتبه‌ها',
+  'Locked: {n} kept pacts open it': 'قفله: با {n} قرارِ برده باز می‌شه',
+  '{n} kept pacts to unlock': 'قفله · {n} قرار برده لازمه',
 };
