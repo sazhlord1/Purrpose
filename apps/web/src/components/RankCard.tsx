@@ -40,10 +40,39 @@ export interface RankCardText {
   title?: boolean;
 }
 
+/**
+ * Persian: each rank has an illustrated card (public/img/ranks/rankN.webp, 896×1120) with its
+ * frame, title and number already drawn; the app writes the player's details in its empty
+ * bottom panel. The English edition keeps the drawn SVG card (the pictures say it in Persian).
+ */
+export function usesPhotoCard(): boolean {
+  return getLocale() === 'fa';
+}
+export const rankPhotoUrl = (rank: Rank) => `/img/ranks/rank${rank.level}.webp`;
+/** The cat-name ribbon at the top of the bottom panel (card 1 has one drawn in its picture). */
+const PHOTO_RIBBON = 'M72 318 h256 l-12 14 l12 14 h-256 l12 -14 Z';
+const PHOTO_BAR = { x: 70, y: 418, w: 260, h: 12 };
+
 /** Every word on the card, with where it goes (shared by the SVG and the canvas). */
-export function rankCardTexts(rank: Rank, wins: number, catName: string): RankCardText[] {
+export function rankCardTexts(rank: Rank, wins: number, catName: string, photo = usesPhotoCard()): RankCardText[] {
   const next = nextRank(rank);
   const name = t(rank.name);
+  if (photo) {
+    return [
+      { x: 200, y: 338, size: 16, weight: 700, text: catName, fill: PAPER },
+      { x: 200, y: 385, size: 42, weight: 900, text: num(wins), fill: rank.dark },
+      { x: 200, y: 407, size: 15, weight: 600, text: t('pacts kept'), fill: INK },
+      {
+        x: 200,
+        y: 449,
+        size: 13,
+        weight: 600,
+        text: next ? t('{n} more to {rank}', { n: num(next.minWins - wins), rank: t(next.name) }) : t('The top rank!'),
+        fill: INK,
+      },
+      { x: 200, y: 466, size: 11, weight: 700, text: `${t('purrpose')} · ${IS_IR_EDITION ? 'purrpose.ir' : 'purrpose.space'}`, fill: rank.dark },
+    ];
+  }
   return [
     { x: 186, y: 60, size: name.length > 11 ? 32 : 40, weight: 900, text: name, fill: rank.light, title: true },
     { x: 350, y: 51, size: 20, weight: 900, text: num(rank.level), fill: PAPER },
@@ -85,6 +114,52 @@ export const RankCard = forwardRef<SVGSVGElement, RankCardProps>(function RankCa
   const titleFont = fa ? 'Anjoman, Inter, system-ui, sans-serif' : '"Gochi Hand", "Comic Sans MS", cursive';
   const p = progress(rank, wins);
   const { tier } = rank;
+
+  if (usesPhotoCard()) {
+    const bar = PHOTO_BAR;
+    return (
+      <svg
+        ref={ref}
+        viewBox={`0 0 ${CARD_W} ${CARD_H}`}
+        className={className}
+        role="img"
+        aria-label={t('Rank {n}: {name}', { n: num(rank.level), name: t(rank.name) })}
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <clipPath id={id('pbar')}>
+            <rect x={bar.x} y={bar.y} width={bar.w} height={bar.h} rx={6} />
+          </clipPath>
+        </defs>
+        <image data-card-photo="" href={rankPhotoUrl(rank)} x={0} y={0} width={CARD_W} height={CARD_H} preserveAspectRatio="xMidYMid slice" />
+        {rank.level !== 1 && (
+          <path d={PHOTO_RIBBON} fill={rank.dark} stroke={tier === 3 ? GOLD : rank.light} strokeWidth={2} strokeLinejoin="round" />
+        )}
+        <rect x={bar.x} y={bar.y} width={bar.w} height={bar.h} rx={6} fill={rank.light} />
+        <g clipPath={`url(#${id('pbar')})`}>
+          <rect x={fa ? bar.x + bar.w * (1 - p) : bar.x} y={bar.y} width={bar.w * p} height={bar.h} fill={rank.main} />
+        </g>
+        <rect x={bar.x} y={bar.y} width={bar.w} height={bar.h} rx={6} fill="none" stroke={INK} strokeWidth={1.6} />
+        {!textless &&
+          rankCardTexts(rank, wins, catName, true).map((x, i) => (
+            <text
+              key={i}
+              data-card-text=""
+              x={x.x}
+              y={x.y}
+              fill={x.fill}
+              fontFamily={font}
+              fontSize={x.size}
+              fontWeight={x.weight}
+              textAnchor="middle"
+              direction="rtl"
+            >
+              {x.text}
+            </text>
+          ))}
+      </svg>
+    );
+  }
 
   return (
     <svg

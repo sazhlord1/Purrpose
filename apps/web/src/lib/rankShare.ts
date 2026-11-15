@@ -4,7 +4,7 @@
  * are drawn on top with the canvas, from the same list and positions as the card.
  */
 import { getLocale, t } from '../i18n/index.js';
-import { CARD_W, rankCardTexts } from '../components/RankCard.js';
+import { CARD_W, rankCardTexts, rankPhotoUrl, usesPhotoCard } from '../components/RankCard.js';
 import type { Rank } from './ranks.js';
 
 const W = 1080;
@@ -14,7 +14,8 @@ const INK = '#26201D';
 
 function artImage(svg: SVGSVGElement): Promise<HTMLImageElement> {
   const clone = svg.cloneNode(true) as SVGSVGElement;
-  clone.querySelectorAll('[data-card-text], animateTransform').forEach(n => n.remove());
+  // Words are drawn by the canvas; the card picture too (an SVG drawn as an image can't load it).
+  clone.querySelectorAll('[data-card-text], [data-card-photo], animateTransform').forEach(n => n.remove());
   clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
   clone.setAttribute('width', String(W));
   clone.setAttribute('height', String(H));
@@ -28,6 +29,15 @@ function artImage(svg: SVGSVGElement): Promise<HTMLImageElement> {
     img.onload = () => resolve(img);
     img.onerror = reject;
     img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(xml)}`;
+  });
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
   });
 }
 
@@ -49,12 +59,14 @@ export async function renderRankCard(svg: SVGSVGElement, rank: Rank, wins: numbe
   canvas.height = H;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas unavailable');
+  const photo = usesPhotoCard();
+  if (photo) ctx.drawImage(await loadImage(rankPhotoUrl(rank)), 0, 0, W, H);
   ctx.drawImage(await artImage(svg), 0, 0, W, H);
 
   ctx.textAlign = 'center';
   ctx.direction = fa ? 'rtl' : 'ltr';
   ctx.lineJoin = 'round';
-  for (const x of rankCardTexts(rank, wins, catName)) {
+  for (const x of rankCardTexts(rank, wins, catName, photo)) {
     const px = x.x * S;
     const py = x.y * S;
     if (x.title) {
