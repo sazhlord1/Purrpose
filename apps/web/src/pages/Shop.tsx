@@ -306,7 +306,6 @@ export function Shop() {
               {packs.map(pack => (
                 <div key={pack.id} className="shop-cat">
                   <div className="purr-balance" style={{ fontSize: 26 }}><AppIcon name="purr" size={26} /> {pack.purr}</div>
-                  {pack.bonusLabel && <span className="chip">{t(pack.bonusLabel)}</span>}
                   <DoodleButton
                     variant="primary"
                     disabled={!bazaarOn || buyBazaarPack.isPending || !PURR_PACK_PRICES_IRT[pack.id]}

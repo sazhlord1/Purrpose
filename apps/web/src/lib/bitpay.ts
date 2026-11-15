@@ -24,7 +24,8 @@ export function useBitpayOn(): boolean {
 
 /** Opens the payment and leaves for Bitpay's bank page. Never resolves: the page changes. */
 export async function payWithBitpay(sku: BazaarSku): Promise<never> {
-  const { url } = await api<{ url: string }>('/bitpay/start', { method: 'POST', body: { productId: sku } });
+  const returnTo = window.location.pathname + window.location.search;
+  const { url } = await api<{ url: string }>('/bitpay/start', { method: 'POST', body: { productId: sku, returnTo } });
   window.location.assign(url);
   return new Promise<never>(() => undefined);
 }

@@ -77,7 +77,7 @@ describe.skipIf(!dbReady)('Bitpay (website payments)', () => {
     expect((await call('GET', '/api/v1/bitpay', token)).json().enabled).toBe(true);
     const before = (await me(token)).balances.find((b: { creditType: string }) => b.creditType === 'MEALS')?.amount ?? 0;
 
-    const start = await call('POST', '/api/v1/bitpay/start', token, { productId: 'food_meals' });
+    const start = await call('POST', '/api/v1/bitpay/start', token, { productId: 'food_meals', returnTo: '/pantry' });
     expect(start.statusCode).toBe(200);
     const id = nextId - 1;
     expect(start.json().url).toBe(`https://bitpay.ir/payment-test/gateway-${id}-get`);
@@ -103,10 +103,12 @@ describe.skipIf(!dbReady)('Bitpay (website payments)', () => {
   it('a PURR pack lands on the shop page; unknown or junk ids fail', async () => {
     const token = await register('purr@test.dev');
     const before = (await me(token)).purr;
-    await call('POST', '/api/v1/bitpay/start', token, { productId: 'purr_150' });
+    await call('POST', '/api/v1/bitpay/start', token, { productId: 'purr_150', returnTo: '/shop?section=purr' });
+    expect((await call('POST', '/api/v1/bitpay/start', token, { productId: 'purr_150', returnTo: '//evil.example' })).statusCode).toBe(400);
     const id = nextId - 1;
     opened.get(id)!.paid = true;
     const back = await call('GET', `/api/v1/bitpay/return?trans_id=9&id_get=${id}`);
+    // (the refused //evil one never opened a payment)
     expect(back.headers.location).toBe('https://app.purrpose.ir/shop?section=purr&bitpay=ok&kind=purr&item=purr_150&n=1');
     expect((await me(token)).purr).toBe(before + 150);
     expect((await call('GET', '/api/v1/bitpay/return?trans_id=9&id_get=99999')).headers.location).toBe('https://app.purrpose.ir/pantry?bitpay=failed');

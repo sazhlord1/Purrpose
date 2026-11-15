@@ -284,7 +284,15 @@ export const bazaarVerifySchema = z.object({
 });
 export type BazaarVerifyInput = z.infer<typeof bazaarVerifySchema>;
 /** Pay for one product on the website (Bitpay): same products and prices as Cafe Bazaar. */
-export const bitpayStartSchema = z.object({ productId: bazaarVerifySchema.shape.productId });
+export const bitpayStartSchema = z.object({
+  productId: bazaarVerifySchema.shape.productId,
+  /** The app page to come back to after paying (a path on the app, e.g. /pantry). */
+  returnTo: z
+    .string()
+    .max(300)
+    .regex(/^\/(?![\/\\])[^\s]*$/, 'Not an app page')
+    .optional(),
+});
 /** Give PURR to one account, picked from the user search (userId) or by email. */
 export const adminGrantSchema = z
   .object({
