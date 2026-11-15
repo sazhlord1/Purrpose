@@ -2347,3 +2347,15 @@ html[lang='fa'] .tour-body { line-height: 1.75; }
   line-height: 1.6;
 }
 .proof-voice-load { margin-top: 6px; }
+
+/* Bitpay's trust badge (shop and pantry, website only). */
+.bitpay-trust {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 16px 0 8px;
+  font-size: 12.5px;
+  text-align: start;
+}
+.bitpay-trust img { display: block; height: 72px; width: auto; }

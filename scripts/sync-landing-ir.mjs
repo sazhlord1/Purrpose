@@ -51,6 +51,7 @@ html = seoIr(html);
 const ENAMAD_CODE = '4894141';
 html = html.replace('<meta charset="utf-8">', `<meta charset="utf-8">\n<meta name="enamad" content="${ENAMAD_CODE}" />`);
 // "Add to Home Screen" on iPhone takes the page title unless told otherwise: a short name.
+html = html.replace('</head>', '<link rel="icon" href="/icons/favicon-32.png" type="image/png" sizes="32x32">\n<link rel="shortcut icon" href="/favicon.ico">\n</head>');
 html = html.replace('</head>', '<meta name="apple-mobile-web-app-title" content="پرپس" />\n<meta name="application-name" content="پرپس" />\n</head>');
 
 // Enamad trust seal in the footer: small but visible (its markup must stay as Enamad gives it).
@@ -80,7 +81,7 @@ writeFileSync(path.join(out, 'index.html'), html);
 cpSync(path.join(src, 'fonts'), path.join(out, 'fonts'), { recursive: true });
 // The app's own icons (Mahsham), so the site and the app look the same.
 mkdirSync(path.join(out, 'icons'), { recursive: true });
-for (const f of ['icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'])
+for (const f of ['icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'favicon-32.png'])
   cpSync(path.join(repoRoot, 'apps', 'web', 'public', 'icons', f), path.join(out, 'icons', f));
 mkdirSync(path.join(out, 'img'), { recursive: true });
 for (const f of readdirSync(path.join(src, 'img'))) {
@@ -88,6 +89,8 @@ for (const f of readdirSync(path.join(src, 'img'))) {
   cpSync(path.join(src, 'img', f), path.join(out, 'img', f));
 }
 cpSync(path.join(src, 'og-fa.png'), path.join(out, 'og-fa.png'));
+
+cpSync(path.join(repoRoot, 'apps', 'web', 'public', 'favicon.ico'), path.join(out, 'favicon.ico'));
 
 writeFileSync(path.join(out, `${ENAMAD_CODE}.txt`), '');
 writeFileSync(path.join(out, 'robots.txt'), 'User-agent: *\nAllow: /\n\nSitemap: https://purrpose.ir/sitemap.xml\n');

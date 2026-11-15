@@ -16,6 +16,7 @@ import { bazaarApp, bazaarFailure, buyWithBazaar, restoreBazaarPurchases } from 
 import { bitpayFailure, payWithBitpay, useBitpayOn } from '../lib/bitpay.js';
 import { IS_IR_EDITION } from '../lib/edition.js';
 import { WebPayNote } from '../components/WebPayNote.js';
+import { BitpayTrust } from '../components/BitpayTrust.js';
 import { toman } from '../lib/format.js';
 import { TestCardNote } from '../components/TestCardNote.js';
 import { useMe } from '../lib/queries.js';
@@ -314,6 +315,7 @@ export function Pantry() {
       })}
 
 
+      {bitpayOn && <BitpayTrust />}
       <SketchCard variant="a">
         <h2>{t('Recent activity')}</h2>
         {recent.length === 0 && <p className="muted">{t('Nothing yet.')}</p>}

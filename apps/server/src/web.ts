@@ -37,7 +37,8 @@ const TYPES: Record<string, string> = {
 /** Same rules as the global site's _headers, minus Google (the Iranian build loads nothing from abroad). */
 export const WEB_CSP =
   "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; " +
-  "img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; " +
+  // bitpay.ir: the payment gateway's trust badge on the shop and pantry (an Iranian site).
+  "img-src 'self' data: blob: https://bitpay.ir; media-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; " +
   "manifest-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'";
 
 /**
@@ -45,7 +46,7 @@ export const WEB_CSP =
  * needs 'unsafe-inline' for scripts. It has no sign-in and no user data.
  */
 export const LANDING_CSP = WEB_CSP.replace("script-src 'self'", "script-src 'self' 'unsafe-inline'").replace(
-  "img-src 'self' data: blob:",
+  "img-src 'self' data: blob: https://bitpay.ir",
   // The Enamad trust seal image is served by Enamad (an Iranian site, so it still loads in an outage).
   "img-src 'self' data: blob: https://trustseal.enamad.ir",
 );

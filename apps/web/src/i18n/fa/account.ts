@@ -370,4 +370,6 @@ export const ACCOUNT: Record<string, string> = {
   "Mobile number, name or email": "شماره موبایل، اسم یا ایمیل",
   "Find the account": "پیدا کردن حساب",
   "Change": "عوض کن",
+  "Bitpay trust badge": "نماد اعتماد بیت‌پی",
+  "Payments by Bitpay, a licensed Iranian gateway.": "پرداخت‌ها از درگاه مجاز بیت‌پی انجام می‌شه.",
 };

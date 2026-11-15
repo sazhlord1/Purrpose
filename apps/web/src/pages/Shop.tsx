@@ -28,6 +28,7 @@ import { bitpayFailure, payWithBitpay, useBitpayOn } from '../lib/bitpay.js';
 import { toman } from '../lib/format.js';
 import { TestCardNote } from '../components/TestCardNote.js';
 import { WebPayNote } from '../components/WebPayNote.js';
+import { BitpayTrust } from '../components/BitpayTrust.js';
 import { IS_IR_EDITION } from '../lib/edition.js';
 
 interface ShopResponse {
@@ -316,6 +317,7 @@ export function Shop() {
                 </div>
               ))}
             </div>
+            {bitpayOn && <BitpayTrust />}
           </>
         )}
         {!bazaarApp() && !irWeb() && paymentsMode === 'disabled' && <p className="muted">{t('Buying PURR is coming soon.')}</p>}
