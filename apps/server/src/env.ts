@@ -79,8 +79,13 @@ const envSchema = z.object({
    */
   BITPAY_API: opt(z.string().trim().min(20)),
   BITPAY_TEST: bool,
-  /** Where Bitpay sends the buyer back (must be on the address registered at Bitpay). */
-  BITPAY_REDIRECT_URL: z.string().url().default('https://app.purrpose.ir/api/v1/bitpay/return'),
+  /**
+   * Where Bitpay sends the buyer back. Bitpay only accepts the exact address registered in its
+   * panel (purrpose.ir, not app.purrpose.ir); the API answers on every host, so it works there.
+   */
+  BITPAY_REDIRECT_URL: z.string().url().default('https://purrpose.ir/api/v1/bitpay/return'),
+  /** The web app the buyer lands on after paying (absolute: the return comes in on the landing host). */
+  BITPAY_APP_URL: z.string().url().default('https://app.purrpose.ir'),
   /** The Android package the purchases belong to. */
   BAZAAR_PACKAGE_NAME: z.string().default('space.purrpose.app'),
 

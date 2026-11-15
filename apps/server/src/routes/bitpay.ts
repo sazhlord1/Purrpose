@@ -36,6 +36,7 @@ export function registerBitpayReturn(app: FastifyInstance): void {
     const q = request.query as { trans_id?: unknown; id_get?: unknown };
     const transId = typeof q.trans_id === 'string' ? q.trans_id : '';
     const idGet = typeof q.id_get === 'string' ? q.id_get : '';
+    const app = getEnv().BITPAY_APP_URL.replace(/\/+$/, '');
     let target = '/pantry?bitpay=failed';
     try {
       const out = await finishBitpay(getPrisma(), getEnv(), transId, idGet);
@@ -47,6 +48,6 @@ export function registerBitpayReturn(app: FastifyInstance): void {
       console.error('[bitpay] return failed', err instanceof Error ? err.message : err);
       target = '/pantry?bitpay=error';
     }
-    return reply.redirect(target, 302);
+    return reply.redirect(`${app}${target}`, 302);
   });
 }

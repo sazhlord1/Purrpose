@@ -82,16 +82,16 @@ describe.skipIf(!dbReady)('Bitpay (website payments)', () => {
     const id = nextId - 1;
     expect(start.json().url).toBe(`https://bitpay.ir/payment-test/gateway-${id}-get`);
     expect(sends[0]!.get('amount')).toBe('1890000'); // 189,000 toman in rials
-    expect(sends[0]!.get('redirect')).toBe('https://app.purrpose.ir/api/v1/bitpay/return');
+    expect(sends[0]!.get('redirect')).toBe('https://purrpose.ir/api/v1/bitpay/return');
 
     // Back without paying: nothing.
     const unpaid = await call('GET', `/api/v1/bitpay/return?trans_id=77&id_get=${id}`);
-    expect(unpaid.headers.location).toBe('/pantry?bitpay=failed');
+    expect(unpaid.headers.location).toBe('https://app.purrpose.ir/pantry?bitpay=failed');
 
     opened.get(id)!.paid = true;
     const back = await call('GET', `/api/v1/bitpay/return?trans_id=77&id_get=${id}`);
     expect(back.statusCode).toBe(302);
-    expect(back.headers.location).toBe('/pantry?bitpay=ok&kind=food&item=MEALS&n=1');
+    expect(back.headers.location).toBe('https://app.purrpose.ir/pantry?bitpay=ok&kind=food&item=MEALS&n=1');
     const after = (await me(token)).balances.find((b: { creditType: string }) => b.creditType === 'MEALS').amount;
     expect(after).toBe(before + 1);
 
@@ -107,9 +107,9 @@ describe.skipIf(!dbReady)('Bitpay (website payments)', () => {
     const id = nextId - 1;
     opened.get(id)!.paid = true;
     const back = await call('GET', `/api/v1/bitpay/return?trans_id=9&id_get=${id}`);
-    expect(back.headers.location).toBe('/shop?section=purr&bitpay=ok&kind=purr&item=purr_150&n=1');
+    expect(back.headers.location).toBe('https://app.purrpose.ir/shop?section=purr&bitpay=ok&kind=purr&item=purr_150&n=1');
     expect((await me(token)).purr).toBe(before + 150);
-    expect((await call('GET', '/api/v1/bitpay/return?trans_id=9&id_get=99999')).headers.location).toBe('/pantry?bitpay=failed');
-    expect((await call('GET', '/api/v1/bitpay/return?trans_id=x&id_get=1;drop')).headers.location).toBe('/pantry?bitpay=failed');
+    expect((await call('GET', '/api/v1/bitpay/return?trans_id=9&id_get=99999')).headers.location).toBe('https://app.purrpose.ir/pantry?bitpay=failed');
+    expect((await call('GET', '/api/v1/bitpay/return?trans_id=x&id_get=1;drop')).headers.location).toBe('https://app.purrpose.ir/pantry?bitpay=failed');
   });
 });
