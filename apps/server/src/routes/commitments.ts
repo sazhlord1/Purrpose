@@ -1,15 +1,15 @@
 import { userIdOf } from '../auth.js';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { appealSchema, createCommitmentSchema, idParamsSchema, proofSchema, reviewSchema, type WitnessView } from '@purrpose/shared';
-import type { CommitmentEngine } from '../services/commitments.js';
+import { pactsWithAudio, type CommitmentEngine } from '../services/commitments.js';
 import { getPrisma } from '../db.js';
 import { AppError } from '../errors.js';
 import { parse } from '../validate.js';
 import { clock } from '../clock.js';
 import { z } from 'zod';
 
-/** Proof photos are shrunk in the browser to well under this. */
-const PROOF_BODY_LIMIT = 1024 * 1024;
+/** Proof photos are shrunk in the browser; with a minute of voice it all stays well under this. */
+const PROOF_BODY_LIMIT = 3 * 1024 * 1024;
 const tokenParamsSchema = z.object({ token: z.string().min(20).max(64) });
 
 async function sendProofImage(reply: FastifyReply, commitmentId: string) {
@@ -19,6 +19,17 @@ async function sendProofImage(reply: FastifyReply, commitmentId: string) {
   });
   if (!proof?.image || !proof.imageType) throw new AppError('NOT_FOUND', undefined, 'No photo');
   return reply.header('Content-Type', proof.imageType).header('Cache-Control', 'private, no-store').send(Buffer.from(proof.image));
+}
+
+export async function sendProofAudio(reply: FastifyReply, commitmentId: string) {
+  let row: { audio: Uint8Array; audioType: string } | null = null;
+  try {
+    row = await getPrisma().proofAudio.findUnique({ where: { commitmentId }, select: { audio: true, audioType: true } });
+  } catch {
+    row = null; // older database without voice notes
+  }
+  if (!row) throw new AppError('NOT_FOUND', undefined, 'No voice note');
+  return reply.header('Content-Type', row.audioType).header('Cache-Control', 'private, no-store').send(Buffer.from(row.audio));
 }
 
 export function registerCommitmentRoutes(
@@ -70,6 +81,14 @@ export function registerCommitmentRoutes(
     return { commitment: engine.toDto(commitment), serverTime: clock.now() };
   });
 
+  app.get('/api/v1/commitments/:id/proof-audio', async (request, reply) => {
+    const userId = userIdOf(request);
+    const { id } = parse(idParamsSchema, request.params);
+    const own = await getPrisma().commitment.findFirst({ where: { id, userId }, select: { id: true } });
+    if (!own) throw new AppError('NOT_FOUND', { id }, 'Commitment not found');
+    return sendProofAudio(reply, id);
+  });
+
   app.get('/api/v1/commitments/:id/proof-image', async (request, reply) => {
     const userId = userIdOf(request);
     const { id } = parse(idParamsSchema, request.params);
@@ -114,6 +133,7 @@ export function registerCommitmentRoutes(
     const owner = await getPrisma().commitment.findUnique({ where: { witnessToken: token }, select: { userId: true } });
     if (owner) await engine.settleDue(owner.userId);
     const { c, isOwner, isWitness } = await loadByToken(token, viewerId);
+    const withAudio = c.proof ? await pactsWithAudio(getPrisma(), [c.id]) : new Set<string>();
     const view: WitnessView = {
       title: c.title,
       ownerName: c.user.firstName,
@@ -125,13 +145,21 @@ export function registerCommitmentRoutes(
       isWitness,
       isOwner,
       proof: c.proof && c.proofSubmittedAt
-        ? { text: c.proof.text, hasImage: Boolean(c.proof.imageType), submittedAtISO: c.proofSubmittedAt.toISOString() }
+        ? { text: c.proof.text, hasImage: Boolean(c.proof.imageType), hasAudio: withAudio.has(c.id), submittedAtISO: c.proofSubmittedAt.toISOString() }
         : null,
       reviewDueAtISO: c.reviewDueAt?.toISOString() ?? null,
       reviewedBy: (c.reviewedBy as WitnessView['reviewedBy']) ?? null,
       reviewNote: c.reviewNote,
     };
     return { witness: view, serverTime: clock.now() };
+  });
+
+  app.get('/api/v1/witness/:token/audio', async (request, reply) => {
+    const viewerId = userIdOf(request);
+    const { token } = parse(tokenParamsSchema, request.params);
+    const { c, isOwner, isWitness } = await loadByToken(token, viewerId);
+    if (!isOwner && !isWitness) throw new AppError('NOT_WITNESS', undefined, 'Sign in as the witness to hear the voice note');
+    return sendProofAudio(reply, c.id);
   });
 
   app.get('/api/v1/witness/:token/image', async (request, reply) => {

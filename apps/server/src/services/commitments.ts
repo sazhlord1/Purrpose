@@ -5,6 +5,7 @@ import {
   HONOR_STARTER_BONUS,
   HONOR_STARTER_COUNT,
   HONOR_STARTER_STAKE,
+  PROOF_MAX_AUDIO_BYTES,
   PROOF_MAX_IMAGE_BYTES,
   REVIEW_WINDOW_MS,
   buildTimeView,
@@ -147,6 +148,33 @@ function imageMatches(type: string, bytes: Buffer): boolean {
   if (type === 'image/png') return bytes.length > 8 && bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
   if (type === 'image/webp') return bytes.length > 12 && bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP';
   return false;
+}
+
+/** Checks a voice note's first bytes against the type it claims to be. */
+export function audioMatches(type: string, b: Buffer): boolean {
+  if (b.length < 12) return false;
+  if (type === 'audio/webm') return b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3;
+  if (type === 'audio/ogg') return b.toString('ascii', 0, 4) === 'OggS';
+  if (type === 'audio/mp4') return b.toString('ascii', 4, 8) === 'ftyp';
+  if (type === 'audio/aac') return b[0] === 0xff && (b[1]! & 0xf6) === 0xf0;
+  if (type === 'audio/mpeg') return b.toString('ascii', 0, 3) === 'ID3' || (b[0] === 0xff && (b[1]! & 0xe0) === 0xe0);
+  return false;
+}
+
+type ProofDb = Pick<PrismaClient, 'proofAudio'>;
+
+/**
+ * Which of these pacts have a voice note. An older database without the ProofAudio table
+ * (the English edition before its upgrade) just has none.
+ */
+export async function pactsWithAudio(db: ProofDb, ids: string[]): Promise<Set<string>> {
+  if (ids.length === 0) return new Set();
+  try {
+    const rows = await db.proofAudio.findMany({ where: { commitmentId: { in: ids } }, select: { commitmentId: true } });
+    return new Set(rows.map(r => r.commitmentId));
+  } catch {
+    return new Set();
+  }
 }
 
 export function makeCommitmentEngine(prisma: PrismaClient, clock: ClockApi) {
@@ -333,6 +361,13 @@ export function makeCommitmentEngine(prisma: PrismaClient, clock: ClockApi) {
         throw new AppError('INVALID_INPUT', { fieldErrors: { image: ['That photo could not be used'] } }, 'That photo could not be used');
       }
     }
+    let audio: Buffer | null = null;
+    if (input.audio) {
+      audio = Buffer.from(input.audio.data, 'base64');
+      if (audio.length === 0 || audio.length > PROOF_MAX_AUDIO_BYTES || !audioMatches(input.audio.type, audio)) {
+        throw new AppError('INVALID_INPUT', { fieldErrors: { audio: ['That voice note could not be used'] } }, 'That voice note could not be used');
+      }
+    }
     const result = await prisma.$transaction(async tx => {
       const commitment = await tx.commitment.findFirst({ where: { id, userId } });
       if (!commitment) throw new AppError('NOT_FOUND', { id }, 'Commitment not found');
@@ -360,9 +395,16 @@ export function makeCommitmentEngine(prisma: PrismaClient, clock: ClockApi) {
           image: image ? new Uint8Array(image) : null,
           imageType: image ? input.image?.type ?? null : null,
         },
+        select: { commitmentId: true },
       });
+      if (audio && input.audio) {
+        await tx.proofAudio.create({
+          data: { commitmentId: id, audio: new Uint8Array(audio), audioType: input.audio.type },
+          select: { commitmentId: true },
+        });
+      }
       await tx.appEvent.create({
-        data: { userId, name: 'proof_submitted', payload: { commitmentId: id, image: Boolean(image), witness: Boolean(commitment.witnessEmail) } },
+        data: { userId, name: 'proof_submitted', payload: { commitmentId: id, image: Boolean(image), audio: Boolean(audio), witness: Boolean(commitment.witnessEmail) } },
       });
       return tx.commitment.findUniqueOrThrow({ where: { id } });
     });
@@ -420,6 +462,11 @@ export function makeCommitmentEngine(prisma: PrismaClient, clock: ClockApi) {
       where: { image: { not: null }, commitment: { reviewedAt: { lte: cutoff } } },
       data: { image: null, imageType: null },
     });
+    try {
+      await prisma.proofAudio.deleteMany({ where: { commitment: { reviewedAt: { lte: cutoff } } } });
+    } catch {
+      /* older database without voice notes */
+    }
     return res.count;
   }
 

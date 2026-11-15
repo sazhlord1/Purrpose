@@ -14,13 +14,19 @@ interface SheetProps {
 export function Sheet({ open, onClose, title, children }: SheetProps) {
   useScrollLock(open);
   const panelRef = useRef<HTMLDivElement>(null);
+  // The parent usually passes a new onClose on every render (and pages like a pact re-render
+  // every second for the countdown). Keep it in a ref, so the effect below runs only when the
+  // sheet opens: re-running it moved focus back to the panel and closed the Android keyboard
+  // while you were typing.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return undefined;
-    panelRef.current?.focus();
+    panelRef.current?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key !== 'Tab' || !panelRef.current) return;
@@ -38,9 +44,20 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
         first.focus();
       }
     };
+    // When the on-screen keyboard opens over a field, bring the field into view.
+    const onFocusIn = (e: FocusEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (!el || !/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+      window.setTimeout(() => el.scrollIntoView({ block: 'center', behavior: 'smooth' }), 300);
+    };
+    const panel = panelRef.current;
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+    panel?.addEventListener('focusin', onFocusIn);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      panel?.removeEventListener('focusin', onFocusIn);
+    };
+  }, [open]);
 
   return (
     <AnimatePresence>

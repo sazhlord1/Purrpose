@@ -20,6 +20,7 @@ import { registerSessionRoutes } from './routes/session.js';
 import { registerShopRoutes } from './routes/shop.js';
 import { registerPaymentRoutes, registerStripeWebhook } from './routes/payments.js';
 import { registerBazaarCallback, registerBazaarRoutes } from './routes/bazaar.js';
+import { registerBitpayReturn, registerBitpayRoutes } from './routes/bitpay.js';
 import { registerWalletRoutes } from './routes/wallet.js';
 import { makeCommitmentEngine } from './services/commitments.js';
 import { makeWebHandler, webReplies } from './web.js';
@@ -108,6 +109,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   registerPublicPushRoutes(app);
   await registerStripeWebhook(app);
   registerBazaarCallback(app);
+  registerBitpayReturn(app);
 
   // Everything below requires a valid bearer token.
   await app.register(async function authenticatedScope(scope) {
@@ -122,6 +124,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     registerShopRoutes(scope);
     registerPaymentRoutes(scope);
     registerBazaarRoutes(scope);
+    registerBitpayRoutes(scope);
     registerFocusRoutes(scope);
     registerPushRoutes(scope);
     await registerAdminRoutes(scope);

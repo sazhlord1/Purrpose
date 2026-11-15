@@ -31,3 +31,7 @@ export const APPEAL_WINDOW_MS = 3 * 24 * 3_600_000;
 /** Proof photos are shrunk in the browser; the API refuses anything larger. */
 export const PROOF_MAX_IMAGE_BYTES = 600_000;
 export const PROOF_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+/** A voice note with a proof: at most a minute, recorded in the browser. */
+export const PROOF_MAX_AUDIO_BYTES = 1_000_000;
+export const PROOF_MAX_AUDIO_SECONDS = 60;
+export const PROOF_AUDIO_TYPES = ['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/aac', 'audio/mpeg'] as const;

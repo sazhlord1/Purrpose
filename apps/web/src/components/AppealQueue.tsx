@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { AppealView, ConsequenceType } from '@purrpose/shared';
 import { DoodleButton, SketchCard } from './ui/index.js';
 import { api, apiImage, ApiError } from '../lib/api.js';
+import { ProofVoice } from './pact/ProofVoice.js';
 import { fmtDateTime, foodName, t } from '../i18n/index.js';
 
 interface AppealRow {
@@ -12,7 +13,7 @@ interface AppealRow {
   witnessEmail: string | null;
   consequenceType: ConsequenceType;
   consequenceAmount: number;
-  proof: { text: string; hasImage: boolean };
+  proof: { text: string; hasImage: boolean; hasAudio?: boolean };
   reviewedBy: string | null;
   reviewNote: string | null;
   appeal: AppealView;
@@ -44,6 +45,7 @@ function AppealItem({ r }: { r: AppealRow }) {
       <p className="proof-text" style={{ margin: '6px 0' }}>
         <b>{t('Proof:')}</b> {r.proof.text}
       </p>
+      {r.proof.hasAudio && <ProofVoice path={`/admin/reviews/${r.id}/audio`} />}
       {r.proof.hasImage &&
         (photo ? (
           <img className="proof-full" src={photo} alt={t('Proof photo')} />

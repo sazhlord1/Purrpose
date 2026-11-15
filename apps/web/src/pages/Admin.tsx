@@ -1,4 +1,5 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { normalizeDigits } from '@purrpose/shared';
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { BackLink } from '../components/BackLink.js';
@@ -87,6 +88,100 @@ function UsersPanel() {
   );
 }
 
+/** Give PURR: find the account by phone, name or email, pick it, choose how much. */
+function GivePurr() {
+  const qc = useQueryClient();
+  const [q, setQ] = useState('');
+  const [term, setTerm] = useState('');
+  const [picked, setPicked] = useState<AdminUserRow | null>(null);
+  const [amount, setAmount] = useState(100);
+  const [note, setNote] = useState<string | null>(null);
+  const found = useQuery({
+    queryKey: ['admin-grant-search', term],
+    queryFn: () => api<{ total: number; users: AdminUserRow[] }>(`/admin/users?limit=8&offset=0&q=${encodeURIComponent(term)}`),
+    enabled: term.length > 0,
+  });
+  const grant = useMutation({
+    mutationFn: () =>
+      api<{ label: string; purr: number }>('/admin/purr/grant', { method: 'POST', body: { userId: picked!.id, amount } }),
+    onSuccess: r => {
+      setNote(t('{email} now has {n} PURR.', { email: r.label, n: r.purr }));
+      setPicked(p => (p ? { ...p, purr: r.purr } : p));
+      void qc.invalidateQueries({ queryKey: ['admin-users'] });
+      void qc.invalidateQueries({ queryKey: ['admin-grant-search'] });
+    },
+    onError: e => setNote(e instanceof ApiError ? e.message : t('Failed.')),
+  });
+  const labelOf = (u: AdminUserRow) => u.name ?? u.phone ?? u.email ?? t('Guest');
+  const onSearch = (e: FormEvent) => {
+    e.preventDefault();
+    setNote(null);
+    setPicked(null);
+    setTerm(normalizeDigits(q.trim()));
+  };
+  return (
+    <SketchCard variant="b">
+      <h2>{t('Give PURR')}</h2>
+      <form className="admin-search" onSubmit={onSearch}>
+        <input
+          type="search"
+          placeholder={t('Mobile number, name or email')}
+          value={q}
+          onChange={e => setQ(e.target.value)}
+          aria-label={t('Find the account')}
+        />
+        <DoodleButton type="submit">{t('Search')}</DoodleButton>
+      </form>
+      {term && !picked && (
+        <div className="admin-list" style={{ marginTop: 10 }}>
+          {found.isLoading ? (
+            <p className="muted">{t('fetching the roster…')}</p>
+          ) : !found.data || found.data.users.length === 0 ? (
+            <p className="muted">{t('Nobody here yet.')}</p>
+          ) : (
+            found.data.users.map(u => (
+              <button key={u.id} type="button" className="admin-list-row admin-pick-row" onClick={() => { setPicked(u); setNote(null); }}>
+                <span style={{ minWidth: 0 }}>
+                  <strong className="admin-ellipsis">{labelOf(u)}</strong>
+                  <span className="muted admin-ellipsis ltr" style={{ display: 'block', fontSize: 12.5 }}>{u.phone ?? u.email ?? ''}</span>
+                </span>
+                <span className="chip">{t('{n} PURR', { n: u.purr })}</span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+      {picked && (
+        <form
+          className="auth-form"
+          style={{ marginTop: 12 }}
+          onSubmit={e => {
+            e.preventDefault();
+            setNote(null);
+            grant.mutate();
+          }}
+        >
+          <div className="admin-picked">
+            <span style={{ minWidth: 0 }}>
+              <strong className="admin-ellipsis">{labelOf(picked)}</strong>
+              <span className="muted ltr" style={{ display: 'block', fontSize: 12.5 }}>{picked.phone ?? picked.email ?? ''} · {t('{n} PURR', { n: picked.purr })}</span>
+            </span>
+            <button type="button" className="linklike" onClick={() => setPicked(null)}>{t('Change')}</button>
+          </div>
+          <label className="field">
+            <span>{t('Amount')}</span>
+            <input type="number" min={1} max={100000} required value={amount} onChange={e => setAmount(Number(e.target.value))} />
+          </label>
+          <DoodleButton type="submit" variant="primary" disabled={grant.isPending}>
+            {t('Grant PURR')}
+          </DoodleButton>
+        </form>
+      )}
+      {note && <p className="muted" role="status" style={{ marginTop: 8 }}>{note}</p>}
+    </SketchCard>
+  );
+}
+
 interface Stats {
   users: number;
   accounts: number;
@@ -105,24 +200,9 @@ export function Admin() {
     queryFn: () => api<Stats>('/admin/stats'),
     enabled: isAdmin,
   });
-  const [email, setEmail] = useState('');
-  const [amount, setAmount] = useState(100);
-  const [note, setNote] = useState<string | null>(null);
-
-  const grant = useMutation({
-    mutationFn: () => api<{ email: string; purr: number }>('/admin/purr/grant', { method: 'POST', body: { email, amount } }),
-    onSuccess: r => setNote(t('{email} now has {n} PURR.', { email: r.email, n: r.purr })),
-    onError: e => setNote(e instanceof ApiError ? e.message : t('Failed.')),
-  });
 
   if (me.isLoading) return <main><p className="muted">{t('checking your badge…')}</p></main>;
   if (!isAdmin) return <Navigate to="/admin/login" replace />;
-
-  const onGrant = (e: FormEvent) => {
-    e.preventDefault();
-    setNote(null);
-    grant.mutate();
-  };
 
   const s = stats.data;
   return (
@@ -163,23 +243,7 @@ export function Admin() {
 
       <UsersPanel />
 
-      <SketchCard variant="b">
-        <h2>{t('Give PURR')}</h2>
-        <form className="auth-form" onSubmit={onGrant}>
-          <label className="field">
-            <span>{t('Account email')}</span>
-            <input type="email" className="ltr" required value={email} onChange={e => setEmail(e.target.value)} />
-          </label>
-          <label className="field">
-            <span>{t('Amount')}</span>
-            <input type="number" min={1} max={100000} required value={amount} onChange={e => setAmount(Number(e.target.value))} />
-          </label>
-          {note && <p className="muted" role="status">{note}</p>}
-          <DoodleButton type="submit" variant="primary" disabled={grant.isPending}>
-            {t('Grant PURR')}
-          </DoodleButton>
-        </form>
-      </SketchCard>
+      <GivePurr />
 
       <SketchCard variant="c">
         <h2>{t('Tools')}</h2>

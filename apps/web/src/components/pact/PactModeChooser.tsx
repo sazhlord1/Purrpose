@@ -66,7 +66,7 @@ export function PactModeChooser({ open, startersLeft, pantryEmpty, current, onPi
           onClick={onClose}
         >
           <motion.div
-            className="modal-card card card-a"
+            className="modal-card card card-a mode-modal"
             role="dialog"
             aria-modal="true"
             aria-labelledby="mode-title"

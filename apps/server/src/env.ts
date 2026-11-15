@@ -72,6 +72,15 @@ const envSchema = z.object({
   BAZAAR_CLIENT_SECRET: opt(z.string().min(8)),
   /** Where Bazaar sends the admin back after connecting the client (must match the panel). */
   BAZAAR_REDIRECT_URI: z.string().url().default('https://app.purrpose.ir/api/v1/bazaar/oauth/callback'),
+  /**
+   * Bitpay card gateway (Iranian edition, website / home-screen PWA only). BITPAY_API is the
+   * merchant API key from the Bitpay panel (only in the hosting dashboard — never commit it).
+   * BITPAY_TEST=true uses Bitpay's test gateway and its public test key instead.
+   */
+  BITPAY_API: opt(z.string().trim().min(20)),
+  BITPAY_TEST: bool,
+  /** Where Bitpay sends the buyer back (must be on the address registered at Bitpay). */
+  BITPAY_REDIRECT_URL: z.string().url().default('https://app.purrpose.ir/api/v1/bitpay/return'),
   /** The Android package the purchases belong to. */
   BAZAAR_PACKAGE_NAME: z.string().default('space.purrpose.app'),
 

@@ -24,6 +24,7 @@ import { Tour } from '../components/Tour.js';
 import { shopTour } from '../lib/tours.js';
 import { canBuyHere, goToCheckout } from '../lib/payments.js';
 import { bazaarApp, bazaarFailure, buyWithBazaar, restoreBazaarPurchases } from '../lib/bazaar.js';
+import { bitpayFailure, payWithBitpay, useBitpayOn } from '../lib/bitpay.js';
 import { toman } from '../lib/format.js';
 import { TestCardNote } from '../components/TestCardNote.js';
 import { WebPayNote } from '../components/WebPayNote.js';
@@ -84,7 +85,9 @@ export function Shop() {
   const shop = useQuery({ queryKey: ['shop'], queryFn: () => api<ShopResponse>('/shop') });
   // Iranian Android app: is Cafe Bazaar billing switched on on the server?
   const bazaar = useQuery({ queryKey: ['bazaar'], queryFn: () => api<{ enabled: boolean }>('/bazaar'), enabled: bazaarApp() });
-  const bazaarOn = bazaarApp() && bazaar.data?.enabled === true;
+  // Iranian website / PWA: the card gateway (Bitpay) instead of Bazaar.
+  const bitpayOn = useBitpayOn();
+  const bazaarOn = (bazaarApp() && bazaar.data?.enabled === true) || bitpayOn;
 
   const open = (s: Section | null) => {
     setMessage(null);
@@ -101,19 +104,19 @@ export function Shop() {
 
   // A Bazaar purchase that was paid but never credited (the app closed): finish it now.
   useEffect(() => {
-    if (!bazaarOn) return;
+    if (!bazaarOn || bitpayOn) return;
     void restoreBazaarPurchases().then(done => {
       if (done.some(d => d.credited)) refresh();
     });
   }, [bazaarOn]);
 
   const buyBazaarPack = useMutation({
-    mutationFn: (sku: BazaarSku) => buyWithBazaar(sku),
+    mutationFn: (sku: BazaarSku) => (bitpayOn ? payWithBitpay(sku) : buyWithBazaar(sku)),
     onSuccess: res => {
       setMessage({ kind: 'ok', text: t('Done! You now have {n} PURR.', { n: res.purr }) });
       refresh();
     },
-    onError: e => setMessage(bazaarFailure(e)),
+    onError: e => setMessage(bitpayOn ? bitpayFailure(e) : bazaarFailure(e)),
   });
 
   const unlock = useMutation({
@@ -292,9 +295,13 @@ export function Shop() {
         {header}
         {(bazaarApp() || irWeb()) && (
           <>
-            {irWeb() && <WebPayNote />}
+            {irWeb() && !bitpayOn && <WebPayNote />}
             {bazaarApp() && !bazaarOn && <p className="muted">{t('Buying PURR is coming soon.')}</p>}
-            {bazaarOn && <p className="muted" style={{ fontSize: 13 }}>{t('Paid securely through Cafe Bazaar.')}</p>}
+            {bazaarOn && (
+              <p className="muted" style={{ fontSize: 13 }}>
+                {bitpayOn ? t('Paid by bank card through the Bitpay gateway.') : t('Paid securely through Cafe Bazaar.')}
+              </p>
+            )}
             <div className="shop-grid">
               {packs.map(pack => (
                 <div key={pack.id} className="shop-cat">

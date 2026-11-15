@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { ConsequenceType } from '@purrpose/shared';
 import { DoodleButton, SketchCard } from './ui/index.js';
 import { api, apiImage, ApiError } from '../lib/api.js';
+import { ProofVoice } from './pact/ProofVoice.js';
 import { fmtDateTime, foodName, t } from '../i18n/index.js';
 
 interface ReviewRow {
@@ -13,7 +14,7 @@ interface ReviewRow {
   consequenceType: ConsequenceType;
   consequenceAmount: number;
   deadlineISO: string;
-  proof: { text: string; hasImage: boolean };
+  proof: { text: string; hasImage: boolean; hasAudio?: boolean };
   submittedAtISO: string | null;
   reviewDueAtISO: string | null;
 }
@@ -40,6 +41,7 @@ function ReviewItem({ r }: { r: ReviewRow }) {
         </div>
       )}
       <p className="proof-text" style={{ margin: '6px 0' }}>{r.proof.text}</p>
+      {r.proof.hasAudio && <ProofVoice path={`/admin/reviews/${r.id}/audio`} />}
       {r.proof.hasImage &&
         (photo ? (
           <img className="proof-full" src={photo} alt={t('Proof photo')} />

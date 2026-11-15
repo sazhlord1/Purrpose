@@ -13,6 +13,7 @@ import { AppIcon, type IconName } from '@purrpose/cats';
 import { api, ApiError } from '../lib/api.js';
 import { canBuyHere, goToCheckout } from '../lib/payments.js';
 import { bazaarApp, bazaarFailure, buyWithBazaar, restoreBazaarPurchases } from '../lib/bazaar.js';
+import { bitpayFailure, payWithBitpay, useBitpayOn } from '../lib/bitpay.js';
 import { IS_IR_EDITION } from '../lib/edition.js';
 import { WebPayNote } from '../components/WebPayNote.js';
 import { toman } from '../lib/format.js';
@@ -92,7 +93,9 @@ export function Pantry() {
   const canBuy = shop.data?.paymentsMode === 'stripe' && canBuyHere();
   // Iranian Android app: real food through Cafe Bazaar, one unit per purchase.
   const bazaar = useQuery({ queryKey: ['bazaar'], queryFn: () => api<{ enabled: boolean }>('/bazaar'), enabled: bazaarApp() });
-  const canBuyBazaar = bazaarApp() && bazaar.data?.enabled === true;
+  // Iranian website / PWA: the card gateway (Bitpay) takes Bazaar's place.
+  const bitpayOn = useBitpayOn();
+  const canBuyBazaar = (bazaarApp() && bazaar.data?.enabled === true) || bitpayOn;
   const canTopUp = !canBuy && !canBuyBazaar && (shop.data?.paymentsMode === 'sandbox' || isAdmin);
 
   const [selectedItem, setSelectedItem] = useState<PantryItemMeta | null>(null);
@@ -153,19 +156,20 @@ export function Pantry() {
   };
   // A Bazaar purchase that was paid but never credited (the app closed): finish it now.
   useEffect(() => {
-    if (!canBuyBazaar) return;
+    if (!canBuyBazaar || bitpayOn) return;
     void restoreBazaarPurchases().then(done => {
       if (done.some(d => d.credited)) refreshFood();
     });
   }, [canBuyBazaar]);
   const buyBazaarFood = useMutation({
-    mutationFn: (creditType: ConsequenceType) => buyWithBazaar(BAZAAR_FOOD_SKU[creditType]),
+    mutationFn: (creditType: ConsequenceType) =>
+      bitpayOn ? payWithBitpay(BAZAAR_FOOD_SKU[creditType]) : buyWithBazaar(BAZAAR_FOOD_SKU[creditType]),
     onSuccess: (_res, creditType) => {
       setNote(t('{food}: one more in your pantry. Thank you!', { food: foodName(creditType) }));
       refreshFood();
     },
     onError: e => {
-      const f = bazaarFailure(e);
+      const f = bitpayOn ? bitpayFailure(e) : bazaarFailure(e);
       setNeedsAccount(Boolean(f.needsAccount));
       setNote(f.text);
     },
@@ -274,12 +278,6 @@ export function Pantry() {
                   >
                     {t(meta.badge)}
                   </span>
-                  {IS_IR_EDITION && (
-                    <span className="pantry-price">
-                      <strong>{toman(FOOD_PRICES_IRT[b.creditType])}</strong>{' '}
-                      <span>{{ can: t('per can'), kg: t('per kg'), visit: t('per visit') }[FOOD_PRICES[b.creditType].unit]}</span>
-                    </span>
-                  )}
                 </span>
                 <span style={{ fontSize: 14, color: 'var(--ink-soft, inherit)', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
                   <span>
@@ -289,6 +287,12 @@ export function Pantry() {
                     {t('available:')} <strong>{b.available}</strong>
                   </span>
                 </span>
+                {IS_IR_EDITION && (
+                  <span className="pantry-price">
+                    <strong>{toman(FOOD_PRICES_IRT[b.creditType])}</strong>
+                    <span>{{ can: t('per can'), kg: t('per kg'), visit: t('per visit') }[FOOD_PRICES[b.creditType].unit]}</span>
+                  </span>
+                )}
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 'none' }}>
                 <AnimatedNumber value={b.amount} className="hand" style={{ fontSize: 26, color: meta.accent }} />
@@ -413,7 +417,9 @@ export function Pantry() {
                     </DoodleButton>
                     <DoodleButton onClick={() => setSelectedItem(null)}>{t('Close')}</DoodleButton>
                   </div>
-                  <p className="muted" style={{ fontSize: 12.5, marginTop: 10 }}>{t('Paid securely through Cafe Bazaar.')}</p>
+                  <p className="muted" style={{ fontSize: 12.5, marginTop: 10 }}>
+                    {bitpayOn ? t('Paid by bank card through the Bitpay gateway.') : t('Paid securely through Cafe Bazaar.')}
+                  </p>
                 </div>
               );
             })()}

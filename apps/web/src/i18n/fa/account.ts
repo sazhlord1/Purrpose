@@ -182,7 +182,7 @@ export const ACCOUNT: Record<string, string> = {
 
   // admin
   "Users": "کاربرها",
-  "Search email or name": "جستجوی ایمیل یا نام",
+  "Search email or name": "جستجوی شماره موبایل، اسم یا ایمیل",
   "Search users": "جستجوی کاربرها",
   "Search": "بگرد",
   "include guests": "مهمون‌ها هم باشن",
@@ -361,4 +361,13 @@ export const ACCOUNT: Record<string, string> = {
   "Start the connection from the admin page first": "اول از صفحه‌ی ادمین اتصال رو شروع کن",
   "Bazaar client is not set up": "کلاینت بازار تنظیم نشده",
   "Set BAZAAR_CLIENT_ID and BAZAAR_CLIENT_SECRET first": "اول BAZAAR_CLIENT_ID و BAZAAR_CLIENT_SECRET رو تنظیم کن",
+  "Paid by bank card through the Bitpay gateway.": "پرداخت با کارت بانکی از درگاه امن بیت‌پی.",
+  "Could not open the payment page. Try again in a moment.": "صفحه‌ی پرداخت باز نشد. یه کم دیگه دوباره امتحان کن.",
+  "The payment was not completed. If money was taken from your card, the bank returns it within 72 hours.": "پرداخت کامل نشد. اگه پولی از حسابت کم شده، بانک حداکثر تا ۷۲ ساعت برش می‌گردونه.",
+  "Payment received: +{n} PURR.": "پرداخت انجام شد: {n}+ میو اضافه شد.",
+  "Payment received: {n} × {food} added to your pantry.": "پرداخت انجام شد: {n} × {food} به انبارت اضافه شد.",
+  "We couldn’t confirm the payment yet. If you were charged, it will show up shortly.": "هنوز نتونستیم پرداخت رو تأیید کنیم. اگه پولی کم شده، به‌زودی اینجا اضافه می‌شه.",
+  "Mobile number, name or email": "شماره موبایل، اسم یا ایمیل",
+  "Find the account": "پیدا کردن حساب",
+  "Change": "عوض کن",
 };

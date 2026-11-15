@@ -1,13 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
-import { AppIcon } from '@purrpose/cats';
 import type { CommitmentDto } from '@purrpose/shared';
 import { DoodleButton, Sheet } from '../ui/index.js';
 import { api, ApiError } from '../../lib/api.js';
 import { shrinkPhoto, type ShrunkPhoto } from '../../lib/image.js';
+import { markPermissionExplained, permissionExplained, type PermissionKind } from '../../lib/permissionNotes.js';
 import { t } from '../../i18n/index.js';
+import { VoiceRecorder, canRecordVoice, type RecordedVoice } from './VoiceRecorder.js';
 
-/** "I did it" for a strict pact: a few words and, if you like, a photo. */
+/** "I did it" for a strict pact: a few words and, if you like, a photo and a voice note. */
 export function ProofForm({
   open,
   commitment,
@@ -25,8 +26,19 @@ export function ProofForm({
   const [text, setText] = useState('');
   const [photo, setPhoto] = useState<ShrunkPhoto | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [voice, setVoice] = useState<RecordedVoice | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Which permission we're explaining before the phone asks for it, and what to do after. */
+  const [asking, setAsking] = useState<{ kind: PermissionKind; then: () => void } | null>(null);
+  const [recorderOn, setRecorderOn] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+
+  /** Runs `then` after our own explanation (once per device), so the phone's prompt makes sense. */
+  const withPermission = (kind: PermissionKind, then: () => void) => {
+    if (permissionExplained(kind)) then();
+    else setAsking({ kind, then });
+  };
 
   useEffect(() => () => {
     if (photo) URL.revokeObjectURL(photo.previewUrl);
@@ -36,7 +48,11 @@ export function ProofForm({
     mutationFn: () =>
       api<{ commitment: CommitmentDto }>(`/commitments/${commitment.id}/proof`, {
         method: 'POST',
-        body: { text: text.trim(), ...(photo ? { image: { type: photo.type, data: photo.data } } : {}) },
+        body: {
+          text: text.trim(),
+          ...(photo ? { image: { type: photo.type, data: photo.data } } : {}),
+          ...(voice ? { audio: { type: voice.type, data: voice.data } } : {}),
+        },
       }),
     onSuccess: res => {
       qc.setQueryData(['commitment', commitment.id], { commitment: res.commitment });
@@ -85,6 +101,29 @@ export function ProofForm({
           placeholder={t('e.g. Sent the report to my manager at 5pm.')}
         />
       </label>
+      {asking && (
+        <div className="permission-note" role="dialog" aria-label={t('Permission')}>
+          <p style={{ margin: '0 0 8px' }}>
+            {asking.kind === 'camera'
+              ? t('To take a photo of your proof, Purrpose needs the camera. Your phone will ask you next; the photo is only sent with this proof.')
+              : t('To record a voice note, Purrpose needs the microphone. Your phone will ask you next; nothing is recorded until you press record.')}
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <DoodleButton
+              variant="primary"
+              onClick={() => {
+                markPermissionExplained(asking.kind);
+                const next = asking.then;
+                setAsking(null);
+                next();
+              }}
+            >
+              {t('OK, continue')}
+            </DoodleButton>
+            <DoodleButton onClick={() => setAsking(null)}>{t('Not now')}</DoodleButton>
+          </div>
+        </div>
+      )}
       <div className="proof-photo">
         {photo ? (
           <>
@@ -94,10 +133,26 @@ export function ProofForm({
             </button>
           </>
         ) : (
-          <DoodleButton onClick={() => fileRef.current?.click()} disabled={photoBusy}>
-            <AppIcon name="sparkle" size={18} /> {photoBusy ? t('Shrinking the photo…') : t('Add a photo (optional)')}
-          </DoodleButton>
+          <div className="proof-add-row">
+            <DoodleButton onClick={() => withPermission('camera', () => cameraRef.current?.click())} disabled={photoBusy}>
+              📷 {photoBusy ? t('Shrinking the photo…') : t('Take a photo')}
+            </DoodleButton>
+            <DoodleButton onClick={() => fileRef.current?.click()} disabled={photoBusy}>
+              🖼️ {t('From gallery')}
+            </DoodleButton>
+          </div>
         )}
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          hidden
+          onChange={e => {
+            void pick(e.target.files?.[0]);
+            e.target.value = '';
+          }}
+        />
         <input
           ref={fileRef}
           type="file"
@@ -109,6 +164,17 @@ export function ProofForm({
           }}
         />
       </div>
+      {canRecordVoice() && (
+        <div className="proof-voice-row">
+          {recorderOn || voice ? (
+            <VoiceRecorder voice={voice} onVoice={v => { setVoice(v); if (!v) setRecorderOn(false); }} onError={e => { setError(e); setRecorderOn(false); }} autoStart={!voice} />
+          ) : (
+            <DoodleButton onClick={() => withPermission('microphone', () => setRecorderOn(true))}>
+              🎙️ {t('Add a voice note (optional)')}
+            </DoodleButton>
+          )}
+        </div>
+      )}
       {error && (
         <p role="alert" style={{ color: 'var(--stamp-red)', fontSize: 13.5 }}>
           {error}

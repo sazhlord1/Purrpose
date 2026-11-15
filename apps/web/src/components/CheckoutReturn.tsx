@@ -16,6 +16,28 @@ export function CheckoutReturn() {
   const qc = useQueryClient();
   const [text, setText] = useState<string | null>(null);
 
+  // Back from the Bitpay card gateway (Iranian website): the server already checked and
+  // credited the payment, and says how it went in the address (?bitpay=ok&kind=…&item=…&n=…).
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const result = url.searchParams.get('bitpay');
+    if (!result) return;
+    const kind = url.searchParams.get('kind');
+    const item = url.searchParams.get('item') ?? '';
+    const n = Number(url.searchParams.get('n') ?? '1') || 1;
+    for (const k of ['bitpay', 'kind', 'item', 'n']) url.searchParams.delete(k);
+    window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    if (result === 'ok') {
+      if (kind === 'purr') setText(t('Payment received: +{n} PURR.', { n: purrPackById(item)?.purr ?? 0 }));
+      else setText(t('Payment received: {n} × {food} added to your pantry.', { n, food: foodName(item as ConsequenceType, true) }));
+      for (const key of ['me', 'shop', 'history']) void qc.invalidateQueries({ queryKey: [key] });
+    } else if (result === 'failed') {
+      setText(t('The payment was not completed. If money was taken from your card, the bank returns it within 72 hours.'));
+    } else {
+      setText(t('We couldn’t confirm the payment yet. If you were charged, it will show up shortly.'));
+    }
+  }, [qc]);
+
   useEffect(() => {
     const url = new URL(window.location.href);
     const state = url.searchParams.get('checkout');

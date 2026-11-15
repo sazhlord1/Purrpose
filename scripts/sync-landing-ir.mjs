@@ -50,6 +50,8 @@ html = seoIr(html);
 // Enamad (e-trust seal) site verification: meta tag on the home page + empty file at the root.
 const ENAMAD_CODE = '4894141';
 html = html.replace('<meta charset="utf-8">', `<meta charset="utf-8">\n<meta name="enamad" content="${ENAMAD_CODE}" />`);
+// "Add to Home Screen" on iPhone takes the page title unless told otherwise: a short name.
+html = html.replace('</head>', '<meta name="apple-mobile-web-app-title" content="پرپس" />\n<meta name="application-name" content="پرپس" />\n</head>');
 
 // Enamad trust seal in the footer: small but visible (its markup must stay as Enamad gives it).
 const ENAMAD_SEAL =

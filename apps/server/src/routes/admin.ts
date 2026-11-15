@@ -5,7 +5,8 @@ import { requireAdmin, userIdOf } from '../auth.js';
 import { clock } from '../clock.js';
 import { getPrisma } from '../db.js';
 import { AppError } from '../errors.js';
-import { appealOf, makeCommitmentEngine } from '../services/commitments.js';
+import { appealOf, makeCommitmentEngine, pactsWithAudio } from '../services/commitments.js';
+import { sendProofAudio } from './commitments.js';
 import { toHabitDto } from '../services/habits.js';
 import { creditPurr } from '../services/shop.js';
 import { bazaarAuthMode, bazaarEnabled, checkBazaarSetup, startBazaarConnect } from '../services/bazaar.js';
@@ -43,6 +44,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
         orderBy: { reviewDueAt: 'asc' },
         take: 200,
       });
+      const withAudio = await pactsWithAudio(getPrisma(), rows.map(r => r.id));
       const reviews = rows
         .map(c => ({
           id: c.id,
@@ -52,7 +54,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
           consequenceType: c.consequenceType,
           consequenceAmount: c.consequenceAmount,
           deadlineISO: c.deadline.toISOString(),
-          proof: { text: c.proof?.text ?? '', hasImage: Boolean(c.proof?.imageType) },
+          proof: { text: c.proof?.text ?? '', hasImage: Boolean(c.proof?.imageType), hasAudio: withAudio.has(c.id) },
           submittedAtISO: c.proofSubmittedAt?.toISOString() ?? null,
           reviewDueAtISO: c.reviewDueAt?.toISOString() ?? null,
         }))
@@ -66,6 +68,11 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       const proof = await getPrisma().commitmentProof.findUnique({ where: { commitmentId: id }, select: { image: true, imageType: true } });
       if (!proof?.image || !proof.imageType) throw new AppError('NOT_FOUND', undefined, 'No photo');
       return reply.header('Content-Type', proof.imageType).header('Cache-Control', 'private, no-store').send(Buffer.from(proof.image));
+    });
+
+    scope.get('/api/v1/admin/reviews/:id/audio', async (request, reply) => {
+      const { id } = parse(idParamsSchema, request.params);
+      return sendProofAudio(reply, id);
     });
 
     scope.post('/api/v1/admin/reviews/:id', async request => {
@@ -87,6 +94,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
           proof: { select: { text: true, imageType: true } },
         },
       });
+      const appealAudio = await pactsWithAudio(prisma, pacts.map(p => p.id));
       const appeals = [];
       for (const c of pacts) {
         const appeal = await appealOf(prisma, c.id);
@@ -98,7 +106,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
           witnessEmail: c.witnessEmail,
           consequenceType: c.consequenceType,
           consequenceAmount: c.consequenceAmount,
-          proof: { text: c.proof?.text ?? '', hasImage: Boolean(c.proof?.imageType) },
+          proof: { text: c.proof?.text ?? '', hasImage: Boolean(c.proof?.imageType), hasAudio: appealAudio.has(c.id) },
           reviewedBy: c.reviewedBy,
           reviewNote: c.reviewNote,
           appeal,
@@ -306,14 +314,18 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     });
 
     scope.post('/api/v1/admin/purr/grant', async request => {
-      const { email, amount } = parse(adminGrantSchema, request.body);
+      const { userId, email, amount } = parse(adminGrantSchema, request.body);
       const prisma = getPrisma();
-      const user = await prisma.user.findUnique({ where: { email }, select: { id: true } });
-      if (!user) throw new AppError('NOT_FOUND', { email }, 'No account with that email');
+      const user = await prisma.user.findUnique({
+        where: userId ? { id: userId } : { email: email! },
+        select: { id: true, email: true, phone: true, firstName: true, lastName: true },
+      });
+      if (!user) throw new AppError('NOT_FOUND', { userId, email }, 'No such account');
       const purr = await creditPurr(prisma, user.id, amount, 'ADMIN_GRANT', {
         itemId: `grant:by:${request.userId}`,
       });
-      return { email, purr };
+      const name = [user.firstName, user.lastName].filter(Boolean).join(' ');
+      return { email: user.email, phone: user.phone, name: name || null, label: name || user.phone || user.email || user.id, purr };
     });
   });
 }

@@ -143,6 +143,7 @@ model Commitment {
   reviewedBy        String?
   reviewNote        String?
   proof             CommitmentProof?
+  proofAudio        ProofAudio?
   transactions      CreditTransaction[]
   focusSessions     FocusSession[]
   notifications     NotificationLog[]
@@ -159,6 +160,16 @@ model CommitmentProof {
   text         String
   image        Bytes?
   imageType    String?
+  createdAt    DateTime   @default(now())
+}
+
+/// A voice note sent with a proof (optional). Its own table, so an older database without
+/// it keeps working for everything else (the English edition's Supabase is upgraded by hand).
+model ProofAudio {
+  commitmentId String     @id
+  commitment   Commitment @relation(fields: [commitmentId], references: [id], onDelete: Cascade)
+  audio        Bytes
+  audioType    String
   createdAt    DateTime   @default(now())
 }
 

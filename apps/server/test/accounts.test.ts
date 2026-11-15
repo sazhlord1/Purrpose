@@ -145,6 +145,12 @@ describe.skipIf(!dbReady)('accounts, admin, PURR shop, focus, push', () => {
 
     const grant = await call('POST', '/api/v1/admin/purr/grant', token, { email: 'user@test.dev', amount: 500 });
     expect(grant.json()).toMatchObject({ email: 'user@test.dev', purr: 620 });
+    // Or picked from the user search (phone or name), by id.
+    const found = (await call('GET', '/api/v1/admin/users?q=user%40test', token)).json().users[0];
+    const byId = await call('POST', '/api/v1/admin/purr/grant', token, { userId: found.id, amount: 30 });
+    expect(byId.json()).toMatchObject({ email: 'user@test.dev', purr: 650 });
+    expect((await call('POST', '/api/v1/admin/purr/grant', token, { amount: 30 })).statusCode).toBe(400);
+    expect((await call('POST', '/api/v1/admin/purr/grant', token, { userId: 'nope', amount: 30 })).statusCode).toBe(404);
     expect((await call('GET', '/api/v1/admin/stats', token)).json().accounts).toBe(2);
 
     // Non-admins get 403 from admin routes.

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { CAT_IDS, COMMITMENT_MODES, COMMITMENT_STATUSES, CONSEQUENCE_TYPES, TRANSACTION_TYPES } from './enums.js';
-import { HONOR_MIN_STAKE, PROOF_IMAGE_TYPES, PROOF_MAX_IMAGE_BYTES } from './economy.js';
+import { HONOR_MIN_STAKE, PROOF_AUDIO_TYPES, PROOF_IMAGE_TYPES, PROOF_MAX_AUDIO_BYTES, PROOF_MAX_IMAGE_BYTES } from './economy.js';
 import { itemIdSchema, loadoutSchema } from './items.js';
 
 export const consequenceTypeSchema = z.enum(CONSEQUENCE_TYPES);
@@ -283,10 +283,16 @@ export const bazaarVerifySchema = z.object({
   purchaseToken: z.string().trim().min(4).max(512).regex(/^\S+$/),
 });
 export type BazaarVerifyInput = z.infer<typeof bazaarVerifySchema>;
-export const adminGrantSchema = z.object({
-  email: emailSchema,
-  amount: z.number().int().min(1).max(100_000),
-});
+/** Pay for one product on the website (Bitpay): same products and prices as Cafe Bazaar. */
+export const bitpayStartSchema = z.object({ productId: bazaarVerifySchema.shape.productId });
+/** Give PURR to one account, picked from the user search (userId) or by email. */
+export const adminGrantSchema = z
+  .object({
+    userId: z.string().trim().min(1).max(64).optional(),
+    email: emailSchema.optional(),
+    amount: z.number().int().min(1).max(100_000),
+  })
+  .refine(v => Boolean(v.userId || v.email), { message: 'Pick an account', path: ['userId'] });
 
 // ─── Focus ───────────────────────────────────────────────────────────────────
 export const MAX_FOCUS_SESSION_SEC = 12 * 3600;
@@ -327,6 +333,14 @@ export const proofSchema = z.object({
       data: z.string().max(Math.ceil((PROOF_MAX_IMAGE_BYTES * 4) / 3) + 8),
     })
     .optional(),
+  /** A voice note (optional). */
+  audio: z
+    .object({
+      type: z.enum(PROOF_AUDIO_TYPES),
+      /** Base64 (no data: prefix). */
+      data: z.string().max(Math.ceil((PROOF_MAX_AUDIO_BYTES * 4) / 3) + 8),
+    })
+    .optional(),
 });
 export type ProofInput = z.infer<typeof proofSchema>;
 
@@ -349,7 +363,7 @@ export const witnessViewSchema = z.object({
   isWitness: z.boolean(),
   isOwner: z.boolean(),
   proof: z
-    .object({ text: z.string(), hasImage: z.boolean(), submittedAtISO: z.string() })
+    .object({ text: z.string(), hasImage: z.boolean(), hasAudio: z.boolean().optional(), submittedAtISO: z.string() })
     .nullable(),
   reviewDueAtISO: z.string().nullable(),
   reviewedBy: z.enum(['witness', 'admin', 'auto']).nullable(),

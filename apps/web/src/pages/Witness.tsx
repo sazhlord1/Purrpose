@@ -9,6 +9,7 @@ import { api, apiImage, ApiError } from '../lib/api.js';
 import { returnAfterLogin } from '../lib/auth.js';
 import { catNameOf } from '../lib/labels.js';
 import { useMe } from '../lib/queries.js';
+import { ProofVoice } from '../components/pact/ProofVoice.js';
 import { fmtDateTime, foodName, t } from '../i18n/index.js';
 
 /**
@@ -100,6 +101,7 @@ export function Witness() {
           <h2 style={{ marginTop: 0 }}>{t('Their proof')}</h2>
           <p className="proof-text">{w.proof.text}</p>
           {photo && <img className="proof-full" src={photo} alt={t('Proof photo')} />}
+          {w.proof.hasAudio && (w.isWitness || w.isOwner) && <ProofVoice path={`/witness/${encodeURIComponent(token)}/audio`} />}
           {w.proof.hasImage && !photo && !w.isWitness && !w.isOwner && (
             <p className="muted">{t('There’s a photo too. Sign in as the witness to see it.')}</p>
           )}

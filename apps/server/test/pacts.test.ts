@@ -44,6 +44,8 @@ const strict = (witnessEmail?: string) => ({
   ...(witnessEmail ? { witnessEmail } : {}),
 });
 /** 1×1 transparent PNG. */
+/** The first bytes of a WebM file (EBML header) and a little more: enough to pass the type check. */
+const WEBM = Buffer.from([0x1a, 0x45, 0xdf, 0xa3, 0x9f, 0x42, 0x86, 0x81, 0x01, 0x42, 0xf7, 0x81, 0x01, 0x42, 0xf2, 0x81]).toString('base64');
 const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
 describe.skipIf(!dbReady)('Honor and strict pacts', () => {
@@ -142,6 +144,7 @@ describe.skipIf(!dbReady)('Honor and strict pacts', () => {
     const proof = await call('POST', `/api/v1/commitments/${pact.id}/proof`, owner, {
       text: 'Sent it to the team at 5pm',
       image: { type: 'image/png', data: PNG },
+      audio: { type: 'audio/webm', data: WEBM },
     });
     expect(proof.statusCode).toBe(200);
     expect(proof.json().commitment.status).toBe('ACTIVE');
@@ -166,7 +169,11 @@ describe.skipIf(!dbReady)('Honor and strict pacts', () => {
 
     const friend = await register('friend@test.dev', 'Bo');
     const view = (await call('GET', `/api/v1/witness/${pact.witnessToken}`, friend)).json().witness;
-    expect(view).toMatchObject({ isWitness: true, proof: { text: 'Sent it to the team at 5pm', hasImage: true } });
+    expect(view).toMatchObject({ isWitness: true, proof: { text: 'Sent it to the team at 5pm', hasImage: true, hasAudio: true } });
+    const voice = await call('GET', `/api/v1/witness/${pact.witnessToken}/audio`, friend);
+    expect(voice.statusCode).toBe(200);
+    expect(voice.headers['content-type']).toBe('audio/webm');
+    expect((await call('GET', `/api/v1/witness/${pact.witnessToken}/audio`, stranger)).statusCode).toBe(403);
     const img = await call('GET', `/api/v1/witness/${pact.witnessToken}/image`, friend);
     expect(img.statusCode).toBe(200);
     expect(img.headers['content-type']).toBe('image/png');

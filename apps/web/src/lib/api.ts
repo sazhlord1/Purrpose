@@ -161,6 +161,16 @@ export async function api<T>(
 }
 
 /** Fetches an authenticated image (e.g. a proof photo) and returns an object URL for <img>. */
+/** Fetches a private voice note (signed in) and returns a playable object URL. */
+export async function apiAudio(path: string): Promise<string> {
+  const token = getToken() ?? (await ensureSession());
+  const res = await fetch(`${API_BASE_URL}/api/v1${path}`, { headers: { authorization: `Bearer ${token}` } });
+  if (!res.ok || !(res.headers.get('content-type') ?? '').startsWith('audio/')) {
+    throw new ApiError(res.status, 'NOT_FOUND', 'No voice note');
+  }
+  return URL.createObjectURL(await res.blob());
+}
+
 export async function apiImage(path: string): Promise<string> {
   const token = getToken() ?? (await ensureSession());
   const res = await fetch(`${API_BASE_URL}/api/v1${path}`, { headers: { authorization: `Bearer ${token}` } });

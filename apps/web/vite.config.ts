@@ -1,5 +1,6 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
+import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -20,7 +21,21 @@ function iranianEdition(isIr: boolean): Plugin {
         .replace(/\s*<link\s+href="https:\/\/fonts\.googleapis\.com[^"]*"\s+rel="stylesheet"\s*\/>/g, '')
         .replace('<html lang="en">', '<html lang="fa" dir="rtl">')
         .replace('<title>Purrpose</title>', '<title>پرپس</title>')
-        .replace('content="Purrpose" />', 'content="پرپس" />');
+        .replace('<meta name="apple-mobile-web-app-title" content="Purrpose" />', '<meta name="apple-mobile-web-app-title" content="پرپس" />');
+    },
+    // The home-screen name (Android/iOS read the manifest): پرپس, Persian, right to left.
+    writeBundle(options) {
+      if (!isIr || !options.dir) return;
+      const file = path.join(options.dir, 'manifest.webmanifest');
+      try {
+        const m = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>;
+        writeFileSync(
+          file,
+          JSON.stringify({ ...m, name: 'پرپس', short_name: 'پرپس', lang: 'fa', dir: 'rtl', description: 'کارهات رو انجام بده، وگرنه یه گربه سیر می‌شه.' }, null, 2),
+        );
+      } catch {
+        /* no manifest in this build */
+      }
     },
   };
 }
