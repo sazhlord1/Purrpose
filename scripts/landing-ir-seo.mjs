@@ -72,6 +72,16 @@ export function sitemap(today = new Date().toISOString().slice(0, 10)) {
     <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq><priority>1.0</priority>
   </url>
+  <url>
+    <loc>${SITE}deliveries</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq><priority>0.7</priority>
+  </url>
+  <url>
+    <loc>${SITE}contact</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq><priority>0.5</priority>
+  </url>
 </urlset>
 `;
 }

@@ -26,6 +26,8 @@ const DesignSystem = lazy(() => import('./pages/DesignSystem.js').then(m => ({ d
 const CatsGallery = lazy(() => import('./pages/CatsGallery.js').then(m => ({ default: m.CatsGallery })));
 const CatLab = lazy(() => import('./pages/CatLab.js').then(m => ({ default: m.CatLab })));
 const Shop = lazy(() => import('./pages/Shop.js').then(m => ({ default: m.Shop })));
+const AdminSite = lazy(() => import('./pages/AdminSite.js').then(m => ({ default: m.AdminSite })));
+const AdminBlogEditor = lazy(() => import('./pages/AdminBlogEditor.js').then(m => ({ default: m.AdminBlogEditor })));
 const Detective = lazy(() => import('./pages/Detective.js').then(m => ({ default: m.Detective })));
 const Pacts = lazy(() => import('./pages/Pacts.js').then(m => ({ default: m.Pacts })));
 const AdminUser = lazy(() => import('./pages/AdminUser.js').then(m => ({ default: m.AdminUser })));
@@ -83,6 +85,8 @@ function Shell() {
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/admin/users/:id" element={<AdminUser />} />
+                <Route path="/admin/site" element={<AdminSite />} />
+                <Route path="/admin/blog/:id" element={<AdminBlogEditor />} />
                 <Route path="/witness/:token" element={<Witness />} />
                 <Route path="/design" element={<AdminOnly><DesignSystem /></AdminOnly>} />
                 <Route path="/cats" element={<AdminOnly><CatsGallery /></AdminOnly>} />

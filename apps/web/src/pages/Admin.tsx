@@ -245,6 +245,17 @@ export function Admin() {
 
       <GivePurr />
 
+      <SketchCard variant="a">
+        <h2>{t('Website')}</h2>
+        <p className="muted">{t('Messages from the contact form, food delivery proofs and the blog.')}</p>
+        <div className="chip-row" style={{ margin: 0 }}>
+          <Link className="chip" to="/admin/site?tab=messages">{t('Messages')} {fwdArrow()}</Link>
+          <Link className="chip" to="/admin/site?tab=deliveries">{t('Food deliveries')} {fwdArrow()}</Link>
+          <Link className="chip" to="/admin/site?tab=blog">{t('Blog')} {fwdArrow()}</Link>
+          <Link className="chip" to="/admin/blog/new">+ {t('New post')}</Link>
+        </div>
+      </SketchCard>
+
       <SketchCard variant="c">
         <h2>{t('Tools')}</h2>
         <div className="chip-row">

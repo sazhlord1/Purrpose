@@ -1,3 +1,4 @@
+import path from 'node:path';
 import cors from '@fastify/cors';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { authenticate } from './auth.js';
@@ -23,7 +24,9 @@ import { registerBazaarCallback, registerBazaarRoutes } from './routes/bazaar.js
 import { registerBitpayReturn, registerBitpayRoutes } from './routes/bitpay.js';
 import { registerWalletRoutes } from './routes/wallet.js';
 import { makeCommitmentEngine } from './services/commitments.js';
-import { makeWebHandler, webReplies } from './web.js';
+import { isApiPath, makeWebHandler, webReplies } from './web.js';
+import { makeBlogHandler } from './blog.js';
+import { registerPublicSiteRoutes } from './routes/site.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const env = getEnv();
@@ -62,7 +65,8 @@ export async function buildApp(): Promise<FastifyInstance> {
       reply.header('Referrer-Policy', 'no-referrer');
       reply.header('Cross-Origin-Opener-Policy', 'same-origin');
       reply.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
-      reply.header('Cache-Control', 'no-store');
+      // Uploaded pictures/videos (public media) set their own long cache.
+      if (!reply.hasHeader('Cache-Control')) reply.header('Cache-Control', 'no-store');
     }
     if (isProd) reply.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     return payload;
@@ -93,12 +97,22 @@ export async function buildApp(): Promise<FastifyInstance> {
   // With WEB_DIST set, everything outside /api that isn't an API route is the web app.
   const landing = env.LANDING_DIST ? { dir: env.LANDING_DIST, hosts: (env.LANDING_HOSTS ?? '').split(',') } : undefined;
   const serveWeb = env.WEB_DIST ? makeWebHandler(env.WEB_DIST, landing) : null;
+  const blogHosts = (env.BLOG_HOSTS ?? '').split(',').filter(h => h.trim());
+  const blog = blogHosts.length
+    ? makeBlogHandler(getPrisma, { hosts: blogHosts, fontsDir: env.LANDING_DIST ? path.join(env.LANDING_DIST, 'fonts') : undefined })
+    : null;
   app.setNotFoundHandler(async (request, reply) => {
+    if (blog && blog.isBlogHost(request) && !isApiPath(request.url) && (await blog.serve(request, reply))) return reply;
     if (serveWeb && (await serveWeb(request, reply))) return reply;
     return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Not found' } });
   });
 
-  if (!serveWeb) app.get('/', async () => ({ ok: true, name: 'purrpose-api' }));
+  if (!serveWeb) {
+    app.get('/', async (request, reply) => {
+      if (blog && blog.isBlogHost(request) && (await blog.serve(request, reply))) return reply;
+      return { ok: true, name: 'purrpose-api' };
+    });
+  }
   app.get('/healthz', async () => ({ ok: true, serverTime: clock.now() }));
   app.get('/api/v1/healthz', async () => ({ ok: true, serverTime: clock.now() }));
 
@@ -110,6 +124,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await registerStripeWebhook(app);
   registerBazaarCallback(app);
   registerBitpayReturn(app);
+  registerPublicSiteRoutes(app);
 
   // Everything below requires a valid bearer token.
   await app.register(async function authenticatedScope(scope) {

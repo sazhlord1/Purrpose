@@ -29,6 +29,8 @@ const envSchema = z.object({
   /** Static landing page (apps/landing-ir) and the addresses that show it instead of the app. */
   LANDING_DIST: opt(z.string()),
   LANDING_HOSTS: z.string().default('purrpose.ir,www.purrpose.ir'),
+  /** The blog (server-rendered from BlogPost rows). Empty = no blog on this server. */
+  BLOG_HOSTS: z.string().default('blog.purrpose.ir'),
 
   /** Admin account bootstrap. The password is hashed on startup, never stored raw. */
   ADMIN_EMAIL: opt(z.string().email()),

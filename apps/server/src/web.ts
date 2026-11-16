@@ -112,7 +112,12 @@ export function makeWebHandler(distDir: string, landing?: { dir: string; hosts: 
     // The landing page is what should be found.
     if (site === app) reply.header('X-Robots-Tag', 'noindex, nofollow');
     const root = site.root;
-    const file = await fileAt(root, request.url);
+    let file = await fileAt(root, request.url);
+    // Landing pages without ".html": purrpose.ir/contact → contact.html.
+    if (!file && site === land) {
+      const clean = (request.url.split('?')[0] ?? '').replace(/\/+$/, '');
+      if (/^\/[a-z0-9-]+$/.test(clean)) file = await fileAt(root, `${clean}.html`);
+    }
     webReplies.set(reply, site.csp);
     if (file) {
       const ext = path.extname(file).toLowerCase();

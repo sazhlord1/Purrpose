@@ -396,3 +396,23 @@ export function witnessContactSchema() {
 export function isPhoneContact(contact: string | null | undefined): boolean {
   return typeof contact === 'string' && PHONE_RE.test(contact);
 }
+
+/** "Contact us" on purrpose.ir. */
+export const contactSchema = z.object({
+  name: z.string().trim().min(2, 'Write your name').max(80),
+  email: z.string().trim().toLowerCase().email('That email doesn’t look right').max(160),
+  kind: z.enum(['shelter', 'user', 'other']).default('other'),
+  message: z.string().trim().min(5, 'Write a few words').max(3000),
+});
+export type ContactInput = z.infer<typeof contactSchema>;
+
+/** A food delivery post (admin). */
+export const deliveryPostSchema = z.object({
+  title: z.string().trim().min(2).max(140),
+  shelter: z.string().trim().max(120).default(''),
+  summary: z.string().trim().max(200).default(''),
+  caption: z.string().trim().max(3000).default(''),
+  deliveredAt: z.string().datetime().optional(),
+  published: z.boolean().default(true),
+});
+export type DeliveryPostInput = z.infer<typeof deliveryPostSchema>;

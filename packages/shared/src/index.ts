@@ -10,3 +10,4 @@ export * from './habits.js';
 export * from './i18n.js';
 export * from './catsFa.js';
 export * from './catText.js';
+export * from './blog.js';

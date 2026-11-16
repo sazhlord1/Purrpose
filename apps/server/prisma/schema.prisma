@@ -344,3 +344,85 @@ model PhoneCode {
   attempts  Int      @default(0)
   sentAt    DateTime @default(now())
 }
+
+/// "Contact us" messages from the website (shelters, players, anyone), for the admin to answer.
+model ContactMessage {
+  id        String    @id @default(cuid())
+  name      String
+  email     String
+  /// shelter | user | other
+  kind      String    @default("other")
+  message   String
+  createdAt DateTime  @default(now())
+  /// Set when the admin marks it as answered.
+  handledAt DateTime?
+
+  @@index([createdAt])
+}
+
+/// A photo or video kept by the server: food deliveries to shelters and blog pictures.
+/// Bytes live in the database (small site, one server, no separate file store).
+model StoredMedia {
+  id        String   @id @default(cuid())
+  /// MIME type: image/jpeg|png|webp|gif, video/mp4|webm|quicktime
+  type      String
+  data      Bytes
+  size      Int
+  /// delivery | blog
+  purpose   String
+  createdAt DateTime @default(now())
+
+  deliveryItems DeliveryMedia[]
+
+  @@index([purpose, createdAt])
+}
+
+/// One food delivery to a shelter, shown with its photos and videos on purrpose.ir.
+model DeliveryPost {
+  id          String          @id @default(cuid())
+  title       String
+  caption     String          @default("")
+  /// e.g. "۲۰ کنسرو و ۵ کیلو غذای خشک"
+  summary     String          @default("")
+  shelter     String          @default("")
+  deliveredAt DateTime        @default(now())
+  published   Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  media       DeliveryMedia[]
+
+  @@index([published, deliveredAt])
+}
+
+model DeliveryMedia {
+  id      String       @id @default(cuid())
+  postId  String
+  post    DeliveryPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  mediaId String
+  media   StoredMedia  @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  order   Int          @default(0)
+
+  @@index([postId, order])
+}
+
+/// A blog post on blog.purrpose.ir. `content` is a list of blocks (see services/blog.ts), not
+/// HTML, so nothing written in the editor can inject markup into the public pages.
+model BlogPost {
+  id             String    @id @default(cuid())
+  slug           String    @unique
+  title          String
+  excerpt        String    @default("")
+  /// fa | en
+  lang           String    @default("fa")
+  coverMediaId   String?
+  content        Json
+  seoTitle       String    @default("")
+  seoDescription String    @default("")
+  tags           String[]  @default([])
+  published      Boolean   @default(false)
+  publishedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([published, publishedAt])
+}
+

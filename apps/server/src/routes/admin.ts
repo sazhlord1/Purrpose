@@ -13,6 +13,7 @@ import { bazaarAuthMode, bazaarEnabled, checkBazaarSetup, startBazaarConnect } f
 import { getEnv } from '../env.js';
 import { walletView } from '../services/wallet.js';
 import { parse } from '../validate.js';
+import { registerSiteAdminRoutes } from './site.js';
 
 const adminUsersQuery = z.object({
   q: z.string().max(100).optional(),
@@ -27,6 +28,7 @@ const adminUsersQuery = z.object({
 export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
   await app.register(async function adminScope(scope) {
     scope.addHook('onRequest', requireAdmin);
+    await registerSiteAdminRoutes(scope);
     const engine = makeCommitmentEngine(getPrisma(), clock);
 
     /**

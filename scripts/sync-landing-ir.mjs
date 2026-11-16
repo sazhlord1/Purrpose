@@ -15,6 +15,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, write
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { seoIr, sitemap } from './landing-ir-seo.mjs';
+import { addExtras, writeExtraPages } from './landing-ir-extras.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const src = path.resolve(process.argv[2] ?? path.join(repoRoot, '..', 'purrposelanding'), 'public');
@@ -74,6 +75,9 @@ if (/purrpose\.space|googleapis|gstatic/.test(html)) {
   throw new Error('Some purrpose.space or Google links are left in the page.');
 }
 
+// Leaderboard, monthly help, links to /deliveries, /contact and the blog.
+html = addExtras(html);
+
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 writeFileSync(path.join(out, 'index.html'), html);
@@ -95,3 +99,4 @@ cpSync(path.join(repoRoot, 'apps', 'web', 'public', 'favicon.ico'), path.join(ou
 writeFileSync(path.join(out, `${ENAMAD_CODE}.txt`), '');
 writeFileSync(path.join(out, 'robots.txt'), 'User-agent: *\nAllow: /\n\nSitemap: https://purrpose.ir/sitemap.xml\n');
 writeFileSync(path.join(out, 'sitemap.xml'), sitemap());
+writeExtraPages(out);
