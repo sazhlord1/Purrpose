@@ -76,7 +76,7 @@ function isStyled(b: BlogBlock): b is Styled {
 
 /** Drops empty blocks before saving (the server wants at least one item in a list). */
 function cleanBlocks(blocks: BlogBlock[]): BlogBlock[] {
-  return blocks.flatMap(b => {
+  return blocks.flatMap((b): BlogBlock[] => {
     if (b.type === 'list') {
       const items = b.items.map(i => i.trim()).filter(Boolean);
       return items.length ? [{ ...b, items }] : [];
