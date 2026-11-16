@@ -164,14 +164,23 @@ a {
   box-shadow: var(--shadow);
 }
 
+/* Focus: a soft see-through orange patch (like the open tab in the nav), not a dashed ring. */
 .btn:focus-visible,
-input:focus-visible,
-select:focus-visible,
 [role='button']:focus-visible,
 [role='radio']:focus-visible,
 [tabindex='0']:focus-visible {
-  outline: 2.5px dashed var(--accent-orange);
-  outline-offset: 3px;
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(232, 129, 58, 0.35);
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  background-color: rgba(232, 129, 58, 0.1);
+  box-shadow: 0 0 0 3px rgba(232, 129, 58, 0.28);
+  border-color: var(--accent-orange);
+  border-radius: 8px;
+  transition: background-color 140ms ease-out, box-shadow 140ms ease-out;
 }
 
 .btn-primary {
@@ -2359,3 +2368,59 @@ html[lang='fa'] .tour-body { line-height: 1.75; }
   text-align: start;
 }
 .bitpay-trust img { display: block; height: 72px; width: auto; }
+
+/* The ← back / close button at the top of a modal (the pact mode chooser). */
+.modal-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  padding: 4px 10px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.modal-back:hover { background: rgba(226, 135, 67, 0.15); }
+
+/* A rank card opened up close: the page behind blurs a touch and loses its colour. */
+.rank-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+  background: rgba(38, 32, 29, 0.28);
+  backdrop-filter: blur(3px) saturate(0.45);
+  -webkit-backdrop-filter: blur(3px) saturate(0.45);
+  cursor: zoom-out;
+}
+.rank-zoom-card {
+  position: relative;
+  width: min(92vw, calc(82vh * 0.8), 460px);
+}
+.rank-zoom-card .rank-card { filter: drop-shadow(0 18px 32px rgba(0, 0, 0, 0.35)); }
+.rank-zoom-card.is-locked .rank-card { filter: grayscale(1) brightness(0.92) drop-shadow(0 18px 32px rgba(0, 0, 0, 0.35)); }
+.rank-zoom-hint { color: #fff; font-size: 13px; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
+.rank-deck-card.is-current { cursor: zoom-in; }
+.bitpay-trust-fallback {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1.5px solid var(--ink);
+  border-radius: 12px;
+  background: var(--paper-raised);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 13px;
+  text-decoration: none;
+}

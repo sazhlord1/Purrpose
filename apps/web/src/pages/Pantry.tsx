@@ -422,6 +422,7 @@ export function Pantry() {
                   <p className="muted" style={{ fontSize: 12.5, marginTop: 10 }}>
                     {bitpayOn ? t('Paid by bank card through the Bitpay gateway.') : t('Paid securely through Cafe Bazaar.')}
                   </p>
+                  {bitpayOn && <BitpayTrust />}
                 </div>
               );
             })()}

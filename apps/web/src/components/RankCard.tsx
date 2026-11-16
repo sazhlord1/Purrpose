@@ -51,7 +51,7 @@ export function usesPhotoCard(): boolean {
 export const rankPhotoUrl = (rank: Rank) => `/img/ranks/rank${rank.level}.webp`;
 /** The cat-name ribbon at the top of the bottom panel (card 1 has one drawn in its picture). */
 const PHOTO_RIBBON = 'M72 318 h256 l-12 14 l12 14 h-256 l12 -14 Z';
-const PHOTO_BAR = { x: 70, y: 412, w: 260, h: 11 };
+const PHOTO_BAR = { x: 70, y: 406, w: 260, h: 10 };
 
 /** Every word on the card, with where it goes (shared by the SVG and the canvas). */
 export function rankCardTexts(rank: Rank, wins: number, catName: string, photo = usesPhotoCard()): RankCardText[] {
@@ -60,17 +60,17 @@ export function rankCardTexts(rank: Rank, wins: number, catName: string, photo =
   if (photo) {
     return [
       { x: 200, y: 338, size: 16, weight: 700, text: catName, fill: PAPER },
-      { x: 200, y: 381, size: 40, weight: 900, text: num(wins), fill: rank.dark },
-      { x: 200, y: 402, size: 15, weight: 600, text: t('pacts kept'), fill: INK },
+      { x: 200, y: 377, size: 38, weight: 900, text: num(wins), fill: rank.dark },
+      { x: 200, y: 397, size: 14.5, weight: 600, text: t('pacts kept'), fill: INK },
       {
         x: 200,
-        y: 441,
+        y: 432,
         size: 13,
         weight: 600,
         text: next ? t('{n} more to {rank}', { n: num(next.minWins - wins), rank: t(next.name) }) : t('The top rank!'),
         fill: INK,
       },
-      { x: 200, y: 459, size: 8.5, weight: 700, text: `${t('purrpose')} · ${IS_IR_EDITION ? 'purrpose.ir' : 'purrpose.space'}`, fill: rank.dark },
+      { x: 200, y: 451, size: 8, weight: 700, text: `${t('purrpose')} · ${IS_IR_EDITION ? 'purrpose.ir' : 'purrpose.space'}`, fill: rank.dark },
     ];
   }
   return [

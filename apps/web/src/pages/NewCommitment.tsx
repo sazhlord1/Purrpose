@@ -223,6 +223,7 @@ export function NewCommitment() {
           setChoosing(false);
         }}
         onClose={mode ? () => setChoosing(false) : undefined}
+        onBack={() => (window.history.length > 1 ? navigate(-1) : navigate('/'))}
       />
 
       {mode && !choosing && <Tour id="new" steps={newPactTour(mode)} />}

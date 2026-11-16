@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { AppIcon } from '@purrpose/cats';
 import { HONOR_STARTER_BONUS, HONOR_STARTER_COUNT, HONOR_STARTER_STAKE, type CommitmentMode } from '@purrpose/shared';
 import { CanTin } from '../doodles/index.js';
-import { t } from '../../i18n/index.js';
+import { backArrow, t } from '../../i18n/index.js';
 import { useBlockTours } from '../../lib/tour.js';
 import { useScrollLock } from '../../lib/scrollLock.js';
 
@@ -17,13 +17,15 @@ interface Props {
   onPick: (mode: CommitmentMode) => void;
   /** Closing without picking (only offered once a mode was picked before). */
   onClose?: () => void;
+  /** Leave the new-pact page altogether (the chooser is the first thing on it). */
+  onBack?: () => void;
 }
 
 /**
  * The first step of a new pact: strict (real food, a proof, a reviewer) or on your
  * word (PURR). Each option says in a few plain lines what it means.
  */
-export function PactModeChooser({ open, startersLeft, pantryEmpty, current, onPick, onClose }: Props) {
+export function PactModeChooser({ open, startersLeft, pantryEmpty, current, onPick, onClose, onBack }: Props) {
   const first = useRef<HTMLButtonElement>(null);
   useBlockTours('mode-chooser', open);
   useScrollLock(open);
@@ -31,11 +33,11 @@ export function PactModeChooser({ open, startersLeft, pantryEmpty, current, onPi
     if (!open) return undefined;
     first.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && onClose) onClose();
+      if (e.key === 'Escape') (onClose ?? onBack)?.();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  }, [open, onClose, onBack]);
 
   const honorLines = [
     t('You put PURR on the line. No money involved.'),
@@ -63,7 +65,7 @@ export function PactModeChooser({ open, startersLeft, pantryEmpty, current, onPi
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
-          onClick={onClose}
+          onClick={onClose ?? onBack}
         >
           <motion.div
             className="modal-card card card-a mode-modal"
@@ -76,6 +78,16 @@ export function PactModeChooser({ open, startersLeft, pantryEmpty, current, onPi
             exit={{ y: 10, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 380, damping: 30 }}
           >
+            {(onBack || onClose) && (
+              <button
+                type="button"
+                className="modal-back"
+                onClick={onClose ?? onBack}
+                aria-label={onClose ? t('Close') : t('Back')}
+              >
+                <span aria-hidden="true">{backArrow()}</span> {onClose ? t('Close') : t('Back')}
+              </button>
+            )}
             <h2 id="mode-title" className="modal-title">
               {t('Do you want this pact strict, or on your word?')}
             </h2>

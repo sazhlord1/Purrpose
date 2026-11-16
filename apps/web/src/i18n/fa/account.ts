@@ -372,4 +372,5 @@ export const ACCOUNT: Record<string, string> = {
   "Change": "عوض کن",
   "Bitpay trust badge": "نماد اعتماد بیت‌پی",
   "Payments by Bitpay, a licensed Iranian gateway.": "پرداخت‌ها از درگاه مجاز بیت‌پی انجام می‌شه.",
+  "Verified by Bitpay": "تأییدشده‌ی بیت‌پی",
 };

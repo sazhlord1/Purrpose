@@ -1,7 +1,39 @@
+import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, useState, type Ref } from 'react';
+import { useScrollLock } from '../lib/scrollLock.js';
 import { num, t } from '../i18n/index.js';
 import { RANKS, type Rank } from '../lib/ranks.js';
 import { RankCard } from './RankCard.js';
+
+/** The chains and padlock over a rank you haven't reached yet. */
+function RankLock({ rank: r }: { rank: Rank }) {
+  return (
+    <div className="rank-lock" aria-label={t('Locked: {n} kept pacts open it', { n: num(r.minWins) })}>
+      <svg className="rank-chains" viewBox="0 0 400 500" aria-hidden="true" preserveAspectRatio="none">
+        {[
+          [-20, 120, 420, 380],
+          [420, 120, -20, 380],
+        ].map(([x1, y1, x2, y2], i) => (
+          <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#5A5550" strokeWidth={14} strokeDasharray="22 8" strokeLinecap="round" />
+        ))}
+        {[
+          [-20, 120, 420, 380],
+          [420, 120, -20, 380],
+        ].map(([x1, y1, x2, y2], i) => (
+          <line key={`h${i}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#B9B2AA" strokeWidth={6} strokeDasharray="22 8" strokeLinecap="round" />
+        ))}
+      </svg>
+      <div className="rank-lock-badge">
+        <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true">
+          <rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="#F4C430" stroke="#26201D" strokeWidth="1.8" />
+          <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="#26201D" strokeWidth="1.8" />
+          <circle cx="12" cy="15.5" r="1.6" fill="#26201D" />
+        </svg>
+        <span>{t('{n} kept pacts to unlock', { n: num(r.minWins) })}</span>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Every rank card in a row you can swipe through, like a hand of cards. Your current rank
@@ -21,6 +53,15 @@ export function RankDeck({
 }) {
   const rowRef = useRef<HTMLDivElement>(null);
   const [shown, setShown] = useState(rank.level);
+  /** The card opened up close (tap the card in front). */
+  const [zoomed, setZoomed] = useState<Rank | null>(null);
+  useScrollLock(Boolean(zoomed));
+  useEffect(() => {
+    if (!zoomed) return undefined;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setZoomed(null);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [zoomed]);
 
   // Start on the current rank.
   useEffect(() => {
@@ -61,7 +102,8 @@ export function RankDeck({
               role="listitem"
               data-level={r.level}
               className={`rank-deck-card${locked ? ' is-locked' : ''}${current ? ' is-current' : ''}`}
-              onClick={() => go(r.level)}
+              onClick={() => (shown === r.level ? setZoomed(r) : go(r.level))}
+              aria-label={shown === r.level ? t('See it up close') : undefined}
             >
               <RankCard
                 ref={current ? cardRef : undefined}
@@ -70,36 +112,38 @@ export function RankDeck({
                 catName={catName(r)}
                 className="rank-card"
               />
-              {locked && (
-                <div className="rank-lock" aria-label={t('Locked: {n} kept pacts open it', { n: num(r.minWins) })}>
-                  <svg className="rank-chains" viewBox="0 0 400 500" aria-hidden="true" preserveAspectRatio="none">
-                    {[
-                      [-20, 120, 420, 380],
-                      [420, 120, -20, 380],
-                    ].map(([x1, y1, x2, y2], i) => (
-                      <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#5A5550" strokeWidth={14} strokeDasharray="22 8" strokeLinecap="round" />
-                    ))}
-                    {[
-                      [-20, 120, 420, 380],
-                      [420, 120, -20, 380],
-                    ].map(([x1, y1, x2, y2], i) => (
-                      <line key={`h${i}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#B9B2AA" strokeWidth={6} strokeDasharray="22 8" strokeLinecap="round" />
-                    ))}
-                  </svg>
-                  <div className="rank-lock-badge">
-                    <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true">
-                      <rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="#F4C430" stroke="#26201D" strokeWidth="1.8" />
-                      <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="#26201D" strokeWidth="1.8" />
-                      <circle cx="12" cy="15.5" r="1.6" fill="#26201D" />
-                    </svg>
-                    <span>{t('{n} kept pacts to unlock', { n: num(r.minWins) })}</span>
-                  </div>
-                </div>
-              )}
+              {locked && <RankLock rank={r} />}
             </div>
           );
         })}
       </div>
+      <AnimatePresence>
+        {zoomed && (
+          <motion.div
+            className="rank-zoom"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('Rank {n}: {name}', { n: num(zoomed.level), name: t(zoomed.name) })}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={() => setZoomed(null)}
+          >
+            <motion.div
+              className={`rank-zoom-card${zoomed.level > rank.level ? ' is-locked' : ''}`}
+              initial={{ scale: 0.82, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 10, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+            >
+              <RankCard rank={zoomed} wins={wins} catName={catName(zoomed)} className="rank-card" />
+              {zoomed.level > rank.level && <RankLock rank={zoomed} />}
+            </motion.div>
+            <span className="rank-zoom-hint">{t('Tap anywhere to close')}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="rank-dots" role="tablist" aria-label={t('All ranks')}>
         {RANKS.map(r => (
           <button

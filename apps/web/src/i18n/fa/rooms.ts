@@ -161,4 +161,6 @@ export const ROOMS: Record<string, string> = {
   'All ranks': 'همه‌ی رتبه‌ها',
   'Locked: {n} kept pacts open it': 'قفله: با {n} قرارِ برده باز می‌شه',
   '{n} kept pacts to unlock': 'قفله · {n} قرار برده لازمه',
+  'See it up close': 'از نزدیک ببین',
+  'Tap anywhere to close': 'برای بستن یه جا بزن',
 };
