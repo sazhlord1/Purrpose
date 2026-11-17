@@ -1,3 +1,4 @@
+import { BAZAAR_SKUS, type BazaarSku } from './store.js';
 import { z } from 'zod';
 import { CAT_IDS, COMMITMENT_MODES, COMMITMENT_STATUSES, CONSEQUENCE_TYPES, TRANSACTION_TYPES } from './enums.js';
 import { HONOR_MIN_STAKE, PROOF_AUDIO_TYPES, PROOF_IMAGE_TYPES, PROOF_MAX_AUDIO_BYTES, PROOF_MAX_IMAGE_BYTES } from './economy.js';
@@ -282,7 +283,8 @@ export const foodCheckoutSchema = z.object({
 export const confirmPaymentSchema = z.object({ sessionId: z.string().regex(/^cs_(test|live)_[A-Za-z0-9]+$/) });
 /** The Android app bought something through Cafe Bazaar: the server checks it with Bazaar and credits it once. */
 export const bazaarVerifySchema = z.object({
-  productId: z.enum(['food_meals', 'food_dry', 'food_vet', 'purr_150', 'purr_250', 'purr_500', 'purr_1000']),
+  /** Any product in BAZAAR_PRODUCTS (the 100 g / 250 g / care packs included). */
+  productId: z.enum(BAZAAR_SKUS as [BazaarSku, ...BazaarSku[]]),
   purchaseToken: z.string().trim().min(4).max(512).regex(/^\S+$/),
 });
 export type BazaarVerifyInput = z.infer<typeof bazaarVerifySchema>;

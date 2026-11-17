@@ -97,3 +97,16 @@ describe('topUpSchema', () => {
     expect(topUpSchema.safeParse({ creditType: 'PIXEL_DUST', amount: 1 }).success).toBe(false);
   });
 });
+
+describe('store products', () => {
+  it('every pack can be bought (Bazaar and Bitpay accept all product ids)', async () => {
+    const { BAZAAR_SKUS } = await import('../src/store.js');
+    const { bitpayStartSchema, bazaarVerifySchema } = await import('../src/schemas.js');
+    for (const sku of BAZAAR_SKUS) {
+      expect(bitpayStartSchema.safeParse({ productId: sku }).success).toBe(true);
+      expect(bazaarVerifySchema.safeParse({ productId: sku, purchaseToken: 'tok-1234' }).success).toBe(true);
+    }
+    expect(BAZAAR_SKUS).toContain('food_dry_250');
+    expect(BAZAAR_SKUS).toContain('food_vet_3');
+  });
+});
