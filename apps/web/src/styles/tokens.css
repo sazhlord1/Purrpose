@@ -2497,7 +2497,6 @@ html[lang='fa'] .tour-body { line-height: 1.75; }
 .cat-box { position: relative; margin: 0 auto 10px; overflow: hidden; }
 .cat-box-cat { position: absolute; left: 0; right: 0; display: flex; justify-content: center; }
 .cat-box-front { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 34%; }
-.cat-box::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3%; background: var(--paper); }
 
 /* ── Food stake picker ── */
 .food-stake-types { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
