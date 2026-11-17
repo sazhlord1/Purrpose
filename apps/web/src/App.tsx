@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MotionConfig } from 'framer-motion';
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { BrowserRouter, Link, NavLink, Route, Routes, useNavigate } from 'react-router-dom';
+import { BrowserRouter, NavLink, Route, Routes, useNavigate, useSearchParams } from 'react-router-dom';
 import { Home } from './pages/Home.js';
 import { NewCommitment } from './pages/NewCommitment.js';
 import { CommitmentDetail } from './pages/CommitmentDetail.js';
@@ -16,10 +16,14 @@ import { DevDrawer } from './components/DevDrawer.js';
 import { AdminOnly } from './components/AdminOnly.js';
 import { registerServiceWorker, useNotificationScheduler } from './lib/notifications.js';
 import { onReminderTap } from './lib/localReminders.js';
-import { useCommitments } from './lib/queries.js';
+import { Messages } from './pages/Messages.js';
+import { useCommitments, useMe } from './lib/queries.js';
+import { GlobalModals } from './components/popup/GlobalModals.js';
+import { startNewPact } from './lib/startFlows.js';
+import { notifyNewMessages } from './lib/localReminders.js';
 import { AppIcon } from '@purrpose/cats';
 import { LegalPage } from './pages/Legal.js';
-import { t } from './i18n/index.js';
+import { num, t } from './i18n/index.js';
 
 const Settings = lazy(() => import('./pages/Settings.js').then(m => ({ default: m.Settings })));
 const DesignSystem = lazy(() => import('./pages/DesignSystem.js').then(m => ({ default: m.DesignSystem })));
@@ -42,6 +46,29 @@ const queryClient = new QueryClient({
   },
 });
 
+/** A small envelope for Messages (the icon set has none). */
+function MailIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="24" height="24" className="nav-icon" aria-hidden>
+      <rect x="3" y="6" width="18" height="13" rx="2.5" fill="#FFF1C2" stroke="#26201D" strokeWidth="1.7" />
+      <path d="M3.8 7.2 L12 13.2 L20.2 7.2" fill="none" stroke="#26201D" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Old links to /new: open the new-pact card over the home screen. */
+function NewPactRoute() {
+  const navigate = useNavigate();
+  const me = useMe();
+  const [params] = useSearchParams();
+  useEffect(() => {
+    if (!me.data) return;
+    navigate('/', { replace: true });
+    startNewPact(me.data, params.get('cat') ?? undefined);
+  }, [Boolean(me.data)]);
+  return null;
+}
+
 function Shell() {
   const { ready } = useSession();
   // A witness opening their link should see the promise first, not the app's intro.
@@ -55,6 +82,11 @@ function Shell() {
   useNotificationScheduler(ready ? commitments.data?.commitments : undefined);
 
   const navigate = useNavigate();
+  const me = useMe(ready);
+  const unread = me.data?.unreadMessages ?? 0;
+  useEffect(() => {
+    void notifyNewMessages(me.data ? unread : undefined);
+  }, [unread, Boolean(me.data)]);
   useEffect(() => {
     void registerServiceWorker();
     // Android app: tapping a pact reminder opens that pact.
@@ -75,7 +107,9 @@ function Shell() {
                 <Route path="/pacts" element={<Pacts />} />
                 <Route path="/detective" element={<Detective />} />
                 <Route path="/focus" element={<Focus />} />
-                <Route path="/new" element={<NewCommitment />} />
+                <Route path="/new" element={<NewPactRoute />} />
+                <Route path="/new/classic" element={<NewCommitment />} />
+                <Route path="/messages" element={<Messages />} />
                 <Route path="/commitment/:id" element={<CommitmentDetail />} />
                 <Route path="/pantry" element={<Pantry />} />
                 <Route path="/impact" element={<Impact />} />
@@ -103,12 +137,6 @@ function Shell() {
               <AppIcon name="shop" size={24} className="nav-icon" />
               {t('Shop')}
             </NavLink>
-            <Link to="/new" className="nav-new" aria-label={t('New commitment')}>
-              {/* Drawn, not typed: a "+" character never sits in the exact middle of the circle. */}
-              <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden>
-                <path d="M12 4.5v15M4.5 12h15" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" fill="none" />
-              </svg>
-            </Link>
             <NavLink to="/pantry" className={({ isActive }) => (isActive ? 'active' : '')}>
               <AppIcon name="pantry" size={24} className="nav-icon" />
               {t('Pantry')}
@@ -117,7 +145,19 @@ function Shell() {
               <AppIcon name="impact" size={24} className="nav-icon" />
               {t('Impact')}
             </NavLink>
+            <NavLink to="/messages" className={({ isActive }) => (isActive ? 'active' : '')}>
+              <span className="nav-icon-wrap">
+                <MailIcon />
+                {unread > 0 && <span className="nav-badge">{unread > 9 ? '9+' : num(unread)}</span>}
+              </span>
+              {t('Messages')}
+            </NavLink>
+            <NavLink to="/settings" className={({ isActive }) => (isActive ? 'active' : '')} data-tour="home-settings">
+              <AppIcon name="settings" size={24} className="nav-icon" />
+              {t('Settings')}
+            </NavLink>
           </nav>
+          <GlobalModals />
           <DevDrawer />
         </>
       ) : (

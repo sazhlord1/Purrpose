@@ -10,7 +10,8 @@ export const transactionTypeSchema = z.enum(TRANSACTION_TYPES);
 export const commitmentModeSchema = z.enum(COMMITMENT_MODES);
 
 const MIN_DEADLINE_OFFSET_MS = 5 * 60_000;
-const MAX_DEADLINE_OFFSET_MS = 30 * 24 * 3_600_000;
+/** Pacts can run up to a year. */
+export const MAX_DEADLINE_OFFSET_MS = 366 * 24 * 3_600_000;
 
 export function createCommitmentSchema(nowMs: number) {
   return z.object({
@@ -23,7 +24,7 @@ export function createCommitmentSchema(nowMs: number) {
         message: `deadline must be at least ${MIN_DEADLINE_OFFSET_MS / 60_000} minutes in the future`,
       })
       .refine(value => Date.parse(value) <= nowMs + MAX_DEADLINE_OFFSET_MS, {
-        message: 'deadline must be within 30 days',
+        message: 'deadline must be within a year',
       }),
     catId: catIdSchema,
     /**
@@ -154,6 +155,8 @@ export const meResponseSchema = z.object({
   purrStaked: z.number().int().optional(),
   /** Set until the user has seen the welcome-gift message. */
   welcomePurr: z.number().int().nullable().optional(),
+  /** Unread messages in the inbox. */
+  unreadMessages: z.number().int().optional(),
   unlockedCatIds: z.array(catIdSchema),
   ownedItemIds: z.array(itemIdSchema),
   loadout: loadoutSchema,
@@ -273,7 +276,7 @@ export const checkoutSchema = z.object({ packId: z.string().min(1).max(40) });
 /** Buying real food for the pantry (Stripe). */
 export const foodCheckoutSchema = z.object({
   creditType: consequenceTypeSchema,
-  quantity: z.number().int().min(1).max(50),
+  quantity: z.number().int().min(1).max(400),
 });
 /** Back from Stripe Checkout: settle that session. */
 export const confirmPaymentSchema = z.object({ sessionId: z.string().regex(/^cs_(test|live)_[A-Za-z0-9]+$/) });

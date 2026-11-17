@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { foodName, t } from '../i18n/index.js';
+import { foodAmount, t } from '../i18n/index.js';
 import { api } from '../lib/api.js';
 import { purrPackById, type ConsequenceType } from '@purrpose/shared';
 
@@ -29,7 +29,7 @@ export function CheckoutReturn() {
     window.history.replaceState(null, '', url.pathname + url.search + url.hash);
     if (result === 'ok') {
       if (kind === 'purr') setText(t('Payment received: +{n} PURR.', { n: purrPackById(item)?.purr ?? 0 }));
-      else setText(t('Payment received: {n} × {food} added to your pantry.', { n, food: foodName(item as ConsequenceType, true) }));
+      else setText(t('Payment received: {food} added to your pantry.', { food: foodAmount(item as ConsequenceType, n) }));
       for (const key of ['me', 'shop', 'history']) void qc.invalidateQueries({ queryKey: [key] });
     } else if (result === 'failed') {
       setText(t('The payment was not completed. If money was taken from your card, the bank returns it within 72 hours.'));
@@ -67,7 +67,7 @@ export function CheckoutReturn() {
             const purr = purrPackById(res.item)?.purr ?? 0;
             setText(t('Payment received: +{n} PURR.', { n: purr }));
           } else {
-            setText(t('Payment received: {n} × {food} added to your pantry.', { n: res.quantity, food: foodName(res.item as ConsequenceType, true) }));
+            setText(t('Payment received: {food} added to your pantry.', { food: foodAmount(res.item as ConsequenceType, res.quantity) }));
           }
           refresh();
           return;

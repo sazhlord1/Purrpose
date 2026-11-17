@@ -8,6 +8,7 @@ import { nameSchema } from '@purrpose/shared';
 import { ensureWelcomePurr, honorStaked } from '../services/purr.js';
 import { ownedItemIds, unlockedCatIds, userLoadout } from '../services/shop.js';
 import { walletView } from '../services/wallet.js';
+import { unreadCount } from '../services/inbox.js';
 
 export function registerMeRoutes(app: FastifyInstance): void {
   app.get('/api/v1/me', async request => {
@@ -26,6 +27,7 @@ export function registerMeRoutes(app: FastifyInstance): void {
       userLoadout(prisma, userId, request.role),
       honorStaked(prisma, userId),
     ]);
+    const unreadMessages = await unreadCount(prisma, userId);
     if (!user) throw new AppError('NOT_FOUND', undefined, 'User not found');
     const welcome = user.welcomeSeenAt
       ? null
@@ -43,6 +45,7 @@ export function registerMeRoutes(app: FastifyInstance): void {
       purr: user.purrBalance,
       purrStaked,
       welcomePurr: welcome?.amount ?? null,
+      unreadMessages,
       unlockedCatIds: cats,
       ownedItemIds: items,
       loadout,

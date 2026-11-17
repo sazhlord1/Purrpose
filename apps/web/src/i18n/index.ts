@@ -1,4 +1,4 @@
-import { getLocale, localDigits, localizeCats, registerTranslations, setLocale, t as t2, type Locale } from '@purrpose/shared';
+import { DRY_FOOD_GRAMS_PER_UNIT, getLocale, localDigits, localizeCats, num, registerTranslations, setLocale, t as t2, type Locale } from '@purrpose/shared';
 import { FA } from './fa/index.js';
 import { IS_IR_EDITION } from '../lib/edition.js';
 
@@ -109,6 +109,31 @@ function startPersianDigits(): void {
 export function foodName(type: 'MEALS' | 'DRY_FOOD' | 'VET_CARE', lower = false): string {
   const en = { MEALS: 'Cat Meals', DRY_FOOD: 'Dry Food', VET_CARE: 'Vet Care' }[type];
   return t2(lower ? en.toLowerCase() : en);
+}
+
+/**
+ * An amount of pantry food in words. Dry food is stored in 50 g units and vet care in
+ * care shares (a quarter of a visit each), so "6 dry food" reads "300 g dry food".
+ */
+export function foodAmount(type: 'MEALS' | 'DRY_FOOD' | 'VET_CARE', units: number): string {
+  const n = (v: number) => num(Math.round(v * 100) / 100);
+  if (type === 'DRY_FOOD') {
+    const grams = units * DRY_FOOD_GRAMS_PER_UNIT;
+    return grams >= 1000 ? t2('{n} kg dry food', { n: n(grams / 1000) }) : t2('{n} g dry food', { n: n(grams) });
+  }
+  if (type === 'VET_CARE') return t2('{n} care shares', { n: n(units) });
+  return t2('{n} {food}', { n: n(units), food: foodName(type) });
+}
+
+/** Just the amount part ("250 g", "3 shares", "2"), for places that show the food name separately. */
+export function foodQty(type: 'MEALS' | 'DRY_FOOD' | 'VET_CARE', units: number): string {
+  const n = (v: number) => num(Math.round(v * 100) / 100);
+  if (type === 'DRY_FOOD') {
+    const grams = units * DRY_FOOD_GRAMS_PER_UNIT;
+    return grams >= 1000 ? t2('{n} kg', { n: n(grams / 1000) }) : t2('{n} g', { n: n(grams) });
+  }
+  if (type === 'VET_CARE') return t2('{n} shares', { n: n(units) });
+  return n(units);
 }
 
 /** Locale for Intl / toLocaleString: Persian (Solar Hijri calendar) or the browser default. */

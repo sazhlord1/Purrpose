@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ambient } from '../lib/ambient.js';
 import { useQueryClient } from '@tanstack/react-query';
+import { startNewPact } from '../lib/startFlows.js';
 import { Link } from 'react-router-dom';
 import { AppIcon, CatScene } from '@purrpose/cats';
 import { catById, now } from '@purrpose/shared';
@@ -13,7 +14,7 @@ import { fmtRemaining } from '../lib/format.js';
 import { catNameOf, moodLabel, sceneCaption } from '../lib/labels.js';
 import { notifyFailure } from '../lib/notifications.js';
 import { useCommitments, useMe } from '../lib/queries.js';
-import { fwdArrow, t } from '../i18n/index.js';
+import { fwdArrow, t, num } from '../i18n/index.js';
 import { Tour } from '../components/Tour.js';
 import { pactsTour } from '../lib/tours.js';
 
@@ -82,16 +83,16 @@ export function Pacts() {
         <BackLink />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <h1 style={{ margin: 0 }}>{t('Commitments')}</h1>
+          <DoodleButton variant="primary" onClick={() => startNewPact(me.data)}>
+            {t('+ New pact')}
+          </DoodleButton>
         </div>
         <div className="chip-row" aria-label={t('Summary')} data-tour="pacts-summary">
           <span className="chip" style={{ background: 'var(--paper-raised)', fontWeight: 600 }}>
-            {t('{n} active', { n: active.length })}
+            {t('{n} active pacts', { n: num(active.length) })}
           </span>
           <span className="chip" style={{ color: 'var(--stamp-red)', fontWeight: 600 }}>
             {t('{n} meals at stake', { n: meals?.stakedActive ?? 0 })}
-          </span>
-          <span className="chip" style={{ color: '#2E6930', fontWeight: 600 }}>
-            {t('pantry: {n}', { n: meals?.available ?? 0 })}
           </span>
           <Link to="/shop" className="chip" style={{ textDecoration: 'none', fontWeight: 600 }}>
             <AppIcon name="purr" size={16} /> {t('{n} PURR', { n: me.data?.purr ?? 0 })}
@@ -127,7 +128,7 @@ export function Pacts() {
                 {t('Make a commitment to give it a better life!')}
               </p>
               <div style={{ marginTop: 14 }}>
-                <DoodleButton href="/new" variant="primary" size="big">
+                <DoodleButton onClick={() => startNewPact(me.data)} variant="primary" size="big">
                   {t('+ New Commitment')}
                 </DoodleButton>
               </div>
@@ -176,7 +177,7 @@ export function Pacts() {
             )}
 
             <div style={{ marginTop: 14 }}>
-              <DoodleButton href="/new" variant="primary" size="big">
+              <DoodleButton onClick={() => startNewPact(me.data)} variant="primary" size="big">
                 {t('+ New Commitment')}
               </DoodleButton>
             </div>

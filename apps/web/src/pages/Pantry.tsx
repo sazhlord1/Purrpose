@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type FC } from 'react';
 import {
-  BAZAAR_FOOD_SKU,
+  BAZAAR_PRODUCTS,
+  FOOD_PACKS,
   FOOD_PRICES,
-  FOOD_PRICES_IRT,
   usd,
+  type BazaarSku,
   type ConsequenceType,
   type HistoryResponse,
 } from '@purrpose/shared';
@@ -18,10 +19,11 @@ import { IS_IR_EDITION } from '../lib/edition.js';
 import { WebPayNote } from '../components/WebPayNote.js';
 import { BitpayTrust } from '../components/BitpayTrust.js';
 import { toman } from '../lib/format.js';
+import { packLabel, priceRange } from '../lib/food.js';
 import { TestCardNote } from '../components/TestCardNote.js';
 import { useMe } from '../lib/queries.js';
 import { fmtDate } from '../lib/format.js';
-import { foodName, fwdArrow, t } from '../i18n/index.js';
+import { foodAmount, foodName, foodQty, fwdArrow, t } from '../i18n/index.js';
 import {
   AmountPicker,
   AnimatedNumber,
@@ -73,8 +75,7 @@ const purchaseIcon = (p: Purchase): IconName =>
   p.kind === 'food' ? (CREDIT_ICON[p.item as ConsequenceType] ?? 'meals') : 'purr';
 function purchaseName(p: Purchase): string {
   if (p.kind === 'food') {
-    const name = foodName(p.item as ConsequenceType);
-    return p.quantity > 1 ? t('{food} × {n}', { food: name, n: p.quantity }) : name;
+    return foodAmount(p.item as ConsequenceType, p.quantity);
   }
   return t('{n} PURR', { n: Number(p.item.replace('purr_', '')) || 0 });
 }
@@ -128,7 +129,7 @@ export function Pantry() {
         body: { creditType, amount },
       }),
     onSuccess: (res, creditType) => {
-      setNote(t('{food} topped up to {n}.', { food: foodName(creditType), n: res.amount }));
+      setNote(t('{food} topped up to {n}.', { food: foodName(creditType), n: foodQty(creditType, res.amount) }));
       setSelectedItem(null);
       void qc.invalidateQueries({ queryKey: ['me'] });
       void qc.invalidateQueries({ queryKey: ['history'] });
@@ -162,11 +163,12 @@ export function Pantry() {
       if (done.some(d => d.credited)) refreshFood();
     });
   }, [canBuyBazaar]);
+  const [pack, setPack] = useState<BazaarSku | null>(null);
   const buyBazaarFood = useMutation({
-    mutationFn: (creditType: ConsequenceType) =>
-      bitpayOn ? payWithBitpay(BAZAAR_FOOD_SKU[creditType]) : buyWithBazaar(BAZAAR_FOOD_SKU[creditType]),
-    onSuccess: (_res, creditType) => {
-      setNote(t('{food}: one more in your pantry. Thank you!', { food: foodName(creditType) }));
+    mutationFn: (sku: BazaarSku) => (bitpayOn ? payWithBitpay(sku) : buyWithBazaar(sku)),
+    onSuccess: (_res, sku) => {
+      const p = BAZAAR_PRODUCTS[sku];
+      if (p.kind === 'food') setNote(t('{food} added to your pantry. Thank you!', { food: foodAmount(p.item, p.quantity) }));
       refreshFood();
     },
     onError: e => {
@@ -178,6 +180,7 @@ export function Pantry() {
 
   const openItemDetail = (item: PantryItemMeta) => {
     setAmount(canBuy ? 1 : 10);
+    setPack(item.creditType ? (FOOD_PACKS[item.creditType][0] ?? null) : null);
     setNote(null);
     setNeedsAccount(false);
     setSelectedItem(item);
@@ -282,21 +285,24 @@ export function Pantry() {
                 </span>
                 <span style={{ fontSize: 14, color: 'var(--ink-soft, inherit)', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
                   <span>
-                    {t('at stake:')} <strong>{b.stakedActive}</strong>
+                    {t('at stake:')} <strong>{foodQty(b.creditType, b.stakedActive)}</strong>
                   </span>
                   <span>
-                    {t('available:')} <strong>{b.available}</strong>
+                    {t('available:')} <strong>{foodQty(b.creditType, b.available)}</strong>
                   </span>
                 </span>
                 {IS_IR_EDITION && (
                   <span className="pantry-price">
-                    <strong>{toman(FOOD_PRICES_IRT[b.creditType])}</strong>
-                    <span>{{ can: t('per can'), kg: t('per kg'), visit: t('per visit') }[FOOD_PRICES[b.creditType].unit]}</span>
+                    <strong>{priceRange(b.creditType)}</strong>
                   </span>
                 )}
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 'none' }}>
-                <AnimatedNumber value={b.amount} className="hand" style={{ fontSize: 26, color: meta.accent }} />
+                {b.creditType === 'MEALS' ? (
+                  <AnimatedNumber value={b.amount} className="hand" style={{ fontSize: 26, color: meta.accent }} />
+                ) : (
+                  <span className="hand" style={{ fontSize: 19, color: meta.accent, whiteSpace: 'nowrap' }}>{foodQty(b.creditType, b.amount)}</span>
+                )}
                 <button
                   className="chip chip-active"
                   aria-label={t('Top up {food}', { food: foodName(b.creditType) })}
@@ -322,8 +328,7 @@ export function Pantry() {
         {recent.map(e => (
           <div className="row" key={e.id}>
             <span>
-              <AppIcon name={CREDIT_ICON[e.creditType]} size={16} /> {e.amount > 0 ? e.amount : ''}{' '}
-              {foodName(e.creditType)}
+              <AppIcon name={CREDIT_ICON[e.creditType]} size={16} /> {foodAmount(e.creditType, Math.abs(e.amount))}
               {e.type === 'FAILURE_DEDUCTION' && ` — ${t('fed a cat')}`}
               {e.type === 'TOPUP' && ` — ${t('top-up')}`}
               {e.type === 'STARTER_GRANT' && ` — ${t('starter pantry')}`}
@@ -365,12 +370,12 @@ export function Pantry() {
             <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
               <span className="chip chip-active">{selectedItem.badge}</span>
               {selectedItem.stock !== undefined && (
-                <span className="chip">{t('In Pantry: {n}', { n: selectedItem.stock })}</span>
+                <span className="chip">{t('In Pantry: {n}', { n: selectedItem.creditType ? foodQty(selectedItem.creditType, selectedItem.stock) : selectedItem.stock })}</span>
               )}
             </div>
             {selectedItem.creditType && canBuy && (() => {
               const price = FOOD_PRICES[selectedItem.creditType as ConsequenceType];
-              const unit = { can: t('per can'), kg: t('per kg'), visit: t('per visit') }[price.unit];
+              const unit = t('per {unit}', { unit: foodQty(selectedItem.creditType as ConsequenceType, 1) });
               return (
                 <div style={{ width: '100%', marginTop: 8 }}>
                   {shop.data?.paymentsTest && <TestCardNote />}
@@ -378,6 +383,7 @@ export function Pantry() {
                     <span className="ltr">{usd(price.cents)}</span> {unit}
                   </p>
                   <AmountPicker value={amount} onChange={setAmount} max={price.maxQty} />
+                  <p className="muted" style={{ margin: '6px 0 0' }}>{foodAmount(selectedItem.creditType as ConsequenceType, amount)}</p>
                   {note && (
                     <p className="form-error" role="status" style={{ marginTop: 10 }}>
                       {note} {needsAccount && <Link to="/login">{t('Create account / Sign in')}</Link>}
@@ -402,20 +408,37 @@ export function Pantry() {
             })()}
             {selectedItem.creditType && canBuyBazaar && (() => {
               const creditType = selectedItem.creditType as ConsequenceType;
-              const unit = { can: t('per can'), kg: t('per kg'), visit: t('per visit') }[FOOD_PRICES[creditType].unit];
+              const packs = FOOD_PACKS[creditType];
+              const chosen = pack && packs.includes(pack) ? pack : packs[0]!;
               return (
                 <div style={{ width: '100%', marginTop: 8 }}>
-                  <p style={{ margin: '0 0 8px', fontWeight: 700 }}>
-                    {toman(FOOD_PRICES_IRT[creditType])} {unit}
-                  </p>
+                  {packs.length > 1 && <p className="muted" style={{ margin: '0 0 8px' }}>{t('How much?')}</p>}
+                  <div className="pack-grid" role="radiogroup" aria-label={t('How much?')}>
+                    {packs.map(sku => (
+                      <button
+                        key={sku}
+                        type="button"
+                        role="radio"
+                        aria-checked={sku === chosen}
+                        className={`pack-option ${sku === chosen ? 'on' : ''}`}
+                        onClick={() => setPack(sku)}
+                      >
+                        <strong>{packLabel(sku)}</strong>
+                        <span>{toman(BAZAAR_PRODUCTS[sku].toman)}</span>
+                        {creditType === 'VET_CARE' && (
+                          <em>{t('{n}% of a vet visit', { n: BAZAAR_PRODUCTS[sku].quantity * 25 })}</em>
+                        )}
+                      </button>
+                    ))}
+                  </div>
                   {note && (
                     <p className="form-error" role="status" style={{ marginTop: 10 }}>
                       {note} {needsAccount && <Link to="/login">{t('Create account / Sign in')}</Link>}
                     </p>
                   )}
                   <div style={{ marginTop: 14, display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-                    <DoodleButton variant="primary" size="big" disabled={buyBazaarFood.isPending} onClick={() => buyBazaarFood.mutate(creditType)}>
-                      {buyBazaarFood.isPending ? '…' : t('Buy one · {price}', { price: toman(FOOD_PRICES_IRT[creditType]) })}
+                    <DoodleButton variant="primary" size="big" disabled={buyBazaarFood.isPending} onClick={() => buyBazaarFood.mutate(chosen)}>
+                      {buyBazaarFood.isPending ? '…' : t('Buy · {price}', { price: toman(BAZAAR_PRODUCTS[chosen].toman) })}
                     </DoodleButton>
                     <DoodleButton onClick={() => setSelectedItem(null)}>{t('Close')}</DoodleButton>
                   </div>

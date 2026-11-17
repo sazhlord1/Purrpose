@@ -20,7 +20,8 @@ function withParts(template: string, parts: Record<string, ReactNode>): ReactNod
   });
 }
 
-export function Login() {
+/** The sign-in form itself (mobile number in the Iranian edition, email + Google elsewhere). Used by the page and the pop-up. */
+export function LoginPanel() {
   const me = useMe();
   const isGuest = me.data ? isGuestAccount(me.data.user) : true;
   // Iranian edition: a mobile number + SMS code is the main way in (email stays for the admin).
@@ -71,32 +72,8 @@ export function Login() {
     }
   };
 
-  if (me.data && !isGuestAccount(me.data.user)) {
-    return (
-      <main>
-        <h1>{t("You're signed in")}</h1>
-        <p className="muted">
-          {withParts(t('as {email}'), { email: <span className="ltr">{me.data.user.email || me.data.user.phone}</span> })}
-        </p>
-        {me.data.user.role === 'ADMIN' && (
-          <DoodleButton href="/admin" variant="primary">
-            {t('Open the admin panel')}
-          </DoodleButton>
-        )}
-        <DoodleButton href="/settings">{t('Go to settings')}</DoodleButton>
-      </main>
-    );
-  }
-
   return (
-    <main>
-      <h1>{isGuest ? t('Keep your cats safe') : t('Welcome back')}</h1>
-      <p className="muted">
-        {t(
-          'Sign in to save your progress and pick it up on any device. Everything you did here as a guest — pacts, pantry, PURR, cats and items — comes with you into your account.',
-        )}
-      </p>
-
+    <>
       {phoneFirst && (
         <SketchCard variant="a">
           <PhoneLogin initialPhone={params.get('phone')?.trim().slice(0, 20) ?? ''} />
@@ -176,6 +153,39 @@ export function Login() {
           privacy: <a href="/privacy">{t('Privacy Policy')}</a>,
         })}
       </p>
+    </>
+  );
+}
+
+export function Login() {
+  const me = useMe();
+  const isGuest = me.data ? isGuestAccount(me.data.user) : true;
+  if (me.data && !isGuestAccount(me.data.user)) {
+    return (
+      <main>
+        <h1>{t("You're signed in")}</h1>
+        <p className="muted">
+          {withParts(t('as {email}'), { email: <span className="ltr">{me.data.user.email || me.data.user.phone}</span> })}
+        </p>
+        {me.data.user.role === 'ADMIN' && (
+          <DoodleButton href="/admin" variant="primary">
+            {t('Open the admin panel')}
+          </DoodleButton>
+        )}
+        <DoodleButton href="/settings">{t('Go to settings')}</DoodleButton>
+      </main>
+    );
+  }
+
+  return (
+    <main>
+      <h1>{isGuest ? t('Keep your cats safe') : t('Welcome back')}</h1>
+      <p className="muted">
+        {t(
+          'Sign in to save your progress and pick it up on any device. Everything you did here as a guest — pacts, pantry, PURR, cats and items — comes with you into your account.',
+        )}
+      </p>
+      <LoginPanel />
       <p className="muted">
         <Link to="/">
           {backArrow()} {t('back home')}

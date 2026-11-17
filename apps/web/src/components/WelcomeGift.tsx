@@ -6,6 +6,8 @@ import { api } from '../lib/api.js';
 import { useMe } from '../lib/queries.js';
 import { useReducedMotion } from '../lib/useReducedMotion.js';
 import { t } from '../i18n/index.js';
+import { isGuestAccount } from '../lib/auth.js';
+import { IS_IR_EDITION } from '../lib/edition.js';
 
 const SHOW_MS = 6000;
 
@@ -19,7 +21,10 @@ export function WelcomeGift() {
   const qc = useQueryClient();
   const reduced = useReducedMotion();
   const [closed, setClosed] = useState(false);
-  const amount = me.data?.welcomePurr ?? null;
+  // Iranian edition: the gift is announced when someone signs in, not to a guest
+  // (who'd see it again after every sign-out).
+  const guestHere = IS_IR_EDITION && (!me.data || isGuestAccount(me.data.user));
+  const amount = guestHere ? null : (me.data?.welcomePurr ?? null);
   const open = amount !== null && !closed;
   const marked = useRef(false);
 

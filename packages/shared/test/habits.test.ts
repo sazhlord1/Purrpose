@@ -25,7 +25,9 @@ describe('habit lock math', () => {
     expect(createHabitSchema.safeParse(base).success).toBe(true);
     expect(createHabitSchema.safeParse({ ...base, maxSlips: 1 }).success).toBe(false);
     expect(createHabitSchema.safeParse({ ...base, maxSlips: 11 }).success).toBe(false);
-    expect(createHabitSchema.safeParse({ ...base, durationDays: 10 }).success).toBe(false);
+    expect(createHabitSchema.safeParse({ ...base, durationDays: 10 }).success).toBe(true);
+    expect(createHabitSchema.safeParse({ ...base, durationDays: 2 }).success).toBe(false);
+    expect(createHabitSchema.safeParse({ ...base, durationDays: 366 }).success).toBe(false);
   });
 
   it('the detective gets harsher as the slips add up', () => {

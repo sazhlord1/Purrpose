@@ -71,8 +71,8 @@ describe.skipIf(!dbReady)('Purrpose API', () => {
     const { token } = await newSession();
     const me = (await api('GET', '/api/v1/me', { token })).json();
     expect(balanceOf(me.balances, 'MEALS')).toBe(10);
-    expect(balanceOf(me.balances, 'DRY_FOOD')).toBe(2);
-    expect(balanceOf(me.balances, 'VET_CARE')).toBe(1);
+    expect(balanceOf(me.balances, 'DRY_FOOD')).toBe(40);
+    expect(balanceOf(me.balances, 'VET_CARE')).toBe(4);
     for (const b of me.balances) {
       expect(b.available).toBe(b.amount);
       expect(b.stakedActive).toBe(0);

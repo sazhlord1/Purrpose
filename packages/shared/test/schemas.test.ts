@@ -58,7 +58,7 @@ describe('createCommitmentSchema', () => {
     });
     const tooFar = schema.safeParse({
       title: 'x',
-      deadlineISO: new Date(now + 31 * 24 * 3_600_000).toISOString(),
+      deadlineISO: new Date(now + 367 * 24 * 3_600_000).toISOString(),
       catId: 'black',
       consequenceType: 'MEALS',
       consequenceAmount: 1,

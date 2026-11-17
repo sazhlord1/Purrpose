@@ -24,7 +24,7 @@ function messageFor(kind: Kind, c: { id: string; title: string; catId: string },
   };
 }
 
-async function sendToUser(
+export async function sendToUser(
   prisma: PrismaClient,
   keys: VapidKeys,
   userId: string,

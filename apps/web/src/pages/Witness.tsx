@@ -10,7 +10,7 @@ import { returnAfterLogin } from '../lib/auth.js';
 import { catNameOf } from '../lib/labels.js';
 import { useMe } from '../lib/queries.js';
 import { ProofVoice } from '../components/pact/ProofVoice.js';
-import { fmtDateTime, foodName, t } from '../i18n/index.js';
+import { fmtDateTime, foodAmount, t } from '../i18n/index.js';
 
 /**
  * What a witness sees when they open the link: the promise, the proof, and two
@@ -67,7 +67,7 @@ export function Witness() {
   }
 
   const owner = w.ownerName ?? t('Your friend');
-  const stake = t('{n} {food}', { n: w.stakeLabel.amount, food: foodName(w.stakeLabel.type) });
+  const stake = foodAmount(w.stakeLabel.type, w.stakeLabel.amount);
   const signedInEmail = me.data?.user.email || me.data?.user.phone || null;
   const witnessByPhone = isPhoneContact(w.witnessEmail);
   const decided = w.status !== 'ACTIVE';

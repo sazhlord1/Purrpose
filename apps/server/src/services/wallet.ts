@@ -4,8 +4,8 @@ import type { PrismaClient, Prisma } from '@prisma/client';
 
 export const STARTER_GRANT: Array<{ creditType: ConsequenceType; amount: number }> = [
   { creditType: 'MEALS', amount: 10 },
-  { creditType: 'DRY_FOOD', amount: 2 },
-  { creditType: 'VET_CARE', amount: 1 },
+  { creditType: 'DRY_FOOD', amount: 40 }, // 2 kg in 50 g units
+  { creditType: 'VET_CARE', amount: 4 }, // one visit in care shares
 ];
 
 const ALL_TYPES: ConsequenceType[] = ['MEALS', 'DRY_FOOD', 'VET_CARE'];

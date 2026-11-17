@@ -84,7 +84,7 @@ describe.skipIf(!dbReady)('website content', () => {
     await mk('Sara', 'Karimi', 3);
     const ali = await mk('Ali', 'Rezaei', 5);
     await prisma.creditTransaction.create({ data: { userId: ali.id, type: 'FAILURE_DEDUCTION', creditType: 'MEALS', amount: 4 } });
-    await prisma.creditTransaction.create({ data: { userId: ali.id, type: 'FAILURE_DEDUCTION', creditType: 'DRY_FOOD', amount: 2 } });
+    await prisma.creditTransaction.create({ data: { userId: ali.id, type: 'FAILURE_DEDUCTION', creditType: 'DRY_FOOD', amount: 40 } });
     await prisma.creditTransaction.create({ data: { userId: ali.id, type: 'TOPUP', creditType: 'MEALS', amount: 9 } });
 
     const res = await call('GET', '/api/v1/public/site');
@@ -175,5 +175,31 @@ describe.skipIf(!dbReady)('website content', () => {
     const id = created.json().post.id;
     await call('POST', `/api/v1/admin/blog/${id}`, admin, { ...post, published: false });
     expect((await call('GET', `/${encodeURIComponent(post.slug)}`, undefined, undefined, 'blog.purrpose.ir')).statusCode).toBe(404);
+  });
+});
+
+describe.skipIf(!dbReady)('inbox', () => {
+  beforeAll(async () => {
+    app = await buildApp();
+  });
+  afterAll(async () => {
+    await app?.close();
+  });
+  beforeEach(async () => {
+    await wipeDatabase(prisma);
+  });
+
+  it('greets accounts, not guests, and delivers team messages', async () => {
+    const guest = (await call('POST', '/api/v1/session')).json().token;
+    expect((await call('GET', '/api/v1/inbox', guest)).json()).toMatchObject({ messages: [], guest: true });
+
+    const user = await prisma.user.create({ data: { email: 'reader@t.dev', firstName: 'Reader' } });
+    const admin = await adminToken();
+    const sent = await call('POST', '/api/v1/admin/messages', admin, { title: 'سلام', body: 'یه خبر خوب', userId: user.id });
+    expect(sent.json()).toEqual({ sent: 1 });
+    expect((await call('POST', '/api/v1/admin/messages', admin, { title: 'همه', body: 'برای همه' })).json().sent).toBe(2); // reader + admin
+
+    const rows = await prisma.inboxMessage.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'asc' } });
+    expect(rows.map(r => r.title)).toEqual(['سلام', 'همه']);
   });
 });

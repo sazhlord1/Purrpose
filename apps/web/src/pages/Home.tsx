@@ -1,9 +1,11 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { openLogin, openPantryPeek } from '../lib/modals.js';
+import { startNewPact } from '../lib/startFlows.js';
 import { isGuestAccount } from '../lib/auth.js';
 import { AppIcon } from '@purrpose/cats';
 import { now } from '@purrpose/shared';
 import { DetectiveBanner, FocusBanner, HubBanner, PactsBanner } from '../components/HubBanners.js';
-import { t } from '../i18n/index.js';
+import { num, t } from '../i18n/index.js';
 import { localHour } from '../lib/commitmentView.js';
 import { useCommitments, useHabits, useMe } from '../lib/queries.js';
 import { Tour } from '../components/Tour.js';
@@ -52,7 +54,7 @@ export function Home() {
 
   const activePacts = (commitments.data?.commitments ?? []).filter(c => c.status === 'ACTIVE').length;
   const openCases = (habits.data?.habits ?? []).filter(h => h.status === 'ACTIVE').length;
-  const meals = me.data?.balances.find(b => b.creditType === 'MEALS');
+  const navigate = useNavigate();
   const [beforeName, afterName = ''] = greetingLine(greeting(hour), Boolean(firstName)).split('{name}');
 
   return (
@@ -68,29 +70,26 @@ export function Home() {
               </>
             )}
           </h1>
-          <div className="home-links">
-            {isGuest && (
-              <Link to="/login" className="muted" aria-label={t('Sign in or create an account')}>
-                <AppIcon name="account" size={16} /> {t('sign in')}
-              </Link>
-            )}
-            {me.data?.user.role === 'ADMIN' && (
+          {me.data?.user.role === 'ADMIN' && (
+            <div className="home-links">
               <Link to="/admin" className="muted" aria-label={t('Admin panel')}>
                 <AppIcon name="crown" size={16} /> {t('admin')}
               </Link>
-            )}
-            <Link to="/settings" className="muted" aria-label={t('Settings')} data-tour="home-settings">
-              <AppIcon name="settings" size={16} /> {t('settings')}
-            </Link>
-          </div>
+            </div>
+          )}
         </div>
-        <div className="chip-row" aria-label={t('Summary')} data-tour="home-wallet">
-          <span className="chip" style={{ color: '#2E6930', fontWeight: 600 }}>
-            {t('pantry: {n} meals', { n: meals?.available ?? 0 })}
-          </span>
-          <Link to="/shop" className="chip" style={{ textDecoration: 'none', fontWeight: 600 }}>
-            <AppIcon name="purr" size={16} /> {t('{n} PURR', { n: me.data?.purr ?? 0 })}
+        <div className={`home-stats ${isGuest ? 'is-three' : ''}`} aria-label={t('Summary')} data-tour="home-wallet">
+          <Link to="/shop" className="home-stat">
+            <AppIcon name="purr" size={20} /> {t('{n} PURR', { n: me.data?.purr ?? 0 })}
           </Link>
+          <button type="button" className="home-stat" onClick={openPantryPeek}>
+            <AppIcon name="pantry" size={20} /> {t('See your pantry')}
+          </button>
+          {isGuest && (
+            <button type="button" className="home-stat home-stat-login" onClick={() => openLogin()} aria-label={t('Sign in or create an account')}>
+              <AppIcon name="account" size={20} /> {t('sign in')}
+            </button>
+          )}
         </div>
       </header>
 
@@ -99,8 +98,10 @@ export function Home() {
         <HubBanner
           to="/pacts"
           tour="hub-pacts"
-          title={t('Make a commitment')}
-          badge={activePacts > 0 ? t('{n} active', { n: activePacts }) : undefined}
+          title={t('New pact')}
+          sub={t('A task, a deadline, a cat waiting.')}
+          onOpen={() => (isGuest || activePacts === 0 ? startNewPact(me.data) : navigate('/pacts'))}
+          badge={activePacts > 0 ? t('{n} active pacts', { n: num(activePacts) }) : undefined}
           blurb={t('Pick a task and a deadline, and stake some cat food. Finish in time and your stray moves up in the world. Miss it, and the cats eat.')}
         >
           <PactsBanner reduced={reduced} />
@@ -109,6 +110,7 @@ export function Home() {
           to="/focus"
           tour="hub-focus"
           title={t('Focus Room')}
+          sub={t('Start the timer and stay put with your cat.')}
           blurb={t('A quiet room for deep work. Start the timer, your cat curls up on its cushion, and you both stay put until it rings.')}
         >
           <FocusBanner reduced={reduced} />
@@ -117,6 +119,7 @@ export function Home() {
           to="/detective"
           tour="hub-detective"
           title={t('Detective Cheat')}
+          sub={t('Quit a bad habit. Confess every slip.')}
           badge={
             openCases > 0
               ? openCases > 1

@@ -5,6 +5,7 @@ import { clearSiteStatsCache } from '../src/services/site.js';
 
 /** Wipes every table (children first) and resets in-memory rate limits. */
 export async function wipeDatabase(prisma: PrismaClient): Promise<void> {
+  await prisma.inboxMessage.deleteMany({});
   await prisma.deliveryMedia.deleteMany({});
   await prisma.deliveryPost.deleteMany({});
   await prisma.storedMedia.deleteMany({});

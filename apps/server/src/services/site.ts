@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
+import { DRY_FOOD_GRAMS_PER_UNIT, VET_SHARES_PER_VISIT } from '@purrpose/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 /**
@@ -79,7 +80,13 @@ export async function siteStats(prisma: PrismaClient, now = new Date()): Promise
       _sum: { amount: true },
     });
     const of = (t: string) => Math.abs(rows.find(r => r.creditType === t)?._sum.amount ?? 0);
-    return { meals: of('MEALS'), dryFood: of('DRY_FOOD'), vetCare: of('VET_CARE') };
+    // Dry food is stored in 50 g units, vet care in quarter-visit shares.
+    const round1 = (n: number) => Math.round(n * 10) / 10;
+    return {
+      meals: of('MEALS'),
+      dryFood: round1((of('DRY_FOOD') * DRY_FOOD_GRAMS_PER_UNIT) / 1000),
+      vetCare: round1(of('VET_CARE') / VET_SHARES_PER_VISIT),
+    };
   };
   const [thisMonth, allTime, pactsKept] = await Promise.all([
     sum(month.start),

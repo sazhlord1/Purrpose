@@ -17,8 +17,8 @@ import { createCheckoutSession, retrieveCheckoutSession, type CheckoutSession } 
 
 const FOOD_NAMES: Record<ConsequenceType, string> = {
   MEALS: 'Cat meal (can)',
-  DRY_FOOD: 'Dry cat food (1 kg)',
-  VET_CARE: 'Vet care (one visit)',
+  DRY_FOOD: 'Dry cat food (50 g)',
+  VET_CARE: 'Cat care share (a quarter of a vet visit)',
 };
 
 function stripeKey(env: Env): string {

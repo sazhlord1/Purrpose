@@ -17,7 +17,10 @@ import { getLocale, num } from './i18n.js';
 export const HABIT_STATUSES = ['ACTIVE', 'KEPT', 'BROKEN'] as const;
 export type HabitStatus = (typeof HABIT_STATUSES)[number];
 
+/** Quick picks; any length from HABIT_MIN_DAYS to HABIT_MAX_DAYS works. */
 export const HABIT_DURATIONS_DAYS = [7, 14, 30, 60] as const;
+export const HABIT_MIN_DAYS = 3;
+export const HABIT_MAX_DAYS = 365;
 export const HABIT_MIN_SLIPS = 2;
 export const HABIT_MAX_SLIPS = 10;
 export const HABIT_DEFAULT_SLIPS = 4;
@@ -48,7 +51,8 @@ export const createHabitSchema = z.object({
   durationDays: z
     .number()
     .int()
-    .refine(d => (HABIT_DURATIONS_DAYS as readonly number[]).includes(d), 'Pick 7, 14, 30 or 60 days'),
+    .min(HABIT_MIN_DAYS, 'At least 3 days')
+    .max(HABIT_MAX_DAYS, 'At most a year'),
 });
 export type CreateHabitInput = z.infer<typeof createHabitSchema>;
 

@@ -1,5 +1,5 @@
 import { catById, t, type CommitmentDto } from '@purrpose/shared';
-import { foodName } from '../i18n/index.js';
+import { foodAmount } from '../i18n/index.js';
 
 /**
  * Human words for internal phases — the UI never shows INITIAL / VERY_CLOSE etc.
@@ -53,7 +53,7 @@ export function sceneCaption(catId: string, phase: string, stageLabel: string, p
 /** What's on the line: "3 cat meals" for a strict pact, "40 PURR" for an honor pact. */
 export function stakeLabel(c: Pick<CommitmentDto, 'mode' | 'purrStake' | 'consequenceType' | 'consequenceAmount'>): string {
   if (c.mode === 'HONOR') return t('{n} PURR', { n: c.purrStake ?? 0 });
-  return t('{n} {food}', { n: c.consequenceAmount, food: foodName(c.consequenceType) });
+  return foodAmount(c.consequenceType, c.consequenceAmount);
 }
 
 /** Proof sent, nobody has decided yet. */

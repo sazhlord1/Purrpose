@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { fmtFood, type BalanceView, type ConsequenceType, type HabitDto } from '@purrpose/shared';
+import { type BalanceView, type ConsequenceType, type HabitDto } from '@purrpose/shared';
 import { SketchCard } from '../components/ui/index.js';
 import { api } from '../lib/api.js';
 import { catNameOf } from '../lib/labels.js';
 import { useMe } from '../lib/queries.js';
-import { backArrow, fmtDateTime, foodName, t } from '../i18n/index.js';
+import { AdminSendMessage } from '../components/AdminSendMessage.js';
+import { backArrow, fmtDateTime, foodAmount, foodName, foodQty, t } from '../i18n/index.js';
 
 export interface AdminUserRow {
   id: string;
@@ -45,7 +46,6 @@ interface AdminUserDetail {
 }
 
 export const fmtDate = (iso: string | null) => fmtDateTime(iso, { dateStyle: 'medium', timeStyle: 'short' });
-const food = (type: ConsequenceType) => foodName(type, true);
 
 const PACT_STATUS: Record<string, { label: string; cls: string }> = {
   ACTIVE: { label: 'active', cls: '' },
@@ -87,13 +87,15 @@ export function AdminUser() {
         {t('joined {date}', { date: fmtDate(d.user.createdAtISO) })} · {t('last sign-in {date}', { date: fmtDate(d.user.lastLoginAtISO) })}
       </p>
 
+      {(d.user.email || d.user.phone) && <AdminSendMessage userId={d.user.id} name={d.user.name ?? undefined} />}
+
       <SketchCard variant="a">
         <h2 style={{ marginTop: 0 }}>{t('Wallet')}</h2>
         {d.balances.map(b => (
           <div className="row" key={b.creditType}>
             <span className="muted">{foodName(b.creditType)}</span>
             <strong>
-              {b.amount} <span className="muted" style={{ fontWeight: 400 }}>{t('({staked} at stake · {free} free)', { staked: b.stakedActive, free: b.available })}</span>
+              {foodQty(b.creditType, b.amount)} <span className="muted" style={{ fontWeight: 400 }}>{t('({staked} at stake · {free} free)', { staked: foodQty(b.creditType, b.stakedActive), free: foodQty(b.creditType, b.available) })}</span>
             </strong>
           </div>
         ))}
@@ -116,7 +118,7 @@ export function AdminUser() {
                   <div className="muted" style={{ fontSize: 13 }}>
                     {c.mode === 'HONOR'
                       ? t('{n} PURR', { n: c.purrStake ?? 0 })
-                      : t('{n} {food}', { n: c.consequenceAmount, food: food(c.consequenceType) })}{' '}
+                      : foodAmount(c.consequenceType, c.consequenceAmount)}{' '}
                     · {catNameOf(c.catId)} · {t('due {date}', { date: fmtDate(c.deadlineISO) })}
                     {c.witnessEmail ? <> · {t('witness')} <span className="ltr">{c.witnessEmail}</span></> : null}
                     {c.reviewedBy ? ` · ${t('reviewed by {who}', { who: t(c.reviewedBy) })}` : ''}
@@ -141,7 +143,7 @@ export function AdminUser() {
                   <strong>{h.title}</strong>
                   <div className="muted" style={{ fontSize: 13 }}>
                     {t('{n}/{max} slips', { n: h.slipCount, max: h.maxSlips })} ·{' '}
-                    {t('{locked} of {stake} {food} locked', { locked: fmtFood(h.locked), stake: h.stakeAmount, food: food(h.consequenceType) })}
+                    {t('{locked} of {stake} locked', { locked: foodQty(h.consequenceType, h.locked), stake: foodAmount(h.consequenceType, h.stakeAmount) })}
                     {h.lostAmount !== null && ` · ${t('cats got {n}', { n: h.lostAmount })}`} · {t('ends {date}', { date: fmtDate(h.endsAtISO) })}
                   </div>
                   {h.slips.length > 0 && (
@@ -169,7 +171,7 @@ export function AdminUser() {
                   <strong>{l.title ?? '—'}</strong>
                   <div className="muted" style={{ fontSize: 13 }}>{t(l.source)} · {fmtDate(l.atISO)}</div>
                 </div>
-                <strong style={{ color: 'var(--stamp-red)' }}>−{l.amount} {food(l.creditType)}</strong>
+                <strong style={{ color: 'var(--stamp-red)' }}>−{foodAmount(l.creditType, l.amount)}</strong>
               </div>
             ))}
           </div>

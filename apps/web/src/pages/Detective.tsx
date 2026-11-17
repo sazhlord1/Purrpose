@@ -1,17 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AppIcon, type Expression, type IconName } from '@purrpose/cats';
 import {
-  CAT_IDS,
-  CONSEQUENCE_TYPES,
-  FREE_CAT_IDS,
   GRACE_WINDOW_MS,
-  HABIT_DEFAULT_SLIPS,
-  HABIT_DURATIONS_DAYS,
-  HABIT_MAX_SLIPS,
-  HABIT_MIN_SLIPS,
   detectiveLine,
-  fmtFood,
   habitLoss,
   now,
   type CatId,
@@ -20,11 +12,12 @@ import {
 } from '@purrpose/shared';
 import { BackLink } from '../components/BackLink.js';
 import { InterrogationRoom } from '../components/InterrogationRoom.js';
-import { AmountPicker, Chip, DoodleButton, Field, Input, SketchCard } from '../components/ui/index.js';
+import { Chip, SketchCard } from '../components/ui/index.js';
 import { api, ApiError } from '../lib/api.js';
 import { catNameOf } from '../lib/labels.js';
 import { useHabits, useMe } from '../lib/queries.js';
-import { foodName, t } from '../i18n/index.js';
+import { foodAmount, foodQty, t } from '../i18n/index.js';
+import { startNewCase } from '../lib/startFlows.js';
 import { Tour } from '../components/Tour.js';
 import { detectiveTour } from '../lib/tours.js';
 
@@ -47,13 +40,13 @@ function daysLeft(h: HabitDto): number {
 function EvidenceLocker({ h }: { h: HabitDto }) {
   const units = Math.min(h.stakeAmount, 12);
   const perUnit = h.stakeAmount / units; // >1 when the stake is too big to draw one tile each
-  const label = foodName(h.consequenceType, true);
+  const type = h.consequenceType;
   const share = h.stakeAmount / h.maxSlips;
   return (
     <div className="locker">
       <div className="row" style={{ alignItems: 'baseline' }}>
         <strong>
-          {t('{locked} of {stake} {food} locked', { locked: fmtFood(h.locked), stake: h.stakeAmount, food: label })}
+          {t('{locked} of {stake} locked', { locked: foodQty(type, h.locked), stake: foodAmount(type, h.stakeAmount) })}
         </strong>
         <span className="muted" style={{ fontSize: 13 }}>
           {h.status === 'ACTIVE'
@@ -87,18 +80,16 @@ function EvidenceLocker({ h }: { h: HabitDto }) {
         </div>
         <span className="muted" style={{ fontSize: 13 }}>
           {h.status === 'ACTIVE' && h.slipCount > 0
-            ? t('{used} of {max} slips · each slip locks {share} {food} · if it ended today the cats would get {n}', {
+            ? t('{used} of {max} slips · each slip locks {share} · if it ended today the cats would get {n}', {
                 used: h.slipCount,
                 max: h.maxSlips,
-                share: fmtFood(share),
-                food: label,
-                n: habitLoss(h.stakeAmount, h.slipCount, h.maxSlips),
+                share: foodAmount(type, share),
+                n: foodAmount(type, habitLoss(h.stakeAmount, h.slipCount, h.maxSlips)),
               })
-            : t('{used} of {max} slips · each slip locks {share} {food}', {
+            : t('{used} of {max} slips · each slip locks {share}', {
                 used: h.slipCount,
                 max: h.maxSlips,
-                share: fmtFood(share),
-                food: label,
+                share: foodAmount(type, share),
               })}
         </span>
       </div>
@@ -106,130 +97,17 @@ function EvidenceLocker({ h }: { h: HabitDto }) {
   );
 }
 
-function NewCaseForm({ onDone }: { onDone: (h: HabitDto) => void }) {
-  const me = useMe();
-  const qc = useQueryClient();
-  const unlocked: readonly string[] = me.data?.unlockedCatIds ?? FREE_CAT_IDS;
-  const [title, setTitle] = useState('');
-  const [catId, setCatId] = useState<CatId>('tuxedo');
-  const [type, setType] = useState<ConsequenceType>('MEALS');
-  const [stake, setStake] = useState(2);
-  const [slips, setSlips] = useState(HABIT_DEFAULT_SLIPS);
-  const [days, setDays] = useState<number>(30);
-  const [error, setError] = useState<string | null>(null);
-  const available = me.data?.balances.find(b => b.creditType === type)?.available ?? 0;
-  const label = foodName(type, true);
-
-  const create = useMutation({
-    mutationFn: () =>
-      api<{ habit: HabitDto }>('/habits', {
-        method: 'POST',
-        body: { title, catId, consequenceType: type, stakeAmount: stake, maxSlips: slips, durationDays: days },
-      }),
-    onSuccess: r => {
-      void qc.invalidateQueries({ queryKey: ['habits'] });
-      void qc.invalidateQueries({ queryKey: ['me'] });
-      onDone(r.habit);
-    },
-    onError: e => setError(e instanceof ApiError ? e.message : t('Could not reach the station.')),
-  });
-
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    create.mutate();
-  };
-
-  return (
-    <SketchCard variant="b">
-      <h2 style={{ marginTop: 0 }}>{t('Open a case')}</h2>
-      <form className="auth-form" onSubmit={submit}>
-        <Field label={t('What are you quitting or sticking to?')}>
-          <Input
-            required
-            maxLength={80}
-            placeholder={t('No cigarettes · Stick to my diet · No doom-scrolling')}
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            onKeyDown={e => {
-              // Enter / "Go" just closes the keyboard; the case opens only from its button.
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                e.currentTarget.blur();
-              }
-            }}
-          />
-        </Field>
-        <Field label={t('Detective on the case')}>
-          <div className="chip-row" style={{ margin: 0 }}>
-            {CAT_IDS.filter(id => unlocked.includes(id)).map(id => (
-              <Chip key={id} active={catId === id} onClick={() => setCatId(id)}>
-                {catNameOf(id)}
-              </Chip>
-            ))}
-          </div>
-        </Field>
-        <Field
-          label={t('Food on the table')}
-          hint={t('{n} {food} available', { n: available, food: label })}
-          error={stake > available ? t('Not enough food in the pantry.') : undefined}
-        >
-          <div className="chip-row" style={{ margin: '0 0 8px' }}>
-            {CONSEQUENCE_TYPES.map(ct => (
-              <Chip key={ct} active={type === ct} onClick={() => setType(ct)}>
-                <AppIcon name={FOOD_ICON[ct]} size={16} /> {foodName(ct)}
-              </Chip>
-            ))}
-          </div>
-          <AmountPicker value={stake} onChange={setStake} />
-        </Field>
-        <Field
-          label={t('Slips allowed before the case closes: {n}', { n: slips })}
-          hint={t('Each slip locks {share} {food}.', { share: fmtFood(stake / slips), food: label })}
-        >
-          <input
-            type="range"
-            min={HABIT_MIN_SLIPS}
-            max={HABIT_MAX_SLIPS}
-            value={slips}
-            onChange={e => setSlips(Number(e.target.value))}
-            aria-label={t('Slips allowed')}
-            style={{ width: '100%' }}
-          />
-        </Field>
-        <Field label={t('For how long?')}>
-          <div className="chip-row" style={{ margin: 0 }}>
-            {HABIT_DURATIONS_DAYS.map(d => (
-              <Chip key={d} active={days === d} onClick={() => setDays(d)}>
-                {t('{n} days', { n: d })}
-              </Chip>
-            ))}
-          </div>
-        </Field>
-        <p className="muted" style={{ margin: 0, fontSize: 13.5 }}>
-          {t('Confess every slip. At the end, whatever is locked goes to the cats and the rest comes back to your pantry.')}{' '}
-          {t('Slip {n} times and the whole {stake} {food} is gone.', { n: slips, stake, food: label })}
-        </p>
-        {error && <p className="form-error" role="alert">{error}</p>}
-        <DoodleButton type="submit" variant="primary" size="big" disabled={create.isPending || stake > available || !title.trim()}>
-          {create.isPending ? '…' : t('Open the case')}
-        </DoodleButton>
-      </form>
-    </SketchCard>
-  );
-}
-
 /** Detective Cheat: confess your slips in the interrogation room. */
 export function Detective() {
   const qc = useQueryClient();
   const habits = useHabits();
+  const me = useMe();
   const reduced = isReduced();
   const all = useMemo(() => habits.data?.habits ?? [], [habits.data]);
   const open = all.filter(h => h.status === 'ACTIVE');
   const closed = all.filter(h => h.status !== 'ACTIVE');
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [line, setLine] = useState<string | null>(null);
   const [glare, setGlare] = useState(false);
@@ -360,17 +238,11 @@ export function Detective() {
 
       {habits.isLoading ? (
         <p className="muted">{t('pulling the files…')}</p>
-      ) : !current || showForm ? (
-        <NewCaseForm
-          onDone={h => {
-            setSelectedId(h.id);
-            setShowForm(false);
-            setLine(t("Then it's settled. I'll be watching."));
-          }}
-        />
       ) : (
         <div style={{ marginTop: 14 }}>
-          <DoodleButton onClick={() => setShowForm(true)}>+ {t('Open another case')}</DoodleButton>
+          <button type="button" className="case-open" onClick={() => startNewCase(me.data)}>
+            + {current ? t('Open another case') : t('Open a new case')}
+          </button>
         </div>
       )}
 
@@ -387,12 +259,11 @@ export function Detective() {
                   </span>
                 </div>
                 <p className="muted" style={{ margin: '4px 0 0', fontSize: 13.5 }}>
-                  {t('{used} of {max} slips · the cats got {lost} of {stake} {food} · detective {name}', {
+                  {t('{used} of {max} slips · the cats got {lost} of {stake} · detective {name}', {
                     used: h.slipCount,
                     max: h.maxSlips,
-                    lost: h.lostAmount ?? 0,
-                    stake: h.stakeAmount,
-                    food: foodName(h.consequenceType, true),
+                    lost: foodQty(h.consequenceType, h.lostAmount ?? 0),
+                    stake: foodAmount(h.consequenceType, h.stakeAmount),
                     name: catNameOf(h.catId),
                   })}
                 </p>

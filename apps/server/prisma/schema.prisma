@@ -95,6 +95,7 @@ model User {
   itemUnlocks   ItemUnlock[]
   focusSessions FocusSession[]
   pushSubs      PushSubscription[]
+  inbox         InboxMessage[]
   habits        Habit[]
 }
 
@@ -426,3 +427,20 @@ model BlogPost {
   @@index([published, publishedAt])
 }
 
+
+/// The player's inbox ("Messages"): a welcome note and messages from the team.
+/// kind 'welcome' is written by the app in the player's language; 'team' carries its text.
+model InboxMessage {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String    @default("team")
+  title     String    @default("")
+  body      String    @default("")
+  /// Makes one-per-user messages (the welcome note) unique.
+  key       String?   @unique
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
+  @@index([userId, createdAt])
+}

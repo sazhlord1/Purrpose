@@ -27,6 +27,7 @@ import { makeCommitmentEngine } from './services/commitments.js';
 import { isApiPath, makeWebHandler, webReplies } from './web.js';
 import { makeBlogHandler } from './blog.js';
 import { registerPublicSiteRoutes } from './routes/site.js';
+import { registerInboxRoutes } from './routes/inbox.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const env = getEnv();
@@ -131,6 +132,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     scope.addHook('onRequest', rateLimitMutations);
     scope.addHook('onRequest', authenticate);
     registerMeRoutes(scope);
+    registerInboxRoutes(scope);
     registerAccountRoutes(scope);
     registerCommitmentRoutes(scope, engine);
     registerWalletRoutes(scope);

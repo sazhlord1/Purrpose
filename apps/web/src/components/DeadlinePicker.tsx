@@ -1,10 +1,10 @@
 /**
- * Picks a pact's deadline: a strip of day cards (today … 30 days out) and two
+ * Picks a pact's deadline: quick jumps, a month calendar (up to a year out) and two
  * scroll wheels for the hour and minute. In Persian the days are Solar Hijri
  * (Intl's Persian calendar, "۲۲ آبان"), the week runs right to left and the
  * digits are Persian; the time stays 24-hour, read left to right.
  */
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { dateLocale, getLocale, t } from '../i18n/index.js';
 import { fmtRemaining } from '../lib/format.js';
 
@@ -62,11 +62,6 @@ export function DeadlinePicker({ value, min, max, onChange, now }: DeadlinePicke
   const clamp = (ms: number) => Math.min(Math.max(ms, lo), hi);
 
   const today = startOfDay(lo);
-  const days = useMemo(() => {
-    const out: number[] = [];
-    for (let d = today; d <= hi; d = addDays(d, 1)) out.push(d);
-    return out;
-  }, [today, hi]);
 
   const sel = new Date(value);
   const selDay = startOfDay(value);
@@ -79,19 +74,45 @@ export function DeadlinePicker({ value, min, max, onChange, now }: DeadlinePicke
       weekday: new Intl.DateTimeFormat(loc, { weekday: fa ? 'long' : 'short' }),
       day: new Intl.DateTimeFormat(loc, { day: 'numeric' }),
       month: new Intl.DateTimeFormat(loc, { month: fa ? 'long' : 'short' }),
-      full: new Intl.DateTimeFormat(loc, { weekday: 'long', day: 'numeric', month: 'long' }),
+      full: new Intl.DateTimeFormat(loc, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+      monthYear: new Intl.DateTimeFormat(loc, { month: 'long', year: 'numeric' }),
+      narrowDay: new Intl.DateTimeFormat(loc, { weekday: 'narrow' }),
     };
   }, [fa]);
 
-  const dayLabel = (d: number) =>
-    d === today ? t('Today') : d === addDays(today, 1) ? t('Tomorrow') : fmt.weekday.format(d);
-
-  // Keep the chosen day card in view.
-  const stripRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = stripRef.current?.querySelector<HTMLElement>('[aria-checked="true"]');
-    el?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
-  }, [selDay]);
+  /**
+   * Whole months (Solar Hijri in Persian) from this month to the last allowed day, as
+   * calendar grids. Weeks start on Saturday in Persian, Sunday in English.
+   */
+  const months = useMemo(() => {
+    const key = (d: number) => fmt.monthYear.format(d);
+    let start = today;
+    while (key(addDays(start, -1)) === key(today)) start = addDays(start, -1);
+    let end = startOfDay(hi);
+    while (key(addDays(end, 1)) === key(end)) end = addDays(end, 1);
+    const out: Array<{ label: string; cells: Array<number | null> }> = [];
+    for (let d = start; d <= end; d = addDays(d, 1)) {
+      const label = key(d);
+      let month = out[out.length - 1];
+      if (!month || month.label !== label) {
+        month = { label, cells: [] };
+        const lead = fa ? (new Date(d).getDay() + 1) % 7 : new Date(d).getDay();
+        for (let i = 0; i < lead; i++) month.cells.push(null);
+        out.push(month);
+      }
+      month.cells.push(d);
+    }
+    return out;
+  }, [today, hi, fmt, fa]);
+  const weekdays = useMemo(() => {
+    // Any week: 2024-01-06 was a Saturday, 2024-01-07 a Sunday.
+    const first = fa ? new Date(2024, 0, 6).getTime() : new Date(2024, 0, 7).getTime();
+    return Array.from({ length: 7 }, (_, i) => fmt.narrowDay.format(addDays(first, i)));
+  }, [fmt, fa]);
+  const selMonth = Math.max(0, months.findIndex(mo => mo.cells.includes(startOfDay(value))));
+  const [shownMonth, setShownMonth] = useState(selMonth);
+  useEffect(() => setShownMonth(selMonth), [selMonth]);
+  const month = months[Math.min(shownMonth, months.length - 1)];
 
   const pickDay = (d: number) => onChange(clamp(at(d, h, m)));
   const pickHour = (hour: number) => onChange(clamp(at(selDay, hour, m)));
@@ -116,26 +137,70 @@ export function DeadlinePicker({ value, min, max, onChange, now }: DeadlinePicke
         <span className="dlp-summary-left">{t('{time} left', { time: left })}</span>
       </div>
 
-      <div className="dlp-days" ref={stripRef} role="radiogroup" aria-label={t('Deadline day')}>
-        {days.map((d, i) => {
-          const first = i === 0 || fmt.month.format(d) !== fmt.month.format(days[i - 1]!);
-          const weekend = fa ? new Date(d).getDay() === 5 : [0, 6].includes(new Date(d).getDay());
+      <div className="dlp-jumps" role="group" aria-label={t('Quick picks')}>
+        {(
+          [
+            [t('Tomorrow'), 1],
+            [t('In a week'), 7],
+            [t('In a month'), 30],
+            [t('In 3 months'), 91],
+          ] as Array<[string, number]>
+        ).map(([label, n]) => {
+          const ms = at(addDays(today, n), h, m);
           return (
-            <button
-              key={d}
-              type="button"
-              role="radio"
-              aria-checked={d === selDay}
-              className={`dlp-day${d === selDay ? ' is-on' : ''}${weekend ? ' is-weekend' : ''}`}
-              onClick={() => pickDay(d)}
-            >
-              <span className="dlp-day-name">{dayLabel(d)}</span>
-              <span className="dlp-day-num">{fmt.day.format(d)}</span>
-              <span className={`dlp-day-month${first ? ' is-first' : ''}`}>{fmt.month.format(d)}</span>
+            <button key={n} type="button" className={`dlp-jump${startOfDay(ms) === selDay ? ' is-on' : ''}`} disabled={ms > hi} onClick={() => onChange(clamp(ms))}>
+              {label}
             </button>
           );
         })}
       </div>
+
+      {month && (
+        <div className="dlp-cal">
+          <div className="dlp-cal-head">
+            <button type="button" className="dlp-cal-nav" aria-label={t('Previous month')} disabled={shownMonth <= 0} onClick={() => setShownMonth(i => Math.max(0, i - 1))}>
+              {fa ? '›' : '‹'}
+            </button>
+            <strong>{month.label}</strong>
+            <button
+              type="button"
+              className="dlp-cal-nav"
+              aria-label={t('Next month')}
+              disabled={shownMonth >= months.length - 1}
+              onClick={() => setShownMonth(i => Math.min(months.length - 1, i + 1))}
+            >
+              {fa ? '‹' : '›'}
+            </button>
+          </div>
+          <div className="dlp-cal-grid" role="radiogroup" aria-label={t('Deadline day')}>
+            {weekdays.map((w, i) => (
+              <span key={`w${i}`} className="dlp-cal-wd" aria-hidden>
+                {w}
+              </span>
+            ))}
+            {month.cells.map((d, i) =>
+              d === null ? (
+                <span key={`e${i}`} />
+              ) : (
+                <button
+                  key={d}
+                  type="button"
+                  role="radio"
+                  aria-checked={d === selDay}
+                  aria-label={fmt.full.format(d)}
+                  disabled={d < today || d > hi}
+                  className={`dlp-cal-day${d === selDay ? ' is-on' : ''}${d === today ? ' is-today' : ''}${
+                    (fa ? new Date(d).getDay() === 5 : [0, 6].includes(new Date(d).getDay())) ? ' is-weekend' : ''
+                  }`}
+                  onClick={() => pickDay(d)}
+                >
+                  {fmt.day.format(d)}
+                </button>
+              ),
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="dlp-time">
         <div className="dlp-wheels" dir="ltr">

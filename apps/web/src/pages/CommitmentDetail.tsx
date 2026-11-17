@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { startNewPact } from '../lib/startFlows.js';
 import { AppIcon, CatScene, type CatState, type LivingCatHandle } from '@purrpose/cats';
 import { HONOR_STARTER_BONUS, now, type CommitmentDto } from '@purrpose/shared';
 import { GraceDelete } from '../components/GraceDelete.js';
@@ -256,7 +257,7 @@ export function CommitmentDetail() {
 
       {showBanner && (
         <div className="result-actions">
-          <DoodleButton href={`/new?cat=${c.catId}`} variant="primary">
+          <DoodleButton onClick={() => startNewPact(me.data, c.catId)} variant="primary">
             <AppIcon name="paw" size={18} /> {t('New pact with {name}', { name: catName })}
           </DoodleButton>
           <DoodleButton onClick={() => void onShare()} disabled={shareState === 'busy'}>

@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import { type ConsequenceType, type HistoryResponse } from '@purrpose/shared';
 import { catName } from '@purrpose/cats';
 import { api } from '../lib/api.js';
-import { foodName, t } from '../i18n/index.js';
+import { foodAmount, t } from '../i18n/index.js';
 import { AnimatedNumber, DoodleButton, SketchCard, Stamp, Skeleton } from '../components/ui/index.js';
 import { CanTin, KibbleBag, VetCare } from '../components/doodles/index.js';
 import { RankDeck } from '../components/RankDeck.js';
@@ -95,7 +95,7 @@ export function Impact() {
               <div className="row" key={type}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                   <Icon size={20} strokeWidth={2.2} />
-                  {amount} {foodName(type as ConsequenceType)}
+                  {foodAmount(type as ConsequenceType, amount)}
                 </span>
                 <Stamp kind="fed" />
               </div>

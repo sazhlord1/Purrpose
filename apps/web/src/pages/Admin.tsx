@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { normalizeDigits } from '@purrpose/shared';
 import { useState, type FormEvent } from 'react';
+import { AdminSendMessage } from '../components/AdminSendMessage.js';
 import { Link, Navigate } from 'react-router-dom';
 import { BackLink } from '../components/BackLink.js';
 import { AppealQueue } from '../components/AppealQueue.js';
@@ -244,6 +245,8 @@ export function Admin() {
       <UsersPanel />
 
       <GivePurr />
+
+      <AdminSendMessage />
 
       <SketchCard variant="a">
         <h2>{t('Website')}</h2>

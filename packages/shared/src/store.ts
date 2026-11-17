@@ -37,19 +37,33 @@ export function purrPackById(id: string): PurrPack | undefined {
   return PURR_PACKS.find(p => p.id === id);
 }
 
-/** Real cat food for strict pacts, bought per unit. A dry-food unit is one kilogram. */
+/**
+ * Pantry units. A can is one can. Dry food is counted in 50-gram units (so 100 g, 250 g,
+ * 350 g… all work); vet care in "care shares", a quarter of one vet visit each.
+ * Balances, stakes and payments all store these units.
+ */
+export const DRY_FOOD_GRAMS_PER_UNIT = 50;
+export const VET_SHARES_PER_VISIT = 4;
+
+/** Real cat food for strict pacts, priced per unit (international edition, Stripe). */
 export const FOOD_PRICES = {
   MEALS: { cents: 299, unit: 'can', maxQty: 50 },
-  DRY_FOOD: { cents: 1000, unit: 'kg', maxQty: 20 },
-  VET_CARE: { cents: 15000, unit: 'visit', maxQty: 3 },
+  DRY_FOOD: { cents: 50, unit: '50g', maxQty: 400 },
+  VET_CARE: { cents: 3750, unit: 'share', maxQty: 12 },
 } as const satisfies Record<'MEALS' | 'DRY_FOOD' | 'VET_CARE', { cents: number; unit: string; maxQty: number }>;
 
 /**
- * Iranian edition, sold through Cafe Bazaar. What one unit really costs us (Aban 1405,
- * the team's numbers) and the price in the Bazaar panel, in toman. The owner chose
- * these prices; at a 30% Bazaar share a can and a kilo of dry food sell below cost.
+ * Iranian edition: the price of a whole can / kilo / vet visit (Aban 1405, the team's
+ * numbers), in toman. Smaller packs cost the same per gram or per share.
  */
 export const FOOD_PRICES_IRT = { MEALS: 189_000, DRY_FOOD: 749_000, VET_CARE: 1_490_000 } as const;
+
+/** Toman for one pantry unit (a can, 50 g of dry food, one care share). */
+export const FOOD_UNIT_TOMAN = {
+  MEALS: FOOD_PRICES_IRT.MEALS,
+  DRY_FOOD: FOOD_PRICES_IRT.DRY_FOOD / (1000 / DRY_FOOD_GRAMS_PER_UNIT),
+  VET_CARE: FOOD_PRICES_IRT.VET_CARE / VET_SHARES_PER_VISIT,
+} as const;
 
 /** PURR packs in the Iranian edition (toman, Cafe Bazaar). Same pack ids as the global edition. */
 export const PURR_PACK_PRICES_IRT: Readonly<Record<string, number>> = {
@@ -61,17 +75,29 @@ export const PURR_PACK_PRICES_IRT: Readonly<Record<string, number>> = {
 
 /**
  * The Cafe Bazaar products (one-time, consumable), exactly as defined in the Bazaar
- * panel. The SKU decides what gets credited; the price shown is ours (Bazaar charges
- * what its panel says, in rials including tax: toman × 10).
+ * panel. The SKU decides what gets credited (quantity = pantry units); the price shown
+ * is ours (Bazaar charges what its panel says, in rials including tax: toman × 10).
+ * Bitpay sells the same products at the same prices.
  */
 export type BazaarProduct =
-  | { kind: 'food'; item: 'MEALS' | 'DRY_FOOD' | 'VET_CARE'; quantity: 1; toman: number }
+  | { kind: 'food'; item: 'MEALS' | 'DRY_FOOD' | 'VET_CARE'; quantity: number; toman: number }
   | { kind: 'purr'; item: string; quantity: 1; toman: number };
+
+const dry = (grams: number) =>
+  ({ kind: 'food', item: 'DRY_FOOD', quantity: grams / DRY_FOOD_GRAMS_PER_UNIT, toman: (FOOD_PRICES_IRT.DRY_FOOD * grams) / 1000 }) as const;
+const vet = (shares: number) =>
+  ({ kind: 'food', item: 'VET_CARE', quantity: shares, toman: (FOOD_PRICES_IRT.VET_CARE * shares) / VET_SHARES_PER_VISIT }) as const;
 
 export const BAZAAR_PRODUCTS = {
   food_meals: { kind: 'food', item: 'MEALS', quantity: 1, toman: FOOD_PRICES_IRT.MEALS },
-  food_dry: { kind: 'food', item: 'DRY_FOOD', quantity: 1, toman: FOOD_PRICES_IRT.DRY_FOOD },
-  food_vet: { kind: 'food', item: 'VET_CARE', quantity: 1, toman: FOOD_PRICES_IRT.VET_CARE },
+  food_dry_100: dry(100),
+  food_dry_250: dry(250),
+  food_dry_500: dry(500),
+  food_dry: dry(1000),
+  food_vet_1: vet(1),
+  food_vet_2: vet(2),
+  food_vet_3: vet(3),
+  food_vet: vet(4),
   purr_150: { kind: 'purr', item: 'purr_150', quantity: 1, toman: 39_000 },
   purr_250: { kind: 'purr', item: 'purr_250', quantity: 1, toman: 59_000 },
   purr_500: { kind: 'purr', item: 'purr_500', quantity: 1, toman: 99_000 },
@@ -81,12 +107,33 @@ export const BAZAAR_PRODUCTS = {
 export type BazaarSku = keyof typeof BAZAAR_PRODUCTS;
 export const BAZAAR_SKUS = Object.keys(BAZAAR_PRODUCTS) as BazaarSku[];
 
-/** The Bazaar SKU that sells one unit of this food. */
+/** The packs on sale for each food, smallest first (the pantry's buy sheet lists these). */
+export const FOOD_PACKS: Record<'MEALS' | 'DRY_FOOD' | 'VET_CARE', readonly BazaarSku[]> = {
+  MEALS: ['food_meals'],
+  DRY_FOOD: ['food_dry_100', 'food_dry_250', 'food_dry_500', 'food_dry'],
+  VET_CARE: ['food_vet_1', 'food_vet_2', 'food_vet_3', 'food_vet'],
+};
+
+/** Names of the vet-care support packs, by number of care shares. */
+export const VET_PACK_NAMES: Record<number, string> = {
+  1: 'Bandage pack',
+  2: 'Vaccine pack',
+  3: 'Check-up pack',
+  4: 'Full care pack',
+};
+
+/** @deprecated the smallest pack of each food; kept for older callers. */
 export const BAZAAR_FOOD_SKU: Record<'MEALS' | 'DRY_FOOD' | 'VET_CARE', BazaarSku> = {
   MEALS: 'food_meals',
-  DRY_FOOD: 'food_dry',
-  VET_CARE: 'food_vet',
+  DRY_FOOD: 'food_dry_100',
+  VET_CARE: 'food_vet_1',
 };
+
+/** "250 g", "1.5 kg" — dry-food units as a weight (numbers in Latin digits; callers localise). */
+export function dryFoodWeight(units: number): { value: number; unit: 'g' | 'kg' } {
+  const grams = units * DRY_FOOD_GRAMS_PER_UNIT;
+  return grams >= 1000 ? { value: Math.round((grams / 1000) * 100) / 100, unit: 'kg' } : { value: grams, unit: 'g' };
+}
 
 /**
  * disabled: nothing can be bought · sandbox: free test credits (never in production) ·

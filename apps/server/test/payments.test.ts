@@ -182,7 +182,7 @@ describe.skipIf(!dbReady)('Stripe Checkout purchases', () => {
 
   it('refuses too much food in one go, and other people’s payments', async () => {
     const token = await register('a@example.com');
-    const tooMuch = await call('POST', '/api/v1/wallet/checkout', token, { creditType: 'VET_CARE', quantity: 4 });
+    const tooMuch = await call('POST', '/api/v1/wallet/checkout', token, { creditType: 'VET_CARE', quantity: 13 });
     expect(tooMuch.statusCode).toBe(400);
     const start = await call('POST', '/api/v1/shop/checkout', token, { packId: 'purr_500' });
     const sessionId = sessionIdOf(start.json().url);

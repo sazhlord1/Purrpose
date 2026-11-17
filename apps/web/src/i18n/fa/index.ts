@@ -5,6 +5,7 @@ import { COMMON } from './common.js';
 import { PACTS } from './pacts.js';
 import { ROOMS } from './rooms.js';
 import { SITE } from './site.js';
+import { V2 } from './v2.js';
 
 /** Every Persian string in the app (English text → Persian). */
-export const FA: Record<string, string> = { ...COMMON, ...PACTS, ...ROOMS, ...ACCOUNT, ...MODES, ...TOUR, ...SITE };
+export const FA: Record<string, string> = { ...COMMON, ...PACTS, ...ROOMS, ...ACCOUNT, ...MODES, ...TOUR, ...SITE, ...V2 };

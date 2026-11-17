@@ -14,6 +14,7 @@ import { getEnv } from '../env.js';
 import { walletView } from '../services/wallet.js';
 import { parse } from '../validate.js';
 import { registerSiteAdminRoutes } from './site.js';
+import { registerInboxAdminRoutes } from './inbox.js';
 
 const adminUsersQuery = z.object({
   q: z.string().max(100).optional(),
@@ -29,6 +30,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
   await app.register(async function adminScope(scope) {
     scope.addHook('onRequest', requireAdmin);
     await registerSiteAdminRoutes(scope);
+    registerInboxAdminRoutes(scope);
     const engine = makeCommitmentEngine(getPrisma(), clock);
 
     /**

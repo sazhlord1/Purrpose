@@ -1,0 +1,116 @@
+/** Persian for the Aban 1405 update: smaller packs, pop-up flows, Messages, the new home. */
+export const V2: Record<string, string> = {
+  // Food names and amounts
+  'Vet Care': 'کمک هزینه درمان گربه‌ها',
+  'vet care': 'کمک هزینه درمان گربه‌ها',
+  '{n} kg dry food': '{n} کیلو غذای خشک',
+  '{n} g dry food': '{n} گرم غذای خشک',
+  '{n} care shares': '{n} سهم کمک درمان',
+  '{n} kg': '{n} کیلو',
+  '{n} g': '{n} گرم',
+  '{n} shares': '{n} سهم',
+  '{n} can': '{n} کنسرو',
+  'Bandage pack': 'بسته‌ی پانسمان',
+  'Vaccine pack': 'بسته‌ی واکسن',
+  'Check-up pack': 'بسته‌ی چکاپ',
+  'Full care pack': 'بسته‌ی درمان کامل',
+  'Care pack': 'بسته‌ی حمایتی',
+  '{n}% of a vet visit': '{n}٪ هزینه‌ی یک ویزیت',
+  '{price} per can': 'هر کنسرو {price}',
+  'from {min} to {max}': 'از {min} تا {max}',
+  'per {unit}': 'هر {unit}',
+  'How much?': 'چقدر؟',
+  'Buy · {price}': 'خرید · {price}',
+  '{food} added to your pantry. Thank you!': '{food} به انبارت اضافه شد. ممنون!',
+  'Payment received: {food} added to your pantry.': 'پرداخت انجام شد: {food} به انبارت اضافه شد.',
+  'Checkout · {total}': 'پرداخت · {total}',
+  'Secure checkout by Stripe. Prices in US dollars.': 'پرداخت امن با Stripe. قیمت‌ها به دلار آمریکا.',
+  'Checkout cancelled. Nothing was charged.': 'پرداخت لغو شد. پولی کم نشد.',
+  'Payment is processing…': 'پرداخت در حال انجامه…',
+  'Payment is still processing. It will show up here as soon as Stripe confirms it.': 'پرداخت هنوز در حال انجامه. به‌محض تأیید، اینجا نشون داده می‌شه.',
+
+  // Home
+  'See your pantry': 'موجودی انبار',
+  'New pact': 'قرار جدید',
+  '+ New pact': '+ قرار جدید',
+  'A task, a deadline, a cat waiting.': 'یه کار، یه ددلاین، یه گربه‌ی منتظر.',
+  '{n} active pacts': '{n} قرار فعال',
+  'Start the timer and stay put with your cat.': 'تایمر رو بزن و کنار گربه‌ت متمرکز بمون.',
+  'Quit a bad habit. Confess every slip.': 'یه عادت بد رو ترک کن؛ هر لغزش رو اعتراف کن.',
+
+  // Pantry peek
+  'Your pantry': 'انبارت',
+  'Food you can put on the line in your pacts:': 'غذایی که می‌تونی سر قرارهات بذاری:',
+  '+{n} at stake': '+{n} سر قرارها',
+  'Open the pantry': 'رفتن به انبار',
+
+  // Sign in
+  'Sign in to Purrpose': 'ورود به پرپس',
+  'Sign in to save your progress and pick it up on any device.': 'وارد شو تا پیشرفتت ذخیره بشه و روی هر دستگاهی ادامه بدی.',
+  'To make a new pact, sign in first.': 'برای ساختن قرار جدید، اول وارد شو.',
+  'To open a case, sign in first.': 'برای باز کردن پرونده، اول وارد شو.',
+
+  // New pact
+  'Pact type': 'نوع قرار',
+  'What kind of pact?': 'چه جور قراری؟',
+  'Miss it and the PURR goes to your cat.': 'انجامش ندی، میوها مال گربه‌ت می‌شه.',
+  'Your opponent and your task': 'حریف گربه‌ای و کارت',
+  'By when?': 'تا کی؟',
+  'What’s on the line?': 'گروت چیه؟',
+  'What goes on the line?': 'چی گرو می‌ذاری؟',
+  Less: 'کمتر',
+  More: 'بیشتر',
+  'No witness? The Purrpose team checks your proof.': 'شاهد نداری؟ تیم پرپس مدرکت رو بررسی می‌کنه.',
+  'If I don’t keep this pact, {stake} is donated to shelter cats and can’t be returned.':
+    'اگه سر این قرار نمونم، {stake} به گربه‌های پناهگاه اهدا می‌شه و برنمی‌گرده.',
+  'Step {n} of {total}': 'مرحله‌ی {n} از {total}',
+  'Step {n}': 'مرحله‌ی {n}',
+  '{n} free': '{n} آزاد',
+  'Your pantry only has {n} free.': 'انبارت فقط {n} آزاد داره.',
+  'Buy more': 'بیشتر بخر',
+  'Quick picks': 'انتخاب سریع',
+  'In a week': 'یه هفته دیگه',
+  'In a month': 'یه ماه دیگه',
+  'In 3 months': 'سه ماه دیگه',
+  'Previous month': 'ماه قبل',
+  'Next month': 'ماه بعد',
+
+  // Detective
+  'Open a new case': 'یه پرونده‌ی جدید باز کن',
+  'Quitting something? Put food on the table and confess every slip to the detective. Each slip locks a share of it.':
+    'می‌خوای یه چیزی رو ترک کنی؟ غذا بذار وسط و هر بار که لغزیدی پیش کارآگاه اعتراف کن. هر لغزش یه سهم از گرو رو قفل می‌کنه.',
+  'The terms of the case': 'شرایط پرونده',
+  'Each slip locks {share}.': 'هر لغزش {share} رو قفل می‌کنه.',
+  'The case closes on {date}.': 'پرونده {date} بسته می‌شه.',
+  'Confess every slip. At the end, whatever is locked goes to the cats and the rest comes back to your pantry.':
+    'هر بار چیت کردی اعتراف کن. آخرش هر چقدر از گروهات رفت می‌رسه به گربه‌ها و بقیه‌ش برمی‌گرده تو انبارت.',
+  '1 week': '۱ هفته',
+  '2 weeks': '۲ هفته',
+  '1 month': '۱ ماه',
+  '2 months': '۲ ماه',
+  '3 months': '۳ ماه',
+  '6 months': '۶ ماه',
+  '{locked} of {stake} locked': '{locked} از {stake} قفل شده',
+  '{used} of {max} slips · each slip locks {share} · if it ended today the cats would get {n}':
+    '{used} از {max} لغزش · هر لغزش {share} قفل می‌کنه · اگه امروز تموم می‌شد {n} به گربه‌ها می‌رسید',
+  '{used} of {max} slips · each slip locks {share}': '{used} از {max} لغزش · هر لغزش {share} قفل می‌کنه',
+  '{used} of {max} slips · the cats got {lost} of {stake} · detective {name}':
+    '{used} از {max} لغزش · گربه‌ها {lost} از {stake} رو گرفتن · کارآگاه {name}',
+
+  // Messages
+  'Welcome to Purrpose! 🐾': 'به پرپس خوش اومدی! 🐾',
+  'You got {n} PURR as a welcome gift. Purrpose is where you make pacts with a cat: keep your word and your cat moves up in the world; miss it and your stake feeds real shelter cats. Start an “on my word” pact with your PURR, or a strict one with food from your pantry, and win new cats as you go.':
+    '{n} میو هدیه‌ی خوش‌آمد گرفتی. پرپس جاییه که برای کارهات با یه گربه قرار می‌ذاری: سر قولت بمونی، گربه‌ت پیشرفت می‌کنه؛ نمونی، گروت غذای گربه‌های واقعی پناهگاه می‌شه. با میوهات یه قرار «مرامی» بذار، یا با غذای انبارت یه قرار «سفت و سخت»، و کم‌کم گربه‌های جدید باز کن.',
+  'Sign in to get messages from the Purrpose team.': 'وارد شو تا پیام‌های تیم پرپس به دستت برسه.',
+  new: 'جدید',
+  'You have a new message.': 'شما یک پیام جدید دارید.',
+  'Sent to {n} inboxes.': 'برای {n} نفر فرستاده شد.',
+  'Message {name}': 'پیام به {name}',
+  'this player': 'این کاربر',
+  'Message everyone': 'پیام به همه',
+  'Goes to their Messages, with a “new message” notification.': 'به صندوق پیام‌هاش می‌ره، با اعلان «پیام جدید».',
+  'Goes to every account’s Messages, with a “new message” notification.': 'به صندوق پیام همه‌ی حساب‌ها می‌ره، با اعلان «پیام جدید».',
+  'Send this to everyone?': 'این پیام برای همه فرستاده بشه؟',
+  Message: 'پیام',
+  Send: 'فرستادن',
+};

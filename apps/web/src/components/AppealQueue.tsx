@@ -4,7 +4,7 @@ import type { AppealView, ConsequenceType } from '@purrpose/shared';
 import { DoodleButton, SketchCard } from './ui/index.js';
 import { api, apiImage, ApiError } from '../lib/api.js';
 import { ProofVoice } from './pact/ProofVoice.js';
-import { fmtDateTime, foodName, t } from '../i18n/index.js';
+import { fmtDateTime, foodAmount, t } from '../i18n/index.js';
 
 interface AppealRow {
   id: string;
@@ -34,7 +34,7 @@ function AppealItem({ r }: { r: AppealRow }) {
       <strong>{r.title}</strong>
       <div className="muted" style={{ fontSize: 13 }}>
         <span className="ltr">{r.owner.phone ?? r.owner.email ?? t('guest')}</span> ·{' '}
-        {t('{n} {food}', { n: r.consequenceAmount, food: foodName(r.consequenceType) })} ·{' '}
+        {foodAmount(r.consequenceType, r.consequenceAmount)} ·{' '}
         {fmtDateTime(r.appeal.createdAtISO, { dateStyle: 'short', timeStyle: 'short' })}
       </div>
       <div className="muted" style={{ fontSize: 13 }}>

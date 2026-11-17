@@ -2,8 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import type { CommitmentDto, FocusSummary, HabitDto, MeResponse } from '@purrpose/shared';
 import { api } from './api.js';
 
-export function useMe() {
-  return useQuery({ queryKey: ['me'], queryFn: () => api<MeResponse>('/me') });
+export function useMe(enabled = true) {
+  return useQuery({ queryKey: ['me'], queryFn: () => api<MeResponse>('/me'), enabled });
 }
 
 export function useCommitments(refetchInterval?: number, enabled = true) {

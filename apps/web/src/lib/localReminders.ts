@@ -162,3 +162,37 @@ export async function onReminderTap(open: (url: string) => void): Promise<void> 
     })
     .catch(() => undefined);
 }
+
+const SEEN_KEY = 'purrpose.inbox.notified';
+
+/**
+ * Android app: the inbox is checked when the app is open or comes back; a new message
+ * shows "You have a new message" on the phone (a tap opens Messages). Messages that
+ * arrive while the app is fully closed show up the next time it opens.
+ */
+export async function notifyNewMessages(unread: number | undefined): Promise<void> {
+  if (unread === undefined) return;
+  let seen = 0;
+  try {
+    seen = Number(localStorage.getItem(SEEN_KEY) ?? '0') || 0;
+    localStorage.setItem(SEEN_KEY, String(unread));
+  } catch {
+    return;
+  }
+  if (unread <= seen) return;
+  const ln = await plugin();
+  if (!ln || (await localReminderState()) === 'denied') return;
+  await ln
+    .schedule({
+      notifications: [
+        {
+          id: 990_001,
+          title: t('Purrpose'),
+          body: t('You have a new message.'),
+          schedule: { at: new Date(Date.now() + 1000), allowWhileIdle: true },
+          extra: { url: '/messages' },
+        },
+      ],
+    })
+    .catch(() => undefined);
+}

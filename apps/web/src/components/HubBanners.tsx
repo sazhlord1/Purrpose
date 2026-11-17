@@ -26,13 +26,19 @@ export function HubBanner({
   to,
   title,
   blurb,
+  sub: subtitle,
   badge,
   tour,
+  onOpen,
   children,
 }: {
   to: string;
   title: string;
   blurb: string;
+  /** One short line under the title. */
+  sub?: string;
+  /** Instead of going to `to` (e.g. open the new-pact card). */
+  onOpen?: () => void;
   badge?: string;
   /** Hook for the guided tour. */
   tour?: string;
@@ -69,7 +75,8 @@ export function HubBanner({
           held.current = false;
           return; // that was a long press: just show the description
         }
-        navigate(to);
+        if (onOpen) onOpen();
+        else navigate(to);
       }}
       onPointerDown={startHold}
       onPointerUp={endHold}
@@ -83,6 +90,7 @@ export function HubBanner({
       <div className="hub-banner-shade" aria-hidden />
       <div className="hub-banner-text">
         <span className="hub-banner-title">{title}</span>
+        {subtitle && <span className="hub-banner-sub">{subtitle}</span>}
         {badge && <span className="hub-banner-badge">{badge}</span>}
       </div>
       <div className="hub-banner-info" aria-hidden>
