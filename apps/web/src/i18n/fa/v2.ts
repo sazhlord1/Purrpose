@@ -32,6 +32,7 @@ export const V2: Record<string, string> = {
   // Home
   'See your pantry': 'موجودی انبار',
   'New pact': 'قرار جدید',
+  'Tap here for a new pact: pick a cat, a task and a deadline.': 'برای قرار جدید اینجا رو بزن: یه گربه، یه کار و یه ددلاین انتخاب کن.',
   '+ New pact': '+ قرار جدید',
   'A task, a deadline, a cat waiting.': 'یه کار، یه ددلاین، یه گربه‌ی منتظر.',
   '{n} active pacts': '{n} قرار فعال',

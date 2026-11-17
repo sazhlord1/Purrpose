@@ -4,13 +4,13 @@ import { num, t } from '../i18n/index.js';
 
 /** Every screen's guided tour, written for someone who has never seen the app. */
 
-/** Home: just the + (everything else on the screen speaks for itself). */
+/** Home: the New pact card (everything else on the screen speaks for itself). */
 export function homeTour(): TourStep[] {
   return [
     {
-      target: '.nav-new',
-      title: t('The + button'),
-      body: t('The quickest way to a new pact, from any screen.'),
+      target: '[data-tour="hub-pacts"]',
+      title: t('New pact'),
+      body: t('Tap here for a new pact: pick a cat, a task and a deadline.'),
     },
   ];
 }
