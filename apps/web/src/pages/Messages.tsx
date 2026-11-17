@@ -19,9 +19,9 @@ interface InboxMessage {
 /** The welcome note is written here, in the player's language. */
 function welcome(): { title: string; body: string } {
   return {
-    title: t('Welcome to Purrpose! 🐾'),
+    title: t('Welcome to Purrpose!'),
     body: t(
-      'You got {n} PURR as a welcome gift. Purrpose is where you make pacts with a cat: keep your word and your cat moves up in the world; miss it and your stake feeds real shelter cats. Start an “on my word” pact with your PURR, or a strict one with food from your pantry, and win new cats as you go.',
+      '{n} PURR are yours as a welcome gift. Purrpose is where a feline opponent becomes your rival on the way to your goals: keep your word and your cat stays hungry; miss it, and you save a lot of shelter cats from hunger and illness!',
       { n: num(PURR_WELCOME) },
     ),
   };

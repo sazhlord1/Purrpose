@@ -33,20 +33,21 @@ function takeReturnPath(): string | null {
 }
 
 /** Admins land straight in their panel; everyone else back where they came from, or home. */
-function landingFor(res: AuthResponse): string {
+function landingFor(): string {
   const back = takeReturnPath();
-  return back ?? (res.role === 'ADMIN' ? '/admin' : '/');
+  // Everyone lands on the home screen (admins reach the panel from the crown link there).
+  return back ?? '/';
 }
 
 export async function signIn(email: string, password: string): Promise<void> {
   const res = await api<AuthResponse>('/auth/login', { method: 'POST', body: { email, password } });
-  switchTo(res.token, landingFor(res));
+  switchTo(res.token, landingFor());
 }
 
 /** Google's ID token → our session. Guest progress on this device moves into the account. */
 export async function signInWithGoogle(credential: string): Promise<void> {
   const res = await api<AuthResponse>('/auth/google', { method: 'POST', body: { credential } });
-  switchTo(res.token, landingFor(res));
+  switchTo(res.token, landingFor());
 }
 
 export async function adminSignIn(email: string, password: string): Promise<void> {
@@ -65,7 +66,7 @@ export async function createAccount(
     method: 'POST',
     body: { email, password, firstName, lastName },
   });
-  switchTo(res.token, takeReturnPath() ?? '/settings');
+  switchTo(res.token, takeReturnPath() ?? '/');
 }
 
 /** Is "sign in with your phone number" switched on at this server? */
@@ -97,8 +98,8 @@ export async function saveName(firstName: string, lastName: string): Promise<voi
 }
 
 /** After a phone sign-in: reload into the account. */
-export function finishSignIn(res: AuthResponse): void {
-  window.location.assign(landingFor(res));
+export function finishSignIn(): void {
+  window.location.assign(landingFor());
 }
 
 /** Guests have neither an email nor a phone number. */

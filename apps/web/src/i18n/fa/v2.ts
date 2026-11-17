@@ -114,4 +114,18 @@ export const V2: Record<string, string> = {
   'Send this to everyone?': 'این پیام برای همه فرستاده بشه؟',
   Message: 'پیام',
   Send: 'فرستادن',
+  'Welcome to Purrpose!': 'به پرپس خوش اومدی!',
+  '{n} PURR are yours as a welcome gift. Purrpose is where a feline opponent becomes your rival on the way to your goals: keep your word and your cat stays hungry; miss it, and you save a lot of shelter cats from hunger and illness!':
+    '{n} میو هدیه‌ی خوش‌آمد به تو تعلق گرفت. پرپس جاییه که توش یه حریف گربه‌ای برای رسیدن به اهدافت به رقیبت تبدیل می‌شه: سر قولت بمونی، گربه‌ت گرسنه می‌مونه؛ ولی اگه نمونی، کلی گربه‌ی بی‌سرپناه رو از گرسنگی و بیماری نجات می‌دی!',
+  'What kind of pact are you making?': 'چجور قراری می‌بندی؟',
+  'Pick your feline opponent': 'حریف گربه‌ای‌ت رو انتخاب کن',
+  'What do you promise to do?': 'چه کاری رو قول می‌دی انجام بدی؟',
+  'By when do you promise to do it?': 'تا کی قول می‌دی انجامش بدی؟',
+  'What do you put on the line?': 'چه چیزی رو گرو می‌ذاری؟',
+  'I promise {name}!': 'به {name} قول می‌دم!',
+  'A friend who looks at your proof when you’re done and says yes or no. No witness? The Purrpose team checks it.':
+    'شاهد دوستیه که وقتی کارت تموم شد مدرکت رو می‌بینه و تأیید یا رد می‌کنه. شاهد نذاری، تیم پرپس بررسیش می‌کنه.',
+  'This is for anyone who wants to drop a bad habit. Just leave some food with us as a pledge, and every time you slip, confess to Detective Cheat.':
+    'این بخش مناسب اونیه که می‌خواد یه عادت بدش رو کنار بذاره! فقط کافیه غذا گرو بذاری پیش ما و هر وقت لغزیدی پیش کارآگاه چیت اعتراف کنی.',
+  'Allow notifications for Purrpose in Android settings.': 'اجازه‌ی اعلان پرپس رو از تنظیمات اندروید بده.',
 };

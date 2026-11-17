@@ -228,7 +228,7 @@ export function NewPactWizard({ open, initialCat }: { open: boolean; initialCat?
   const body = [
     // 1 · the kind of pact
     <div key="mode" className="wiz-step">
-      <h2>{t('What kind of pact?')}</h2>
+      <h2>{t('What kind of pact are you making?')}</h2>
       <div className="mode-options">
         <button type="button" className={`mode-option ${mode === 'HONOR' ? 'is-current' : ''}`} onClick={() => pickMode('HONOR')}>
           <span className="mode-option-head">
@@ -263,7 +263,7 @@ export function NewPactWizard({ open, initialCat }: { open: boolean; initialCat?
 
     // 2 · opponent + task
     <div key="cat" className="wiz-step">
-      <h2>{t('Your opponent and your task')}</h2>
+      <h2>{t('Pick your feline opponent')}</h2>
       <CatInBox catId={catId} size={128} />
       <p className="wiz-cat-name">
         <strong>{currentCat.name}</strong>
@@ -276,7 +276,7 @@ export function NewPactWizard({ open, initialCat }: { open: boolean; initialCat?
         ))}
       </div>
       <label className="field" style={{ marginTop: 12 }}>
-        <span>{t('I promise to get done:')}</span>
+        <span>{t('What do you promise to do?')}</span>
         <input
           maxLength={80}
           value={title}
@@ -294,7 +294,7 @@ export function NewPactWizard({ open, initialCat }: { open: boolean; initialCat?
 
     // 3 · deadline
     <div key="when" className="wiz-step">
-      <h2>{t('By when?')}</h2>
+      <h2>{t('By when do you promise to do it?')}</h2>
       <DeadlinePicker
         value={when}
         min={now() + 6 * 60_000}
@@ -306,7 +306,7 @@ export function NewPactWizard({ open, initialCat }: { open: boolean; initialCat?
 
     // 4 · the stake
     <div key="stake" className="wiz-step">
-      <h2>{t('What’s on the line?')}</h2>
+      <h2>{t('What do you put on the line?')}</h2>
       {mode === 'HONOR' ? (
         <div className="wiz-purr">
           <p className="muted" style={{ margin: '0 0 8px' }}>{t('{n} PURR free', { n: purrFree })}</p>
@@ -357,7 +357,7 @@ export function NewPactWizard({ open, initialCat }: { open: boolean; initialCat?
           </label>
           {witnessError && <p className="form-error">{witnessError}</p>}
           <p className="muted field-note" style={{ marginTop: 4 }}>
-            {t('No witness? The Purrpose team checks your proof.')}
+            {t('A friend who looks at your proof when you’re done and says yes or no. No witness? The Purrpose team checks it.')}
           </p>
           <label className="consent-box">
             <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />
@@ -372,9 +372,6 @@ export function NewPactWizard({ open, initialCat }: { open: boolean; initialCat?
           {error}
         </p>
       )}
-      <DoodleButton variant="primary" size="big" disabled={!canSeal || busy} onClick={() => void seal()} style={{ width: '100%', justifyContent: 'center', marginTop: 12 }}>
-        <AppIcon name="paw" size={18} /> {busy ? '…' : t('Seal the Pact')}
-      </DoodleButton>
     </div>,
   ];
 
@@ -410,24 +407,22 @@ export function NewPactWizard({ open, initialCat }: { open: boolean; initialCat?
             </motion.div>
           </AnimatePresence>
         </div>
-        {step > 0 && step < STEPS - 1 && (
-          <div className="wiz-nav">
-            <button type="button" className="linklike" onClick={() => go(step - 1)}>
-              {t('Back')}
-            </button>
+        <div className="wiz-nav">
+          {step > 0 ? (
+            <DoodleButton onClick={() => go(step - 1)}>{t('Back')}</DoodleButton>
+          ) : (
+            <span />
+          )}
+          {step < STEPS - 1 ? (
             <DoodleButton variant="primary" disabled={!canNext} onClick={() => go(step + 1)}>
               {t('Next')}
             </DoodleButton>
-          </div>
-        )}
-        {step === STEPS - 1 && (
-          <div className="wiz-nav">
-            <button type="button" className="linklike" onClick={() => go(step - 1)}>
-              {t('Back')}
-            </button>
-            <span />
-          </div>
-        )}
+          ) : (
+            <DoodleButton variant="primary" disabled={!canSeal || busy} onClick={() => void seal()}>
+              <AppIcon name="paw" size={18} /> {busy ? '…' : t('I promise {name}!', { name: currentCat.name })}
+            </DoodleButton>
+          )}
+        </div>
       </Popup>
       <PawShake
         open={Boolean(sealedId)}

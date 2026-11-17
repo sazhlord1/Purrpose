@@ -68,7 +68,7 @@ export function PhoneLogin({ initialPhone = '' }: { initialPhone?: string }) {
         setStep('name');
         setBusy(false);
       } else {
-        finishSignIn(res);
+        finishSignIn();
       }
     } catch (err) {
       setError(err instanceof ApiError && err.code === 'INVALID_INPUT' ? t('Enter the code from the SMS') : describe(err));
@@ -86,7 +86,7 @@ export function PhoneLogin({ initialPhone = '' }: { initialPhone?: string }) {
     } catch {
       /* the name is nice to have; never block signing in on it */
     }
-    finishSignIn(res);
+    finishSignIn();
   };
 
   if (step === 'name') {

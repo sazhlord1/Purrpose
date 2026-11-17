@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BackLink } from '../components/BackLink.js';
-import { DoodleButton, SketchCard } from '../components/ui/index.js';
+import { DoodleButton, SketchCard, Toggle } from '../components/ui/index.js';
+import { disableLocalReminders, enableLocalReminders, localReminderState, type LocalReminderState } from '../lib/localReminders.js';
 import { fmtDateTime, fwdArrow, getLocale, setAppLanguage, t, type Locale } from '../i18n/index.js';
 import { signOut } from '../lib/auth.js';
 import { IS_IR_EDITION } from '../lib/edition.js';
@@ -35,6 +36,20 @@ export function Settings() {
   useEffect(() => {
     void currentPushState().then(setPush);
   }, []);
+
+  const [local, setLocal] = useState<LocalReminderState>('unsupported');
+  const [localBusy, setLocalBusy] = useState(false);
+  useEffect(() => {
+    if (isNativeApp()) void localReminderState().then(setLocal);
+  }, []);
+  const toggleLocal = async (on: boolean) => {
+    setLocalBusy(true);
+    try {
+      setLocal(on ? await enableLocalReminders() : await disableLocalReminders());
+    } finally {
+      setLocalBusy(false);
+    }
+  };
 
   const togglePush = async () => {
     setPushBusy(true);
@@ -119,35 +134,50 @@ export function Settings() {
         )}
       </SketchCard>
 
-      {!isNativeApp() && (
       <SketchCard variant="b">
         <h2>{t('Notifications')}</h2>
-        <div className="row">
-          <span>{t('Deadline reminders')}</span>
-          <span className="muted" style={{ textAlign: 'end' }}>{push ? t(PUSH_COPY[push]) : '…'}</span>
-        </div>
-        {(push === 'on' || push === 'off') && (
-          <DoodleButton onClick={() => void togglePush()} disabled={pushBusy}>
-            {push === 'on' ? t('Turn off') : t('Turn on')}
-          </DoodleButton>
+        {isNativeApp() ? (
+          <div className="settings-switch">
+            <span>
+              {t('Deadline reminders')}
+              {local === 'denied' && <small>{t('Allow notifications for Purrpose in Android settings.')}</small>}
+            </span>
+            <Toggle
+              label={t('Deadline reminders')}
+              checked={local === 'on'}
+              disabled={local === 'denied' || local === 'unsupported' || localBusy}
+              onChange={on => void toggleLocal(on)}
+            />
+          </div>
+        ) : (
+          <div className="settings-switch">
+            <span>
+              {t('Deadline reminders')}
+              {push && push !== 'on' && push !== 'off' && <small>{t(PUSH_COPY[push])}</small>}
+            </span>
+            <Toggle
+              label={t('Deadline reminders')}
+              checked={push === 'on'}
+              disabled={pushBusy || !(push === 'on' || push === 'off')}
+              onChange={() => void togglePush()}
+            />
+          </div>
         )}
       </SketchCard>
-      )}
 
       <SketchCard variant="b">
         <h2>{t('Accessibility')}</h2>
-        <label className="row" style={{ cursor: 'pointer' }}>
+        <div className="settings-switch">
           <span>{t('Reduced motion (calmer cats)')}</span>
-          <input
-            type="checkbox"
+          <Toggle
+            label={t('Reduced motion (calmer cats)')}
             checked={reducedMotion}
-            onChange={e => {
-              localStorage.setItem('purrpose.reducedMotion', e.target.checked ? '1' : '0');
+            onChange={on => {
+              localStorage.setItem('purrpose.reducedMotion', on ? '1' : '0');
               location.reload();
             }}
-            style={{ width: 'auto' }}
           />
-        </label>
+        </div>
       </SketchCard>
 
       <SketchCard variant="a">

@@ -8,3 +8,4 @@ export { Sheet } from './Sheet.js';
 export { EmptyState } from './EmptyState.js';
 export { AnimatedNumber } from './AnimatedNumber.js';
 export { Skeleton } from './Skeleton.js';
+export { Toggle } from './Toggle.js';

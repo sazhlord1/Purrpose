@@ -35,8 +35,8 @@ const DAY_PICKS: Array<[string, number]> = [
 ];
 
 /**
- * A new Detective Cheat case in two cards: (1) what it is, the detective and the habit,
- * (2) the food on the table, the slips allowed and how long. Opens the case.
+ * A new Detective Cheat case in three cards: (1) what it is, the detective and the habit,
+ * (2) the food on the table, (3) the slips allowed and how long — then the case opens.
  */
 export function NewCaseWizard({ open }: { open: boolean }) {
   const me = useMe();
@@ -84,18 +84,25 @@ export function NewCaseWizard({ open }: { open: boolean }) {
     onError: e => setError(e instanceof ApiError ? e.message : t('Could not reach the station.')),
   });
 
+  const canNext = [title.trim().length > 0, stake >= 1 && stake <= (available[type] ?? 0), true][step] ?? true;
+  const go = (to: number) => {
+    if (to < 0 || to > 2 || to === step) return;
+    if (to > step && !canNext) return;
+    setStep(to);
+    setError(null);
+  };
   const onDragEnd = (_e: unknown, info: PanInfo) => {
     const forward = fa ? info.offset.x > 70 : info.offset.x < -70;
     const back = fa ? info.offset.x < -70 : info.offset.x > 70;
-    if (forward && step === 0 && title.trim()) setStep(1);
-    else if (back && step === 1) setStep(0);
+    if (forward) go(step + 1);
+    else if (back) go(step - 1);
   };
 
   const steps = [
     <div key="who" className="wiz-step">
       <h2>{t('Open a new case')}</h2>
       <p className="muted" style={{ margin: '0 0 10px', textAlign: 'center', fontSize: 14 }}>
-        {t('Quitting something? Put food on the table and confess every slip to the detective. Each slip locks a share of it.')}
+        {t('This is for anyone who wants to drop a bad habit. Just leave some food with us as a pledge, and every time you slip, confess to Detective Cheat.')}
       </p>
       <div className="case-room">
         <InterrogationRoom catId={catId} expression="stare" />
@@ -117,40 +124,41 @@ export function NewCaseWizard({ open }: { open: boolean }) {
           onKeyDown={e => {
             if (e.key === 'Enter') {
               e.preventDefault();
-              if (title.trim()) setStep(1);
+              go(1);
             }
           }}
         />
       </label>
-      <div className="wiz-nav">
-        <span />
-        <DoodleButton variant="primary" disabled={!title.trim()} onClick={() => setStep(1)}>
-          {t('Next')}
-        </DoodleButton>
+    </div>,
+
+    <div key="stake" className="wiz-step">
+      <h2>{t('What do you put on the line?')}</h2>
+      <div className="wiz-section is-tinted">
+        <FoodStake type={type} amount={stake} available={available} onType={setType} onAmount={setStake} />
       </div>
     </div>,
 
     <div key="terms" className="wiz-step">
       <h2>{t('The terms of the case')}</h2>
-      <FoodStake type={type} amount={stake} available={available} onType={setType} onAmount={setStake} />
-
-      <div className="case-row">
-        <span>{t('Slips allowed')}</span>
-        <div className="food-stake-step">
-          <button type="button" aria-label={t('Less')} disabled={slips <= HABIT_MIN_SLIPS} onClick={() => setSlips(s => s - 1)}>
-            −
-          </button>
-          <strong style={{ minWidth: 40 }}>{num(slips)}</strong>
-          <button type="button" aria-label={t('More')} disabled={slips >= HABIT_MAX_SLIPS} onClick={() => setSlips(s => s + 1)}>
-            +
-          </button>
+      <div className="wiz-section">
+        <div className="case-row" style={{ marginTop: 0 }}>
+          <h3 style={{ margin: 0 }}>{t('Slips allowed')}</h3>
+          <div className="food-stake-step">
+            <button type="button" aria-label={t('Less')} disabled={slips <= HABIT_MIN_SLIPS} onClick={() => setSlips(n => n - 1)}>
+              −
+            </button>
+            <strong style={{ minWidth: 40 }}>{num(slips)}</strong>
+            <button type="button" aria-label={t('More')} disabled={slips >= HABIT_MAX_SLIPS} onClick={() => setSlips(n => n + 1)}>
+              +
+            </button>
+          </div>
         </div>
+        <p className="muted case-hint">{t('Each slip locks {share}.', { share: foodAmount(type, stake / slips) })}</p>
       </div>
-      <p className="muted case-hint">{t('Each slip locks {share}.', { share: foodAmount(type, stake / slips) })}</p>
 
-      <div className="case-days">
-        <div className="case-row">
-          <span>{t('For how long?')}</span>
+      <div className="wiz-section is-tinted">
+        <div className="case-row" style={{ marginTop: 0 }}>
+          <h3 style={{ margin: 0 }}>{t('For how long?')}</h3>
           <strong>{t('{n} days', { n: num(days) })}</strong>
         </div>
         <input
@@ -184,31 +192,25 @@ export function NewCaseWizard({ open }: { open: boolean }) {
       <p className="muted case-hint" style={{ textAlign: 'center' }}>
         {t('Confess every slip. At the end, whatever is locked goes to the cats and the rest comes back to your pantry.')}
       </p>
-      <div className="wiz-nav">
-        <button type="button" className="linklike" onClick={() => setStep(0)}>
-          {t('Back')}
-        </button>
-        <span />
-      </div>
     </div>,
   ];
 
   return (
     <Popup open={open} onClose={closeModal} label={t('Open a new case')} className="wizard wizard-case">
       <div className="wiz-dots">
-        {[0, 1].map(i => (
-          <button key={i} type="button" className={i === step ? 'on' : i < step ? 'done' : ''} aria-label={t('Step {n}', { n: i + 1 })} onClick={() => (i === 0 || title.trim()) && setStep(i)} />
+        {[0, 1, 2].map(i => (
+          <button key={i} type="button" className={i === step ? 'on' : i < step ? 'done' : ''} aria-label={t('Step {n}', { n: i + 1 })} onClick={() => go(i)} />
         ))}
       </div>
       <div className="wiz-stage">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={step}
-            initial={{ x: (fa ? -1 : 1) * (step === 1 ? 60 : -60), opacity: 0 }}
+            initial={{ x: (fa ? -1 : 1) * 60, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            drag={step === 0 ? 'x' : false}
+            drag={step === 2 ? false : 'x'}
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.25}
             onDragEnd={onDragEnd}
@@ -216,6 +218,16 @@ export function NewCaseWizard({ open }: { open: boolean }) {
             {steps[step]}
           </motion.div>
         </AnimatePresence>
+      </div>
+      <div className="wiz-nav">
+        {step > 0 ? <DoodleButton onClick={() => go(step - 1)}>{t('Back')}</DoodleButton> : <span />}
+        {step < 2 ? (
+          <DoodleButton variant="primary" disabled={!canNext} onClick={() => go(step + 1)}>
+            {t('Next')}
+          </DoodleButton>
+        ) : (
+          <span />
+        )}
       </div>
     </Popup>
   );
