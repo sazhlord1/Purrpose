@@ -266,6 +266,11 @@ export function Shop() {
             const affordable = purr >= cat.pricePurr;
             return (
               <div key={cat.id} id={`shop-cat-${cat.id}`} className={`shop-cat ${cat.owned ? '' : 'locked'} ${focusCat === cat.id ? 'equipped' : ''}`}>
+                {!cat.owned && (
+                  <span className="shop-cat-lock" aria-hidden>
+                    <AppIcon name="lock" size={16} />
+                  </span>
+                )}
                 <Cat catId={cat.id} state="WAITING" size={100} />
                 <strong>{catNameOf(cat.id)}</strong>
                 <span className="muted" style={{ fontSize: 12 }}>{getLocale() === 'fa' ? catSubtitle(cat.id) : cat.personality}</span>

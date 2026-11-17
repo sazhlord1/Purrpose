@@ -2612,3 +2612,13 @@ html[lang='fa'] .tour-body { line-height: 1.75; }
 .toggle.is-on .toggle-knob { transform: translateX(22px); }
 .settings-switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0; }
 .settings-switch small { display: block; color: var(--ink-faint); font-size: 12.5px; }
+
+/* ── Cat shop: yours are white, the rest locked on orange ── */
+.shop-cat { position: relative; background: var(--paper-raised); }
+.shop-cat.locked { background: #f9d9b8; }
+.shop-cat.locked svg { filter: grayscale(0.35); opacity: 0.85; }
+.shop-cat-lock {
+  position: absolute; top: 10px; inset-inline-start: 10px; width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--paper-raised); border: 2px solid var(--ink); z-index: 1;
+}
+.shop-cat-lock svg { filter: none !important; opacity: 1 !important; }
