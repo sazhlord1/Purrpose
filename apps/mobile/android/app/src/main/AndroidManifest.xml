@@ -33,15 +33,9 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Asked at the moment they're needed, after the app explains why: -->
-    <!-- a photo proof taken with the camera -->
-    <uses-permission android:name="android.permission.CAMERA" />
-    <!-- a voice proof -->
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- No CAMERA / RECORD_AUDIO: Cafe Bazaar doesn't allow them for this kind of app.
+         Photo proofs use the system camera / gallery picker, which needs no permission;
+         voice proofs are website-only. -->
     <!-- pact reminders (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- The camera is optional: the app works on devices without one. -->
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
-    <uses-feature android:name="android.hardware.microphone" android:required="false" />
 </manifest>

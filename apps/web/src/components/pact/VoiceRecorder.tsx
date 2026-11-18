@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { PROOF_AUDIO_TYPES, PROOF_MAX_AUDIO_BYTES, PROOF_MAX_AUDIO_SECONDS } from '@purrpose/shared';
 import { DoodleButton } from '../ui/index.js';
 import { t } from '../../i18n/index.js';
+import { isNativeApp } from '../../lib/platform.js';
 
 export type ProofAudioType = (typeof PROOF_AUDIO_TYPES)[number];
 export interface RecordedVoice {
@@ -14,6 +15,8 @@ export interface RecordedVoice {
 
 /** Can this browser / app record a voice note at all? */
 export function canRecordVoice(): boolean {
+  // The Android app has no microphone permission (Cafe Bazaar rule): voice proofs are website-only.
+  if (isNativeApp()) return false;
   return typeof window !== 'undefined' && 'MediaRecorder' in window && Boolean(navigator.mediaDevices?.getUserMedia);
 }
 
